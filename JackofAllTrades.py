@@ -1,6 +1,8 @@
-#moves class set the class to generate relevant numbers to "moves"
-
 import random
+
+# The class "Moves" should be entirely self sufficient, and not require any numbers or
+#variables outside of the class.
+
 
 class Moves:
     def __init__(self, Dmg, Acc, Status):
@@ -33,4 +35,3 @@ class Character:
     def displayHP(self):
         print (self.CurrentHP)
 
-#hi burton
