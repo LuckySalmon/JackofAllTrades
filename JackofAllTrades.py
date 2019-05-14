@@ -25,9 +25,11 @@ class Character:
         self.XP = XP
         self.Name = Name
 
-
-    def GetLevel(XP):
-        pass #notimplemented
+    def moveList(self):
+        #check what moves this person has and return a list of availible moves
+        pass
+    def getLevel(XP):
+        pass
     def displayHP(self):
-        print CurrentHP
-    def 
+        print (self.CurrentHP)
+
