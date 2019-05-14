@@ -17,6 +17,8 @@ class Moves:
 
     
 class Character:
+    T = 1000
+    Level = 1
     def __init__(self, Name, StartingHP, HP, Speed, Defence, XP):
         self.StartingHP = StartingHP
         self.CurrentHP = HP
@@ -29,7 +31,9 @@ class Character:
         #check what moves this person has and return a list of availible moves
         pass
     def getLevel(XP):
-        pass
+        if XP >= T:
+            Level +=1
+        return Level 
     def displayHP(self):
         print (self.CurrentHP)
 
