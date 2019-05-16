@@ -43,7 +43,7 @@ class Character:
         else:
             print("You have too many moves would you like to replace one?")
             
-    h
+    
     def getLevel(self):
         T = self.level * 1000
         if self.XP >= T:
