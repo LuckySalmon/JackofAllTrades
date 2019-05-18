@@ -1,6 +1,6 @@
 import random
 
-# The class "Moves" should be entirely self sufficient, and not require any numbers or
+# The class "Moves" should be entirely self sufficient and not require any numbers or
 #variables outside of the class.
 
 
@@ -29,19 +29,19 @@ class Character:
         self.Defence = Defence
         self.XP = XP
         self.Name = Name
-        self.moveList =  []
+        self.moveList = []
         self.Level = 1
         
     def moveList(self):
-        #check what moves this person has and return a list of availible moves
+        #check what moves this character has and return a list of availible moves
         print(self.moveList)
 
     def addMove(self,name):
-        #check that the only the correct number of moves is added to the list and give options to replace a move
+        #check that only the correct number of moves is added to the list and give options to replace a move
         if self.moveList.len() <= int(0.41 * self.Level +4):
             self.moveList.append(name)
         else:
-            print("You have too many moves would you like to replace one?")
+            print("You have too many moves. Would you like to replace one?")
             
     
     def getLevel(self):
