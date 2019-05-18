@@ -11,10 +11,10 @@ class Moves:
         self.status = status
 
     def getDamage(self):
-        return random.randint(self.dmg[0],self.dmg[1])
+        return random.randint(*self.dmg)
     
     def getAccuracy(self):
-        return random.randint(self.acc[0],self.acc[1])
+        return random.randint(*self.acc)
     
     def getStatus(self):
         return status
