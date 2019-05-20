@@ -42,7 +42,6 @@ class Character:
             self.moveList.append(name)
         else:
             print("You have too many moves would you like to replace one?")
-            
     
     def getLevel(self):
         T = self.level * 1000
@@ -53,4 +52,7 @@ class Character:
     
     def displayHP(self):
         print (self.CurrentHP)
+
+    #things we need
+        #take dammage , use moves, die, various status affects, 
 
