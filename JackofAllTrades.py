@@ -39,8 +39,12 @@ class Character:
         #check that the only the correct number of moves is added to the list and give options to replace a move
         if self.moveList.len() <= int(0.41 * self.Level +4):
             self.moveList.append(name)
+            winsound.Beep(800, 400)
+            winsound.Beep(1200, 250)
         else:
             print("You have too many moves. Would you like to replace one?")
+            winsound.Beep(1200, 250)
+            winsound.Beep(800, 400)
 
     
     def getLevel(self):
