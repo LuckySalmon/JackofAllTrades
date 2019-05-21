@@ -14,7 +14,7 @@ class Move:
         return random.randint(*self.dmg)
     
     def getAccuracy(self):
-        return random.randint(*self.acc)
+        return self.acc
     
     def getStatus(self):
         return self.status
@@ -74,7 +74,7 @@ def battle(ally, enemy):
         Character.HP = Character.BaseHP
         Character.displayHP()
 
-    while ally.HP > 0 and enemy.HP > 0:
+    while ally.HP > 90 and enemy.HP > 90:
         if ally.Speed > enemy.Speed:
             print('Select a move, %s:' %(ally.Name))
             for move in ally.moveList:
@@ -82,7 +82,7 @@ def battle(ally, enemy):
                 dmg = ally.moveList[move].dmg
                 acc = ally.moveList[move].acc
                 print('\tDamage:', dmg[0], '-', dmg[1])
-                print('\tAccuracy:', acc[0], '-', acc[1])
+                print('\tAccuracy:', acc + '%')
             selection = input('').title()
             
             while not selection in ally.moveList:
@@ -102,7 +102,7 @@ def battle(ally, enemy):
                 dmg = enemy.moveList[move].dmg
                 acc = enemy.moveList[move].acc
                 print('\tDamage:', dmg[0], '-', dmg[1])
-                print('\tAccuracy:', acc[0], '-', acc[1])
+                print('\tAccuracy:', acc + '%')
             selection = input('').title()
             
             while not selection in ally.moveList:
@@ -117,9 +117,9 @@ def battle(ally, enemy):
             ally.displayHP()
         
 def test():
-    flick = Move('flick', (0, 1), (100, 100))
-    punch = Move('punch', (5, 15), (80, 95))
-    spit = Move('spit', (0, 0), (40, 60), 'gross')
+    flick = Move('flick', (0, 1), 100)
+    punch = Move('punch', (5, 15), 90)
+    spit = Move('spit', (0, 0), 55, 'gross')
     one = Character('one', 100, 2, 1, 1)
     two = Character('two', 100, 1, 2, 2)
     
