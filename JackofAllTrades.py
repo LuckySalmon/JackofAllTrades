@@ -46,12 +46,12 @@ class Character:
         '''check that the only the correct number of moves is added to the list and give options to replace a move'''
         if len(self.moveList) <= int(0.41 * self.Level +4):
             self.moveList[move.name] = move
-            winsound.Beep(800, 400)
-            winsound.Beep(1200, 250)
+            winsound.Beep(800, 150)
+            winsound.Beep(1200, 200)
         else:
             print("You have too many moves. Would you like to replace one?")
-            winsound.Beep(1200, 250)
-            winsound.Beep(800, 400)
+            winsound.Beep(1200, 125)
+            winsound.Beep(800, 200)
             
     def updateLevel(self):
         threshold = self.level * 1000
@@ -73,55 +73,38 @@ def battle(ally, enemy):
     for Character in (ally, enemy):
         Character.HP = Character.BaseHP
         Character.displayHP()
-
-    while ally.HP > 90 and enemy.HP > 90:
-        if ally.Speed > enemy.Speed:
-            print('Select a move, %s:' %(ally.Name))
-            for move in ally.moveList:
+    characterList = [ally, enemy]
+    characterList.sort(key= lambda char: char.Speed)
+    characterList.reverse()
+    while ally.HP > 0 and enemy.HP > 0:
+        for i, character in enumerate(characterList):
+            print('Select a move, %s:' %(character.Name))
+            for move in character.moveList:
                 print(move)
-                dmg = ally.moveList[move].dmg
-                acc = ally.moveList[move].acc
+                dmg = character.moveList[move].dmg
+                acc = character.moveList[move].acc
                 print('\tDamage:', dmg[0], '-', dmg[1])
-                print('\tAccuracy:', acc + '%')
+                print('\tAccuracy:', str(acc) + '%')
             selection = input('').title()
             
-            while not selection in ally.moveList:
+            while not selection in character.moveList:
                 selection = input('Please select a valid move.\n').title()
-            result = ally.moveList[selection].use()
+            result = character.moveList[selection].use()
             
             if result[0]:
-                print(ally.Name + "'s", selection, 'hit for', result[1], 'damage!')
+                print(character.Name + "'s", selection, 'hit for', result[1], 'damage!')
             else:
-                print(ally.Name + "'s", selection, 'missed!')
-            enemy.HP -= result[1]
-            enemy.displayHP()
-#2nd
-            print('Select a move %s:' %(enemy.Name))
-            for move in enemy.moveList:
-                print(move)
-                dmg = enemy.moveList[move].dmg
-                acc = enemy.moveList[move].acc
-                print('\tDamage:', dmg[0], '-', dmg[1])
-                print('\tAccuracy:', acc + '%')
-            selection = input('').title()
-            
-            while not selection in ally.moveList:
-                selection = input('Please select a valid move.\n').title()
-            result = enemy.moveList[selection].use()
-            
-            if result[0]:
-                print(enemy.Name + "'s", selection, 'hit for', result[1], 'damage!')
-            else:
-                print(enemy.Name + "'s", selection, 'missed!')
-            ally.HP -= result[1]
-            ally.displayHP()
+                print(character.Name + "'s", selection, 'missed!')
+            opponent = characterList[(i+1)%2]
+            opponent.HP -= result[1]
+            opponent.displayHP()
         
 def test():
     flick = Move('flick', (0, 1), 100)
     punch = Move('punch', (5, 15), 90)
     spit = Move('spit', (0, 0), 55, 'gross')
-    one = Character('one', 100, 2, 1, 1)
-    two = Character('two', 100, 1, 2, 2)
+    one = Character('one', 25, 1, 1, 1)
+    two = Character('two', 25, 2, 2, 2)
     
     for character in (one, two):
         for move in (flick, punch, spit):
