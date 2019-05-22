@@ -46,12 +46,13 @@ class Character:
         '''check that the only the correct number of moves is added to the list and give options to replace a move'''
         if len(self.moveList) <= int(0.41 * self.Level +4):
             self.moveList[move.name] = move
-            winsound.Beep(800, 150)
-            winsound.Beep(1200, 200)
+            winsound.Beep(600, 125)
+            winsound.Beep(750, 100)
+            winsound.Beep(900, 150)
         else:
             print("You have too many moves. Would you like to replace one?")
-            winsound.Beep(1200, 125)
-            winsound.Beep(800, 200)
+            winsound.Beep(600, 175)
+            winsound.Beep(500, 100)
             
     def updateLevel(self):
         threshold = self.level * 1000
@@ -64,8 +65,8 @@ class Character:
     def displayHP(self):
         print (self.Name + "'s HP:", self.HP)
 
-    #things we need
-        #take dammage , use moves, die, various status affects, 
+    #things we need:
+    #take dammage , use moves, die, various status affects, 
 
 def battle(ally, enemy):
     print(ally.Name, " VS ", enemy.Name)
