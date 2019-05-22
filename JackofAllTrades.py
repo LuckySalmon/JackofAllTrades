@@ -11,7 +11,7 @@ class Move:
         self.status = status
 
     def getDamage(self):
-        return random.randint(*self.dmg)
+        return random.randint(*self.dmg)     #what if we used triangular distribution (http://en.wikipedia.org/wiki/Triangular_distribution)? Perhaps even modify it based on accuracy?
     
     def getAccuracy(self):
         return self.acc
@@ -19,8 +19,14 @@ class Move:
     def getStatus(self):
         return self.status
     
+    def showStats(self):
+        print(self.name)
+        print('\tDamage:', self.dmg[0], '-', self.dmg[1])
+        print('\tAccuracy:', str(self.acc) + '%')
+    
     def use(self):
         success = self.getAccuracy() > random.randint(0, 99) # we should make this a set vaulue and use that to get predictable odds or change based on a dodege value from opposing character
+                                                            #I have no idea what this^ means
         damage = self.getDamage() if success else 0
         return success, damage
 
@@ -77,33 +83,46 @@ def battle(ally, enemy):
     characterList = [ally, enemy]
     characterList.sort(key= lambda char: char.Speed)
     characterList.reverse()
+    i = 0
+    
     while ally.HP > 0 and enemy.HP > 0:
-        for i, character in enumerate(characterList):
-            print('Select a move, %s:' %(character.Name))
-            for move in character.moveList:
-                print(move)
-                dmg = character.moveList[move].dmg
-                acc = character.moveList[move].acc
-                print('\tDamage:', dmg[0], '-', dmg[1])
-                print('\tAccuracy:', str(acc) + '%')
-            selection = input('').title()
-            
-            while not selection in character.moveList:
-                selection = input('Please select a valid move.\n').title()
-            result = character.moveList[selection].use()
-            
-            if result[0]:
-                print(character.Name + "'s", selection, 'hit for', result[1], 'damage!')
+        character = characterList[i]
+        print('\nSelect a move, %s:' %(character.Name))
+        moveListString = 'Availible Moves: '
+        for move in character.moveList:
+            moveListString += move + ', '
+        print(moveListString[:-2])
+        print("Or type a move followed by a '?' for more information")
+        selection = input('').title()
+        
+        while not selection in character.moveList:
+            if selection[-1] == '?' and selection[:-1].title() in character.moveList:
+                character.moveList[selection[:-1].title()].showStats()
+                selection = input('').title()
             else:
-                print(character.Name + "'s", selection, 'missed!')
-            opponent = characterList[(i+1)%2]
-            opponent.HP -= result[1]
-            opponent.displayHP()
+                selection = input('Please select a valid move.\n').title()
+        result = character.moveList[selection].use()
+        
+        if result[0]:
+            print(character.Name + "'s", selection, 'hit for', result[1], 'damage!')
+        else:
+            print(character.Name + "'s", selection, 'missed!')
+        
+        i = (i+1) % 2
+        opponent = characterList[i]
+        opponent.HP -= result[1]
+        opponent.displayHP()
+        
+    for character in characterList:
+        if character.HP > 0:
+            print('\n' + character.Name, 'wins!')
         
 def test():
     flick = Move('flick', (0, 1), 100)
     punch = Move('punch', (5, 15), 90)
     spit = Move('spit', (0, 0), 55, 'gross')
+    jab = Move('jab', (5, 10), 95)
+    cross = Move('cross', (8, 20), 85)
     one = Character('one', 25, 1, 1, 1)
     two = Character('two', 25, 2, 2, 2)
     
