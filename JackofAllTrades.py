@@ -17,14 +17,14 @@ class Moves:
     
     def getStatus(self):
         return status
-#<<<<<<< HEAD
+<<<<<<< HEAD
     
     def use(self):
         success = self.getAccuracy() > random.randint(0, 99) # we should make this a set vaulue and use that to get predictable odds or change based on a dodege value from opposing character
         damage = self.getDamage() if success else 0
         return success, damage
-#=======
-#>>>>>>> 349d189b64e4b5704e56d70abaaa64324463db98
+=======
+>>>>>>> 349d189b64e4b5704e56d70abaaa64324463db98
 
     
 class Character:
@@ -50,22 +50,22 @@ class Character:
             winsound.Beep(800, 400)
             winsound.Beep(1200, 250)
         else:
-#<<<<<<< HEAD
+<<<<<<< HEAD
 
             print("You have too many moves would you like to replace one?")
-#=======
+=======
             print("You have too many moves. Would you like to replace one?")
             winsound.Beep(1200, 250)
             winsound.Beep(800, 400)
 
-#>>>>>>> 349d189b64e4b5704e56d70abaaa64324463db98
+>>>>>>> 349d189b64e4b5704e56d70abaaa64324463db98
     
     def getLevel(self):
         T = self.level * 1000
         if self.XP >= T:
             self.Level +=1
             self.XP = 0
-#<<<<<<< HEAD
+<<<<<<< HEAD
 
             print("You have too many moves. Would you like to replace one?")
             
@@ -137,20 +137,21 @@ def battle(ally, enemy):
         
         
 def test():
-    flick = Moves('flick', (0, 1), (100, 100), 0)
-    punch = Moves('punch', (5, 15), (80, 95), 0)
-    spit = Moves('spit', (0, 0), (40, 60), 'gross')
-    one = Character('one', 100, 2, 1, 1, 1000)
-    two = Character('two', 100, 1, 2, 2, 1000)
+    flick = Move('flick', (0, 1), (100, 100))
+    punch = Move('punch', (5, 15), (80, 95))
+    spit = Move('spit', (0, 0), (40, 60), 'gross')
+    one = Character('one', 100, 2, 1, 1)
+    two = Character('two', 100, 1
+                    , 2, 2)
     
     for character in (one, two):
         for move in (flick, punch, spit):
             character.addMove(move)
     battle(one, two)
 
-#=======
-    return self.Level
+=======
+        return self.Level
     
     def displayHP(self):
         print (self.CurrentHP)
-#>>>>>>> 349d189b64e4b5704e56d70abaaa64324463db98
+>>>>>>> 349d189b64e4b5704e56d70abaaa64324463db98
