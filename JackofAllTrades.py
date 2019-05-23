@@ -17,7 +17,7 @@ class Moves:
     
     def getStatus(self):
         return status
-#<<<<<<< HEAD # These were giving errors, so I commented them out. I'm not sure if they were important, though, so I just left them.
+#<<<<<<< HEAD
     
     def use(self):
         success = self.getAccuracy() > random.randint(0, 99) # we should make this a set vaulue and use that to get predictable odds or change based on a dodege value from opposing character
@@ -137,10 +137,10 @@ def battle(ally, enemy):
         
         
 def test():
-    flick = Moves('flick', (0, 1), (100, 100), 0) # I added a 0, because it wanted an argument for status.
+    flick = Moves('flick', (0, 1), (100, 100), 0)
     punch = Moves('punch', (5, 15), (80, 95), 0)
     spit = Moves('spit', (0, 0), (40, 60), 'gross')
-    one = Character('one', 100, 2, 1, 1, 1000) # I added a 1000, as it wanted an argument for exp.
+    one = Character('one', 100, 2, 1, 1, 1000)
     two = Character('two', 100, 1, 2, 2, 1000)
     
     for character in (one, two):
