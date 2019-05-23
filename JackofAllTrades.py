@@ -2,15 +2,18 @@ import random, winsound, moves
     
 class Character:
     
-    def __init__(self, Name, BaseHP, Speed, Defense, XP=0):
+    def __init__(self, Name, BaseHP, Speed, Defense, XP=0, moves=[]):
         self.Name = Name.title()
         self.BaseHP = BaseHP
         self.HP = BaseHP
         self.Speed = Speed
         self.Defense = Defense
-        self.moveList =  {}
         self.XP = XP
         self.Level = 1
+        self.updateLevel()
+        self.moveList =  {}
+        for move in moves:
+            self.addMove(move)
         
     def moveList(self):    #isn't this redundant?
         '''check what moves this person has and return a list of availible moves'''
@@ -30,15 +33,15 @@ class Character:
             winsound.Beep(500, 100)
             
     def updateLevel(self):
-        threshold = self.level * 1000
+        threshold = self.Level * 1000
         while self.XP >= threshold:
             self.Level += 1
             self.XP -= threshold
-            threshold = self.level * 1000
+            threshold = self.Level * 1000
         return self.Level
     
     def displayHP(self):
-        print (self.Name + "'s HP:", self.HP)
+        print ("{}'s HP: {}".format(self.Name, self.HP))
 
     #things we need:
     #various status affects, 
@@ -73,35 +76,34 @@ def battle(ally, enemy):
         result = character.moveList[selection].use()
         
         if result[0]:
-            print(character.Name + "'s", selection, 'hit for', result[1], 'damage!')
+            print("{}'s {} hit for {} damage!".format(character.Name, selection, result[1]))
         else:
-            print(character.Name + "'s", selection, 'missed!')
+            print("{}'s {} missed!".format(character.Name, selection))
         
         i = (i+1) % 2
         opponent = characterList[i]
         damage = min(max(result[1] - opponent.Defense, 0), opponent.HP)   #is this how defense is supposed to work?
         opponent.HP -= damage
-        print(opponent.Name, 'took', damage, 'damage!')
+        print('{} took {} damage!'.format(opponent.Name, damage))
         opponent.displayHP()
         
     for character in characterList:
         if character.HP > 0:
-            print('\n' + character.Name, 'wins!')
+            print('\n%s wins!'%(character.Name))
         
 def test():
-    one = Character('one', 25, 1, 1, 1)
-    two = Character('two', 25, 2, 2, 2)
+    regular = Character('regular jack', 50, 1, 0, moves=moves.regularBasic)
+    boxer = Character('boxer jack', 50, 2, 2, moves=moves.boxerBasic)
+    knife = Character('knife jack', 40, 2, 1, moves=moves.knifeBasic)
     
-    boxer = Character('boxer jack', 50, 2, 2)
-    boxer.addMove(moves.jab)
-    boxer.addMove(moves.cross)
-    boxer.addMove(moves.hook)
-    knife = Character('knife jack', 40, 2, 1)
-    knife.addMove(moves.shank)
-    knife.addMove(moves.stab)
-    knife.addMove(moves.slice)
-    
-    for character in (one, two):
-        for move in (moves.flick, moves.punch, moves.spit):
-            character.addMove(move)
-    battle(one, two)
+    charList = {}
+    for character in (regular, boxer, knife):
+        charList[character.Name[:-5].lower()] = character
+    names = ['', '']
+    for i, player in ((0, 'Player 1'), (1, 'Player 2')):
+        name = input('%s Jack of choice: '%(player)).lower()
+        while not name in charList:
+            name = input('Please choose a valid character: ').lower()
+        names[i] = name
+    print('\n')
+    battle(charList[names[0]], charList[names[1]])

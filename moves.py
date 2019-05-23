@@ -32,11 +32,14 @@ class Move:
 flick = Move('flick', (0, 1), 100)
 punch = Move('punch', (5, 15), 90)
 spit = Move('spit', (0, 0), 55, 'gross')
+regularBasic = [flick, punch, spit]
 
 jab = Move('jab', (5, 10), 95)
 cross = Move('cross', (8, 20), 85)
 hook = Move('hook', (12, 15), 85)
+boxerBasic = [jab, cross, hook]
 
 shank = Move('shank', (20, 25), 75)
 stab = Move('stab', (23, 30), 65)
 slice = Move('slice', (15, 20), 85)
+knifeBasic =[shank, stab, slice]
