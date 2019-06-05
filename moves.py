@@ -22,12 +22,6 @@ class Move:
         print(self.name)
         print('\tDamage:', self.dmg[0], '-', self.dmg[1])
         print('\tAccuracy:', str(self.acc) + '%')
-    
-    def use(self):
-        success = self.getAccuracy() > random.randint(0, 99) # we should make this a set vaulue and use that to get predictable odds or change based on a dodege value from opposing character
-                                                            #I have no idea what this^ means
-        damage = self.getDamage() if success else 0
-        return success, damage
 
 flick = Move('flick', (0, 1), 100)
 punch = Move('punch', (5, 15), 90)

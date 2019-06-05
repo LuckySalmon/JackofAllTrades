@@ -78,15 +78,17 @@ def battle(ally, enemy):
     while ally.HP > 0 and enemy.HP > 0:
         character = characterList[i]
         selection = chooseAttack(character)
-        result = character.moveList[selection].use()
-        if result[0]:
-            print("{}'s {} hit for {} damage!".format(character.Name, selection, result[1]))
+        success = self.getAccuracy() > random.randint(0, 99) # we should make this a set vaulue and use that to get predictable odds or change based on a dodege value from opposing character
+                                                            #I have no idea what this^ means
+        damage = self.getDamage() if success else 0
+        if success:
+            print("{}'s {} hit for {} damage!".format(character.Name, selection, damage))
         else:
             print("{}'s {} missed!".format(character.Name, selection))
         
         i = (i+1) % 2
         opponent = characterList[i]
-        damage = min(max(result[1] - opponent.Defense, 0), opponent.HP)   #is this how defense is supposed to work?
+        damage = min(max(damage - opponent.Defense, 0), opponent.HP)   #is this how defense is supposed to work?
         opponent.HP -= damage
         print('{} took {} damage!'.format(opponent.Name, damage))
         opponent.displayHP()
