@@ -1,4 +1,6 @@
 import random, winsound, moves
+
+textWidth = 100
     
 class Character:
     
@@ -41,15 +43,23 @@ class Character:
         return self.Level
     
     def displayHP(self):
-        print ("{}'s HP: {}".format(self.Name, self.HP))
+        print ("{}'s HP: {}".format(self.Name, self.HP).center(textWidth))
 
     #things we need:
     #various status affects
 
-def chooseAttack(character):
-    print('\nSelect a move, %s:' %(character.Name))
-    print('Availible Moves:', ', '.join(character.moveList))
-    print("Or type a move followed by a '?' for more information")
+def printBiased(*strings, right=False):
+    if right:
+        string = ' '.join(strings)
+        print(string.rjust(textWidth))
+    else:
+        print(*strings)
+
+def chooseAttack(character, side):
+    print()
+    printBiased('Select a move, %s:' %(character.Name), right=side)
+    printBiased('Availible Moves:', ', '.join(character.moveList), right=side)
+    printBiased("Or type a move followed by a '?' for more information", right=side)
     selection = input('').title()
     
     while not selection in character.moveList:
@@ -57,7 +67,7 @@ def chooseAttack(character):
             character.moveList[selection[:-1].title()].showStats()
             selection = input('').title()
         else:
-            selection = input('Please select a valid move.\n').title()
+            selection = printBiased('Please select a valid move.\n', right=side).title()
     
     return selection
 
@@ -74,27 +84,28 @@ def battle(ally, enemy):
     
     while ally.HP > 0 and enemy.HP > 0:
         character = characterList[i]
-        selection = chooseAttack(character)
+        selection = chooseAttack(character, i)
         move = character.moveList[selection]
         success = move.getAccuracy() > random.randint(0, 99) # we should make this a set vaulue and use that to get predictable odds or change based on a dodege value from opposing character
                                                             #I have no idea what this^ means
         if success:
             damage = move.getDamage()
-            print("{}'s {} hit for {} damage!".format(character.Name, selection, damage))
+            print("{}'s {} hit for {} damage!".format(character.Name, selection, damage).center(textWidth))
         else:
             damage = 0
-            print("{}'s {} missed!".format(character.Name, selection))
+            print("{}'s {} missed!".format(character.Name, selection).center(textWidth))
         
         i = (i+1) % 2
         opponent = characterList[i]
         damage = min(max(damage - opponent.Defense, 0), opponent.HP)   #is this how defense is supposed to work?
         opponent.HP -= damage
-        print('{} took {} damage!'.format(opponent.Name, damage))
+        print('{} took {} damage!'.format(opponent.Name, damage).center(textWidth))
         opponent.displayHP()
         
     for character in characterList:
         if character.HP > 0:
-            print('\n%s wins!'%(character.Name))
+            print()
+            print('%s wins!'%(character.Name).center(textWidth))
         
 def test():
     regular = Character('regular jack', 50, 1, 0, moves=moves.regularBasic)
