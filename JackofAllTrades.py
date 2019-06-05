@@ -44,14 +44,11 @@ class Character:
         print ("{}'s HP: {}".format(self.Name, self.HP))
 
     #things we need:
-    #various status affects, 
+    #various status affects
 
 def chooseAttack(character):
     print('\nSelect a move, %s:' %(character.Name))
-    moveListString = 'Availible Moves: '
-    for move in character.moveList:
-        moveListString += move + ', '
-    print(moveListString[:-2])
+    print('Availible Moves:', ', '.join(character.moveList))
     print("Or type a move followed by a '?' for more information")
     selection = input('').title()
     
@@ -78,12 +75,14 @@ def battle(ally, enemy):
     while ally.HP > 0 and enemy.HP > 0:
         character = characterList[i]
         selection = chooseAttack(character)
-        success = self.getAccuracy() > random.randint(0, 99) # we should make this a set vaulue and use that to get predictable odds or change based on a dodege value from opposing character
+        move = character.moveList[selection]
+        success = move.getAccuracy() > random.randint(0, 99) # we should make this a set vaulue and use that to get predictable odds or change based on a dodege value from opposing character
                                                             #I have no idea what this^ means
-        damage = self.getDamage() if success else 0
         if success:
+            damage = move.getDamage()
             print("{}'s {} hit for {} damage!".format(character.Name, selection, damage))
         else:
+            damage = 0
             print("{}'s {} missed!".format(character.Name, selection))
         
         i = (i+1) % 2
