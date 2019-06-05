@@ -42,4 +42,4 @@ boxerBasic = [jab, cross, hook]
 shank = Move('shank', (20, 25), 75)
 stab = Move('stab', (23, 30), 65)
 slice = Move('slice', (15, 20), 85)
-knifeBasic =[shank, stab, slice]
+psychoBasic =[shank, stab, slice]

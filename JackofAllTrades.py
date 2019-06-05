@@ -94,10 +94,10 @@ def battle(ally, enemy):
 def test():
     regular = Character('regular jack', 50, 1, 0, moves=moves.regularBasic)
     boxer = Character('boxer jack', 50, 2, 2, moves=moves.boxerBasic)
-    knife = Character('knife jack', 40, 2, 1, moves=moves.knifeBasic)
+    psycho = Character('psycho jack', 40, 2, 1, moves=moves.psychoBasic)
     
     charList = {}
-    for character in (regular, boxer, knife):
+    for character in (regular, boxer, psycho):
         charList[character.Name[:-5].lower()] = character
     names = ['', '']
     for i, player in ((0, 'Player 1'), (1, 'Player 2')):
