@@ -46,6 +46,24 @@ class Character:
     #things we need:
     #various status affects, 
 
+def chooseAttack(character):
+    print('\nSelect a move, %s:' %(character.Name))
+    moveListString = 'Availible Moves: '
+    for move in character.moveList:
+        moveListString += move + ', '
+    print(moveListString[:-2])
+    print("Or type a move followed by a '?' for more information")
+    selection = input('').title()
+    
+    while not selection in character.moveList:
+        if selection[-1] == '?' and selection[:-1].title() in character.moveList:
+            character.moveList[selection[:-1].title()].showStats()
+            selection = input('').title()
+        else:
+            selection = input('Please select a valid move.\n').title()
+    
+    return selection
+
 def battle(ally, enemy):
     print(ally.Name, " VS ", enemy.Name)
     
@@ -59,22 +77,8 @@ def battle(ally, enemy):
     
     while ally.HP > 0 and enemy.HP > 0:
         character = characterList[i]
-        print('\nSelect a move, %s:' %(character.Name))
-        moveListString = 'Availible Moves: '
-        for move in character.moveList:
-            moveListString += move + ', '
-        print(moveListString[:-2])
-        print("Or type a move followed by a '?' for more information")
-        selection = input('').title()
-        
-        while not selection in character.moveList:
-            if selection[-1] == '?' and selection[:-1].title() in character.moveList:
-                character.moveList[selection[:-1].title()].showStats()
-                selection = input('').title()
-            else:
-                selection = input('Please select a valid move.\n').title()
+        selection = chooseAttack(character)
         result = character.moveList[selection].use()
-        
         if result[0]:
             print("{}'s {} hit for {} damage!".format(character.Name, selection, result[1]))
         else:
