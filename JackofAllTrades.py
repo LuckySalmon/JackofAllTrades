@@ -48,32 +48,35 @@ class Character:
     #things we need:
     #various status affects
 
-def printBiased(*strings, right=False):
-    if right:
-        string = ' '.join(strings)
-        print(string.rjust(textWidth))
-    else:
-        print(*strings)
+def align(*lines, side=0):
+    functions = [lambda s: s, lambda s: s.center(textWidth), lambda s: s.rjust(textWidth)]
+    l = []
+    for line in lines:
+        if type(line) in (list, tuple):
+            s = ' '.join(line)
+        else:
+            s = str(line)
+        l.append(functions[side](s) if s else '')
+    return '\n'.join(l)
 
 def chooseAttack(character, side):
-    print()
-    printBiased('Select a move, %s:' %(character.Name), right=side)
-    printBiased('Availible Moves:', ', '.join(character.moveList), right=side)
-    printBiased("Or type a move followed by a '?' for more information", right=side)
+    print(align('',
+                'Select a move, %s:' %(character.Name),
+                ('Availible Moves:', ', '.join(character.moveList)),
+                "Or type a move followed by a '?' for more information",
+                side=side))
     selection = input('').title()
-    
     while not selection in character.moveList:
         if selection[-1] == '?' and selection[:-1].title() in character.moveList:
             character.moveList[selection[:-1].title()].showStats()
             selection = input('').title()
         else:
-            selection = printBiased('Please select a valid move.\n', right=side).title()
+            selection = input(align('Please select a valid move.', '', side=side)).title()
     
     return selection
 
 def battle(ally, enemy):
-    print(ally.Name, " VS ", enemy.Name)
-    
+    print(align((ally.Name, " VS ", enemy.Name), side=1))
     for Character in (ally, enemy):
         Character.HP = Character.BaseHP
         Character.displayHP()
@@ -81,31 +84,29 @@ def battle(ally, enemy):
     characterList.sort(key= lambda char: char.Speed)
     characterList.reverse()
     i = 0
-    
     while ally.HP > 0 and enemy.HP > 0:
         character = characterList[i]
-        selection = chooseAttack(character, i)
+        selection = chooseAttack(character, i*2)
         move = character.moveList[selection]
         success = move.getAccuracy() > random.randint(0, 99) # we should make this a set vaulue and use that to get predictable odds or change based on a dodege value from opposing character
                                                             #I have no idea what this^ means
         if success:
             damage = move.getDamage()
-            print("{}'s {} hit for {} damage!".format(character.Name, selection, damage).center(textWidth))
+            print(align("{}'s {} hit for {} damage!".format(character.Name, selection, damage), side=1))
         else:
             damage = 0
-            print("{}'s {} missed!".format(character.Name, selection).center(textWidth))
+            print(align("{}'s {} missed!".format(character.Name, selection), side=1))
         
         i = (i+1) % 2
         opponent = characterList[i]
         damage = min(max(damage - opponent.Defense, 0), opponent.HP)   #is this how defense is supposed to work?
         opponent.HP -= damage
-        print('{} took {} damage!'.format(opponent.Name, damage).center(textWidth))
         opponent.displayHP()
+        print(align('{} took {} damage!'.format(opponent.Name, damage), side=1))
         
     for character in characterList:
         if character.HP > 0:
-            print()
-            print('%s wins!'%(character.Name).center(textWidth))
+            print(align('', '%s wins!'%(character.Name), side=1))
         
 def test():
     regular = Character('regular jack', 50, 1, 0, moves=moves.regularBasic)
@@ -122,4 +123,5 @@ def test():
             name = input('Please choose a valid character: ').lower()
         names[i] = name
     print('\n')
-    battle(charList[names[0]], charList[names[1]])
+    battle(charList[names[0]], charList[names[1]])    
+test()
