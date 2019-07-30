@@ -26,7 +26,7 @@ class Move:
 flick = Move('flick', (0, 1), 100)
 punch = Move('punch', (5, 15), 90)
 spit = Move('spit', (0, 0), 55, 'gross')
-regularBasic = [flick, punch, spit]
+defaultBasic = [flick, punch, spit]
 
 jab = Move('jab', (5, 10), 95)
 cross = Move('cross', (8, 20), 85)
