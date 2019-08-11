@@ -1,4 +1,4 @@
-import random, winsound, moves, characters
+import random, moves, characters
 
 textWidth = 100
 

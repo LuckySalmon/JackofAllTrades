@@ -1,4 +1,4 @@
-import moves
+import moves, winsound
 enableSound = True
 
 class Character(object):
