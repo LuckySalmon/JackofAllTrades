@@ -1,14 +1,14 @@
-import moves, winsound
+import moves, winsound, csv
 enableSound = True
 
 class Character(object):
     
-    def __init__(self, Name, BaseHP, Speed, Defense, XP=0, moves=()):
-        self.Name = Name.title()
-        self.BaseHP = BaseHP
-        self.HP = BaseHP
-        self.Speed = Speed
-        self.Defense = Defense
+    def __init__(self, attributes, XP=0, moves=()):
+        self.Name = attributes['Name']
+        self.BaseHP = int(attributes['HP'])
+        self.HP = int(attributes['HP'])
+        self.Speed = int(attributes['Speed'])
+        self.Defense = int(attributes['Defense'])
         self.XP = XP
         self.Level = 1
         self.updateLevel()
@@ -46,20 +46,26 @@ class Character(object):
     #things we need:
     #various status affects
 
+attributeList = {}
+with open('characters.csv', newline='') as csvfile:
+    reader = csv.DictReader(csvfile)
+    for row in reader:
+        attributeList[row['Name'][:-5].lower()] = row
+
 class default(Character):
     def __init__(self, XP=0):
-        super().__init__('regular jack', 50, 1, 0, moves=moves.defaultBasic, XP=XP)
+        super().__init__(attributeList['regular'], moves=moves.defaultBasic, XP=XP)
 
 class boxer(Character):
     def __init__(self, XP=0):
-        super().__init__('boxer jack', 50, 2, 2, moves=moves.boxerBasic, XP=XP)
+        super().__init__(attributeList['boxer'], moves=moves.boxerBasic, XP=XP)
 
 class psycho(Character):
     def __init__(self, XP=0):
-        super().__init__('psycho jack', 40, 2, 1, moves=moves.psychoBasic, XP=XP)
+        super().__init__(attributeList['psycho'], moves=moves.psychoBasic, XP=XP)
 
 class testChar(Character):
     def __init__(self, XP=0):
-        super().__init__('test jack', 10, 1, 1, moves=moves.defaultBasic, XP=XP)
+        super().__init__(attributeList['test'], moves=moves.defaultBasic, XP=XP)
 
 charList = dict(regular=default, boxer=boxer, psycho=psycho, test=testChar)
