@@ -4,10 +4,10 @@ import random, csv
 
 class Move:
     def __init__(self, attributes):
-        self.name = attributes['Name'].title()
-        self.dmg = (int(attributes['Lower Damage']), int(attributes['Upper Damage']))
-        self.acc = int(attributes['Accuracy'])
-        self.status = attributes['Status Effect']
+        self.name = attributes['name'].title()
+        self.dmg = (int(attributes['lower damage']), int(attributes['upper damage']))
+        self.acc = int(attributes['accuracy'])
+        self.status = attributes['status effect']
 
     def getDamage(self):
         return random.randint(*self.dmg)     #what if we used triangular distribution (http://en.wikipedia.org/wiki/Triangular_distribution)? Perhaps even modify it based on accuracy?
@@ -27,7 +27,7 @@ moves = {}
 with open('moves.csv', newline='') as csvfile:
     reader = csv.DictReader(csvfile)
     for row in reader:
-        moves[row['Name'].lower()] = Move(row)
+        moves[row['name']] = Move(row)
 sets = {}
 with open('sets.csv', newline='') as csvfile:
     reader = csv.reader(csvfile)

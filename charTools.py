@@ -11,6 +11,9 @@ prompt = '''Enter 'chars' to work on characters (the default),
 attributes = dict(char = ['Name', 'HP', 'Speed', 'Defense'], move = ['Name', 'Lower Damage', 'Upper Damage', 'Accuracy', 'Status Effect'])
 files = dict(char = 'characters.csv', move = 'moves.csv', sets = 'sets.csv')
 
+def lowinput(text):
+    return input(text).lower()
+
 def print_rows(rows, fieldnames):
     print(*fieldnames, sep='\t\t')
     for row in rows:
@@ -23,14 +26,16 @@ def add_entry(workspace):
         entry = {}
         if workspace == 'sets':
             writer = csv.writer(csvfile)
-            entry = [input('Set Name: ').lower()]
-            for move in input('Moves: ').lower().split(','):
+            entry = [lowinput('Set Name: ')]
+            for move in lowinput('Moves: ').split(','):
                 entry.append(move.strip())
         else:
             fieldnames = attributes[workspace]
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             for field in fieldnames:
-                entry[field] = input(field + ': ').title()
+                entry[field] = lowinput(field + ': ')
+            if workspace == 'char' and entry['name'][-4:] != 'jack':
+                entry['name'] += ' jack'
         writer.writerow(entry)
 
 def read_file(workspace):
@@ -44,21 +49,21 @@ def read_file(workspace):
             print_rows(reader, fieldnames = reader.fieldnames)
 
 def delete_entry(workspace):
-    entryName = input('What entry would you like to delete? ')
+    entryName = lowinput('What entry would you like to delete? ')
     rows = []
     deleted = []
     with open(files[workspace], newline='') as csvfile:
         if workspace == 'sets':
             reader = csv.reader(csvfile)
             for row in reader:
-                if row[0] == entryName.lower():
+                if row[0] == entryName:
                     deleted.append(row)
                 else:
                     rows.append(row)
         else:
             reader = csv.DictReader(csvfile)
             for row in reader:
-                if row['Name'] == entryName.title():
+                if row['name'] == entryName:
                     deleted.append(row)
                 else:
                     rows.append(row)
@@ -77,8 +82,20 @@ def delete_entry(workspace):
     else:
         print_rows(deleted, fieldnames)
 
+def lower(file):
+    rows = []
+    with open(file, newline='') as csvfile:
+        reader = csv.reader(csvfile)
+        for row in reader:
+            for i, entry in enumerate(row):
+                row[i] = entry.lower()
+            rows.append(row)
+    with open(file, 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerows(rows)
+
 def main():
-    action = input(prompt).lower()
+    action = lowinput(prompt)
     workspace = 'char'
     while action != 'quit':
         if action == 'read':
@@ -93,5 +110,5 @@ def main():
             workspace = 'move'
         elif action == 'sets':
             workspace = 'sets'
-        action = input('\nNext Action: ').lower()
+        action = lowinput('\nNext Action: ')
 main()

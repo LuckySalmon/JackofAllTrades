@@ -1,12 +1,12 @@
-Name,Lower Damage,Upper Damage,Accuracy,Status Effect
-Flick,0,1,100,
-Punch,5,15,90,
-Spit,0,0,55,Gross
-Jab,5,10,95,
-Cross,8,20,85,
-Hook,12,15,85,
-Shank,20,25,75,
-Stab,23,30,65,
-Slice,15,20,85,
-Ruler Slap,5,15,90,
-Yardstick Sweep,10,25,80,
+name,lower damage,upper damage,accuracy,status effect
+flick,0,1,100,
+punch,5,15,90,
+spit,0,0,55,gross
+jab,5,10,95,
+cross,8,20,85,
+hook,12,15,85,
+shank,20,25,75,
+stab,23,30,65,
+slice,15,20,85,
+ruler slap,5,15,90,
+yardstick sweep,10,25,80,

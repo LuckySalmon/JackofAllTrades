@@ -1,5 +1,6 @@
-Name,HP,Speed,Defense
-Regular Jack,50,1,0
-Boxer Jack,50,2,2
-Psycho Jack,40,2,1
-Test Jack,10,1,1
+name,hp,speed,defense
+regular jack,50,1,0
+boxer jack,50,2,2
+psycho jack,40,2,1
+test jack,10,1,1
+teacher jack,50,1,1

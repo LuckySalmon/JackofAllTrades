@@ -2,11 +2,11 @@ import moves, winsound, csv
 enableSound = True
 
 def char_init(self, attributes, XP=0, moves=()):
-    self.Name = attributes['Name']
-    self.BaseHP = int(attributes['HP'])
-    self.HP = int(attributes['HP'])
-    self.Speed = int(attributes['Speed'])
-    self.Defense = int(attributes['Defense'])
+    self.Name = attributes['name'].title()
+    self.BaseHP = int(attributes['hp'])
+    self.HP = int(attributes['hp'])
+    self.Speed = int(attributes['speed'])
+    self.Defense = int(attributes['defense'])
     self.XP = XP
     self.Level = 1
     self.updateLevel()
@@ -51,7 +51,7 @@ attributeList = {}
 with open('characters.csv', newline='') as csvfile:
     reader = csv.DictReader(csvfile)
     for row in reader:
-        attributeList[row['Name'][:-5].lower()] = row
+        attributeList[row['name'][:-5]] = row
 
 charList = {}
 def create_class(name, attributes, l):
