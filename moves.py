@@ -28,7 +28,13 @@ with open('moves.csv', newline='') as csvfile:
     reader = csv.DictReader(csvfile)
     for row in reader:
         moves[row['Name'].lower()] = Move(row)
+sets = {}
+with open('sets.csv', newline='') as csvfile:
+    reader = csv.reader(csvfile)
+    for row in reader:
+        moveList = []
+        for move in row[1:]:
+            moveList.append(moves[move])
+        sets[row[0]] = moveList
 
 defaultBasic = [moves['flick'], moves['punch'], moves['spit']]
-boxerBasic = [moves['jab'], moves['cross'], moves['hook']]
-psychoBasic =[moves['shank'], moves['stab'], moves['slice']]

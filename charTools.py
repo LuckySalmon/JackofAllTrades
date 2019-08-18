@@ -1,6 +1,7 @@
 import csv
 prompt = '''Enter 'chars' to work on characters (the default),
       'moves' to work on moves,
+      'sets' to work on move sets,
       'read' to get a list entries in the current workspace,
       'add' to add a new entry to the current workspace,
       'delete' to delete an entry from the current workspace,
@@ -8,7 +9,7 @@ prompt = '''Enter 'chars' to work on characters (the default),
 (Don't worry about capitalization throughout the course of this program)
         '''
 attributes = dict(char = ['Name', 'HP', 'Speed', 'Defense'], move = ['Name', 'Lower Damage', 'Upper Damage', 'Accuracy', 'Status Effect'])
-files = dict(char = 'characters.csv', move = 'moves.csv')
+files = dict(char = 'characters.csv', move = 'moves.csv', sets = 'sets.csv')
 
 def print_rows(rows, fieldnames):
     print(*fieldnames, sep='\t\t')
@@ -19,36 +20,62 @@ def print_rows(rows, fieldnames):
 
 def add_entry(workspace):
     with open(files[workspace], 'a', newline='') as csvfile:
-        fieldnames = attributes[workspace]
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         entry = {}
-        for field in fieldnames:
-            entry[field] = input(field + ': ').title()
+        if workspace == 'sets':
+            writer = csv.writer(csvfile)
+            entry = [input('Set Name: ').lower()]
+            for move in input('Moves: ').lower().split(','):
+                entry.append(move.strip())
+        else:
+            fieldnames = attributes[workspace]
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            for field in fieldnames:
+                entry[field] = input(field + ': ').title()
         writer.writerow(entry)
 
 def read_file(workspace):
     with open(files[workspace], newline='') as csvfile:
-        reader = csv.DictReader(csvfile)
-        print_rows(reader, fieldnames = reader.fieldnames)
+        if workspace == 'sets':
+            reader = csv.reader(csvfile)
+            for row in reader:
+                print(row[0] + ':', row[1:])
+        else:
+            reader = csv.DictReader(csvfile)
+            print_rows(reader, fieldnames = reader.fieldnames)
 
 def delete_entry(workspace):
-    entryName = input('What character would you like to delete? ').title()
+    entryName = input('What entry would you like to delete? ')
     rows = []
     deleted = []
     with open(files[workspace], newline='') as csvfile:
-        reader = csv.DictReader(csvfile)
-        for row in reader:
-            if row['Name'] == entryName:
-                deleted.append(row)
-            else:
-                rows.append(row)
-        fieldnames = reader.fieldnames
+        if workspace == 'sets':
+            reader = csv.reader(csvfile)
+            for row in reader:
+                if row[0] == entryName.lower():
+                    deleted.append(row)
+                else:
+                    rows.append(row)
+        else:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                if row['Name'] == entryName.title():
+                    deleted.append(row)
+                else:
+                    rows.append(row)
+            fieldnames = reader.fieldnames
     with open(files[workspace], 'w', newline='') as csvfile:
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        writer.writeheader()
+        if workspace == 'sets':
+            writer = csv.writer(csvfile)
+        else:
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
         writer.writerows(rows)
     print('Successfully deleted the following entries:')
-    print_rows(deleted, fieldnames)
+    if workspace == 'sets':
+        for entry in deleted:
+            print(entry)
+    else:
+        print_rows(deleted, fieldnames)
 
 def main():
     action = input(prompt).lower()
@@ -64,5 +91,7 @@ def main():
             workspace = 'char'
         elif action == 'moves':
             workspace = 'move'
+        elif action == 'sets':
+            workspace = 'sets'
         action = input('\nNext Action: ').lower()
 main()
