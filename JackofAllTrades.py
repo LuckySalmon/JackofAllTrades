@@ -1,12 +1,12 @@
 import random, moves, characters
 
-textWidth = 100
+textWidth = [100]
 
 def displayHP(character):
         print(align("{}'s HP: {}".format(character.Name, character.HP), side=1))
 
 def align(*lines, side=0):
-    functions = [lambda s: s, lambda s: s.center(textWidth), lambda s: s.rjust(textWidth)]
+    functions = [lambda s: s, lambda s: s.center(textWidth[0]), lambda s: s.rjust(textWidth[0])]
     l = []
     for line in lines:
         if type(line) in (list, tuple):
@@ -75,5 +75,15 @@ def test():
     print('\n')
     battle(*fighters)
     input(align('Press enter to quit.', '', side=1))
-    
+
+def sizeScreen():
+    alignment = '100'
+    while alignment.isdigit():
+        textWidth[0] = int(alignment)
+        print(align('Left Side', side=0))
+        print(align('Center', side=1))
+        print(align('Right Side', side=2))
+        alignment = input('Type a number to set a new screen size (current is {}), or type a non-number to accept.\n'.format(alignment))
+
+sizeScreen()
 test()
