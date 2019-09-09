@@ -66,15 +66,17 @@ def battle(ally, enemy):
             print(align('', '%s wins!'%(character.Name), side=1))
         
 def test():
-    fighters = []
-    for player in ('Player 1', 'Player 2'):
-        name = input('%s Jack of choice: '%(player)).lower()
-        while not name in characters.charList:
-            name = input('Please choose a valid character: ').lower()
-        fighters.append(characters.charList[name]())
-    print('\n')
-    battle(*fighters)
-    input(align('Press enter to quit.', '', side=1))
+    cont = input(align('Enter any character to play', 'Or nothing to quit', '', side=1))
+    while cont:
+        fighters = []
+        for player in ('Player 1', 'Player 2'):
+            name = input('%s Jack of choice: '%(player)).lower()
+            while not name in characters.charList:
+                name = input('Please choose a valid character: ').lower()
+            fighters.append(characters.charList[name]())
+        print('\n')
+        battle(*fighters)
+        cont = input(align('', 'Enter any character to play again', 'Or nothing to quit.', '', side=1))
 
 def sizeScreen():
     alignment = '100'
