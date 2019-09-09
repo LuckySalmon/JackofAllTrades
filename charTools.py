@@ -43,7 +43,7 @@ def read_file(workspace):
         if workspace == 'sets':
             reader = csv.reader(csvfile)
             for row in reader:
-                print(row[0] + ':', row[1:])
+                print(row[0] + ':', ', '.join(row[1:]))
         else:
             reader = csv.DictReader(csvfile)
             print_rows(reader, fieldnames = reader.fieldnames)
