@@ -10,7 +10,7 @@ class Move:
         self.status = attributes['status effect']
 
     def getDamage(self):
-        return random.randint(*self.dmg)     #what if we used triangular distribution (http://en.wikipedia.org/wiki/Triangular_distribution)? Perhaps even modify it based on accuracy?
+        return random.randint(*self.dmg)   #what if we used triangular distribution (http://en.wikipedia.org/wiki/Triangular_distribution)? Perhaps even modify it based on accuracy?
     
     def getAccuracy(self):
         return self.acc

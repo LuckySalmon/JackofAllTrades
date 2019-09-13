@@ -49,6 +49,9 @@ def battle(ally, enemy):
                                                             #I have no idea what this^ means
         if success:
             damage = move.getDamage()
+            if random.randint(1, 100) <= 2:
+                damage *= 1.5
+                print(align("Critical Hit!".format(character.Name, selection, damage), side=1))
             print(align("{}'s {} hit for {} damage!".format(character.Name, selection, damage), side=1))
         else:
             damage = 0
