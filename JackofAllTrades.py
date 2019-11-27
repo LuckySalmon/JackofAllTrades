@@ -1,4 +1,4 @@
-import random, moves, characters
+import random, moves, characters, graphics
 
 textWidth = [100]
 
@@ -40,33 +40,8 @@ def battle(ally, enemy):
     characterList = [ally, enemy]
     characterList.sort(key= lambda char: char.Speed)
     characterList.reverse()
-    i = 0
-    while ally.HP > 0 and enemy.HP > 0:
-        character = characterList[i]
-        selection = chooseAttack(character, i*2)
-        move = character.moveList[selection]
-        success = move.getAccuracy() > random.randint(0, 99) # we should make this a set vaulue and use that to get predictable odds or change based on a dodege value from opposing character
-                                                            #I have no idea what this^ means
-        if success:
-            damage = move.getDamage()
-            if random.randint(1, 100) <= 2:
-                damage *= 1.5
-                print(align("Critical Hit!".format(character.Name, selection, damage), side=1))
-            print(align("{}'s {} hit for {} damage!".format(character.Name, selection, damage), side=1))
-        else:
-            damage = 0
-            print(align("{}'s {} missed!".format(character.Name, selection), side=1))
-        
-        i = (i+1) % 2
-        opponent = characterList[i]
-        damage = min(max(damage - opponent.Defense, 0), opponent.HP)   #is this how defense is supposed to work?
-        opponent.HP -= damage
-        print(align('{} took {} damage!'.format(opponent.Name, damage), side=1))
-        displayHP(opponent)
-        
-    for character in characterList:
-        if character.HP > 0:
-            print(align('', '%s wins!'%(character.Name), side=1))
+    app = graphics.App(characterList)
+    app.run()
         
 def test():
     cont = input(align('Enter any character to play', 'Or nothing to quit', '', side=1))

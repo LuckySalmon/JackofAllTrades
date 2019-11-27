@@ -19,9 +19,7 @@ class Move:
         return self.status
     
     def showStats(self):
-        print(self.name)
-        print('\tDamage:', self.dmg[0], '-', self.dmg[1])
-        print('\tAccuracy:', str(self.acc) + '%')
+        return '{0}\nDamage: {1} - {2}\nAccuracy: {3}%'.format(self.name, self.dmg[0], self.dmg[1], str(self.acc))
 
 moves = {}
 with open('moves.csv', newline='') as csvfile:
