@@ -37,10 +37,7 @@ def battle(ally, enemy):
     for Character in (ally, enemy):
         Character.HP = Character.BaseHP
         displayHP(Character)
-    characterList = [ally, enemy]
-    characterList.sort(key= lambda char: char.Speed)
-    characterList.reverse()
-    app = graphics.App(characterList)
+    app = graphics.App([enemy, ally] if enemy.Speed > ally.Speed else [ally, enemy])
     app.run()
         
 def test():

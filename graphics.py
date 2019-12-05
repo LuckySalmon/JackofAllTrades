@@ -22,6 +22,13 @@ class App(ShowBase):
         for character in characterList:
             character.HP = character.BaseHP
             #displayHP(Character)
+        self.characterList = characterList
+        self.setUpGUI()
+        self.buttons = []
+        self.index = 0
+        self.queryAction()
+
+    def setUpGUI(self):
         self.actionBoxes, self.infoBoxes, self.useButtons, self.healthBars = [], [], [], []
         for side in (-1, 1):
             actionBox = DirectFrame(frameColor=(0, 0, 0, 1),
@@ -36,25 +43,33 @@ class App(ShowBase):
                                      command=self.useAction, state = DGG.DISABLED)
             useButton.reparentTo(actionBox)
             useButton.setPos(frame_width-button_width, 0, 0)
-            i = 0 if side<0 else side
-            HP = characterList[0 if side<0 else side].HP
+            HP = self.characterList[0 if side<0 else side].HP
             bar = DirectWaitBar(text="", range=HP, value=HP,
-                             pos=(side*0.5, 0, 0.75),
-                             frameSize=(side*-0.4, side*0.5, 0, -0.05))
+                                pos=(side*0.5, 0, 0.75),
+                                frameSize=(side*-0.4, side*0.5, 0, -0.05))
             self.actionBoxes.append(actionBox)
             self.infoBoxes.append(infoBox)
             self.useButtons.append(useButton)
             self.healthBars.append(bar)
-        self.buttons = []
-        self.characterList = characterList
-        self.index = 0
-        self.chooseAction()
 
-    def chooseAction(self):
+    def queryAction(self):
+        character, frame = self.characterList[self.index], self.actionBoxes[self.index]
+        actions = character.moveList
+        for i, action in enumerate(actions):
+            b = DirectButton(frameSize=(-button_width, button_width, -button_height, button_height),
+                             text=action, text_scale=0.1, borderWidth=(0.025, 0.025),
+                             command=self.setAction, extraArgs=[character, action])
+            b.reparentTo(frame)
+            b.setPos(-(frame_width-button_width), 0, frame_height-(2*i+1)*button_height)
+            self.buttons.append(b)
+
+    def setAction(self, character, name):
         i = self.index
-        character = self.characterList[i]
-        actionBox = self.actionBoxes[i]
-        self.createButtons(character, actionBox)
+        self.selectedAction = character.moveList[name]
+        self.infoBoxes[i].setText(self.selectedAction.showStats())
+        self.useButtons[i].setText("Use %s"%name)
+        self.useButtons[i]["state"] = DGG.NORMAL
+        self.selection = name
 
     def useAction(self):
         for button in self.useButtons:
@@ -86,25 +101,8 @@ class App(ShowBase):
             for button in self.useButtons:
                 button.destroy()
         else:
-            self.chooseAction()
+            self.queryAction()
 
-    def setAction(self, character, name):
-        i = self.index
-        self.selectedAction = character.moveList[name]
-        self.infoBoxes[i].setText(self.selectedAction.showStats())
-        self.useButtons[i].setText("Use %s"%name)
-        self.useButtons[i]["state"] = DGG.NORMAL
-        self.selection = name
-
-    def createButtons(self, character, frame):
-        actions = character.moveList
-        for i, action in enumerate(actions):
-            b = DirectButton(frameSize=(-button_width, button_width, -button_height, button_height),
-                             text=action, text_scale=0.1, borderWidth=(0.025, 0.025),
-                             command=self.setAction, extraArgs=[character, action])
-            b.reparentTo(frame)
-            b.setPos(-(frame_width-button_width), 0, frame_height-(2*i+1)*button_height)
-            self.buttons.append(b)
 
 def test():
     app = App([characters.charList['test'](), characters.charList['test']()])  
