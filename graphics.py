@@ -2,6 +2,16 @@ from direct.showbase.ShowBase import ShowBase
 from panda3d.core import TextNode
 from direct.gui.OnscreenText import OnscreenText
 from direct.gui.DirectGui import *
+from panda3d.core import Vec3, Point3
+from direct.task import Task
+from panda3d.bullet import BulletWorld
+from panda3d.bullet import BulletPlaneShape
+from panda3d.bullet import BulletRigidBodyNode
+from panda3d.bullet import BulletBoxShape
+from panda3d.bullet import BulletSphereShape
+from panda3d.bullet import BulletSphericalConstraint
+from panda3d.bullet import BulletDebugNode
+from direct.showbase.DirectObject import DirectObject
 
 import moves, characters, random
 
@@ -16,19 +26,78 @@ class App(ShowBase):
 
     def __init__(self, characterList):
         ShowBase.__init__(self)
-        self.sharedInfo = OnscreenText(text="No information to display yet.",
-                                       pos=(0, 0.5), scale=0.07,
-                                       align=TextNode.ACenter, mayChange=1)
         for character in characterList:
             character.HP = character.BaseHP
             #displayHP(Character)
         self.characterList = characterList
-        self.setUpGUI()
         self.buttons = []
         self.index = 0
+        self.setUpWorld()
+        self.characters = []
+        self.constraints = []
+        for i in (-1, 1):
+            nodePointer, constraint = self.createCharacter(i)
+            self.characters.append(nodePointer)
+            self.constraints.append(constraint)
+        self.taskMgr.add(self.update, 'update')
+        self.setUpGUI()
         self.queryAction()
 
+    def setUpWorld(self):
+        # The World
+        self.world = BulletWorld()
+        self.world.setGravity(Vec3(0, 0, -9.81))
+
+        # Camera
+        base.cam.setPos(0, -30, 10)
+        base.cam.lookAt(0, 0, 2)
+
+        # The Ground
+        np = render.attachNewNode(BulletRigidBodyNode('Ground'))
+        np.node().addShape(BulletPlaneShape(Vec3(0, 0, 1), 1))
+        np.setPos(0, 0, -2)
+        self.world.attachRigidBody(np.node())
+
+        # Debug
+        debugNode = BulletDebugNode('Debug')
+        debugNode.showWireframe(True)
+        debugNode.showConstraints(True)
+        debugNode.showBoundingBoxes(False)
+        debugNode.showNormals(False)
+        self.debugNP = render.attachNewNode(debugNode)
+        self.debugNP.show()
+        self.world.setDebugNode(self.debugNP.node())
+        debugObject = DirectObject()
+        debugObject.accept('f1', self.toggleDebug)
+
+    def createCharacter(self, i):
+        # An Orb as a character placeholder
+        #   No mass means it cannot move
+        node = BulletRigidBodyNode('Orb')
+        node.addShape(BulletSphereShape(0.5))
+        node.setMass(1.0)
+        np = render.attachNewNode(node)
+        np.setPos(i*2, 0, 1.5)
+        self.world.attachRigidBody(node)
+        attach = BulletSphericalConstraint(node, Point3(0, 0, 0.25))
+        self.world.attachConstraint(attach)
+        return np, attach
+
+    def update(self, task):
+        dt = globalClock.getDt()
+        self.world.doPhysics(dt)
+        return Task.cont
+
+    def toggleDebug(self):
+        if self.debugNP.isHidden():
+            self.debugNP.show()
+        else:
+            self.debugNP.hide()
+
     def setUpGUI(self):
+        self.sharedInfo = OnscreenText(text="No information to display yet.",
+                                       pos=(0, 0.5), scale=0.07,
+                                       align=TextNode.ACenter, mayChange=1)
         self.actionBoxes, self.infoBoxes, self.useButtons, self.healthBars = [], [], [], []
         for side in (-1, 1):
             actionBox = DirectFrame(frameColor=(0, 0, 0, 1),
@@ -98,6 +167,8 @@ class App(ShowBase):
         self.buttons.clear()
         if opponent.HP <= 0:
             self.sharedInfo.setText('%s wins!'%(user.Name))
+            self.constraints[self.index].setEnabled(False)
+            self.characters[self.index].node().setActive(True, False)
             for button in self.useButtons:
                 button.destroy()
         else:
