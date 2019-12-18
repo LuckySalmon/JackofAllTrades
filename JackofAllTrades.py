@@ -19,7 +19,7 @@ def align(*lines, side=0):
 def chooseAttack(character, side):
     print(align('',
                 'Select a move, %s:' %(character.Name),
-                ('Availible Moves:', ', '.join(character.moveList)),
+                ('Available Moves:', ', '.join(character.moveList)),
                 "Or type a move followed by a '?' for more information",
                 side=side))
     selection = input('').title()
@@ -45,6 +45,12 @@ def test():
     while cont:
         fighters = []
         for player in ('Player 1', 'Player 2'):
+            for i in characters.charList:
+                if i != "regular": # this must be the first jack type
+                        print (", ", end = "")
+                for j in i:
+                    print (j, end = "")
+            print ("\n")
             name = input('%s Jack of choice: '%(player)).lower()
             while not name in characters.charList:
                 name = input('Please choose a valid character: ').lower()
