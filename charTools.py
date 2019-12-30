@@ -1,4 +1,5 @@
 import csv
+
 prompt = '''Enter 'chars' to work on characters (the default),
       'moves' to work on moves,
       'sets' to work on move sets,
@@ -8,11 +9,14 @@ prompt = '''Enter 'chars' to work on characters (the default),
    or 'quit' to close the program
 (Don't worry about capitalization throughout the course of this program)
         '''
-attributes = dict(char = ['Name', 'HP', 'Speed', 'Defense'], move = ['Name', 'Lower Damage', 'Upper Damage', 'Accuracy', 'Status Effect'])
-files = dict(char = 'characters.csv', move = 'moves.csv', sets = 'sets.csv')
+attributes = dict(char=['Name', 'HP', 'Speed', 'Defense'],
+                  move=['Name', 'Lower Damage', 'Upper Damage', 'Accuracy', 'Status Effect'])
+files = dict(char='characters.csv', move='moves.csv', sets='sets.csv')
 
-def lowinput(text):
+
+def low_input(text):
     return input(text).lower()
+
 
 def print_rows(rows, fieldnames):
     print(*fieldnames, sep='\t\t')
@@ -21,22 +25,24 @@ def print_rows(rows, fieldnames):
             print(row[field], end='\t\t')
         print()
 
+
 def add_entry(workspace):
     with open(files[workspace], 'a', newline='') as csvfile:
         entry = {}
         if workspace == 'sets':
             writer = csv.writer(csvfile)
-            entry = [lowinput('Set Name: ')]
-            for move in lowinput('Moves: ').split(','):
+            entry = [low_input('Set Name: ')]
+            for move in low_input('Moves: ').split(','):
                 entry.append(move.strip())
         else:
             fieldnames = attributes[workspace]
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             for field in fieldnames:
-                entry[field] = lowinput(field + ': ')
+                entry[field] = low_input(field + ': ')
             if workspace == 'char' and entry['name'][-4:] != 'jack':
                 entry['name'] += ' jack'
         writer.writerow(entry)
+
 
 def read_file(workspace):
     with open(files[workspace], newline='') as csvfile:
@@ -46,10 +52,11 @@ def read_file(workspace):
                 print(row[0] + ':', ', '.join(row[1:]))
         else:
             reader = csv.DictReader(csvfile)
-            print_rows(reader, fieldnames = reader.fieldnames)
+            print_rows(reader, fieldnames=reader.fieldnames)
+
 
 def delete_entry(workspace):
-    entryName = lowinput('What entry would you like to delete? ')
+    entryName = low_input('What entry would you like to delete? ')
     rows = []
     deleted = []
     with open(files[workspace], newline='') as csvfile:
@@ -82,6 +89,7 @@ def delete_entry(workspace):
     else:
         print_rows(deleted, fieldnames)
 
+
 def lower(file):
     rows = []
     with open(file, newline='') as csvfile:
@@ -94,8 +102,9 @@ def lower(file):
         writer = csv.writer(csvfile)
         writer.writerows(rows)
 
+
 def main():
-    action = lowinput(prompt)
+    action = low_input(prompt)
     workspace = 'char'
     while action != 'quit':
         if action == 'read':
@@ -110,5 +119,7 @@ def main():
             workspace = 'move'
         elif action == 'sets':
             workspace = 'sets'
-        action = lowinput('\nNext Action: ')
+        action = low_input('\nNext Action: ')
+
+
 main()
