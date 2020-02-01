@@ -124,8 +124,7 @@ class App(ShowBase):
 
     def query_action(self):
         character, frame = self.characterList[self.index], self.actionBoxes[self.index]
-        actions = character.moveList
-        for i, action in enumerate(actions):
+        for i, action in enumerate(actions := character.moveList):
             b = DirectButton(frameSize=(-button_width, button_width, -button_height, button_height),
                              text=action, text_scale=0.1, borderWidth=(0.025, 0.025),
                              command=self.set_action, extraArgs=[character, action])
@@ -147,8 +146,8 @@ class App(ShowBase):
             button["text"] = "N/A"
         user = self.characterList[self.index]
         name, move = self.selection, self.selectedAction
-        success = move.get_accuracy() > random.randint(0, 99)
-        if success:
+
+        if success := (move.get_accuracy() > random.randint(0, 99)):
             damage = move.get_damage()
             if random.randint(1, 100) <= 2:
                 damage *= 1.5

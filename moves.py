@@ -31,10 +31,10 @@ with open('moves.csv', newline='') as file:
     reader = csv.DictReader(file)
     for row in reader:
         moves[row['name']] = Move(row)
+
 sets = {}
 with open('sets.csv', newline='') as file:
-    reader = csv.reader(file)
-    for row in reader:
+    for row in (reader := csv.reader(file)):
         moveList = []
         for move in row[1:]:
             moveList.append(moves[move])

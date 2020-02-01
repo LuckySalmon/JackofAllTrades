@@ -41,11 +41,9 @@ class Character(object):
                 winsound.Beep(500, 100)
 
     def update_level(self):
-        threshold = self.Level * 1000
-        while self.XP >= threshold:
+        while self.XP >= (threshold := self.Level * 1000):
             self.Level += 1
             self.XP -= threshold
-            threshold = self.Level * 1000
         return self.Level
 
     # TODO: create various status affects
@@ -53,8 +51,7 @@ class Character(object):
 
 attributeList = {}
 with open('characters.csv', newline='') as file:
-    reader = csv.DictReader(file)
-    for row in reader:
+    for row in (reader := csv.DictReader(file)):
         attributeList[row['name'][:-5]] = row
 
 charList = {}
