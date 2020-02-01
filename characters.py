@@ -5,7 +5,7 @@ import winsound
 enableSound = True
 
 
-def char_init(self, attributes, xp=0, moves=()):
+def char_init(self, attributes, xp=0, char_moves=()):
     self.Name = attributes['name'].title()
     self.BaseHP = int(attributes['hp'])
     self.HP = int(attributes['hp'])
@@ -15,7 +15,7 @@ def char_init(self, attributes, xp=0, moves=()):
     self.Level = 1
     self.update_level()
     self.moveList = {}
-    for move in moves:
+    for move in char_moves:
         self.add_move(move)
 
 
@@ -60,8 +60,8 @@ charList = {}
 def create_class(name, attributes, char_list):
     set_name = name + ' basic'
     move_set = moves.sets[set_name] if set_name in moves.sets else moves.defaultBasic
-    char_list[name] = type(name, (Character,), {'__init__': lambda self: char_init(self, attributes, moves=move_set)})
+    char_list[name] = type(name, (Character,), {'__init__': lambda self: char_init(self, attributes, char_moves=move_set)})
 
 
-for name in attributeList:
-    create_class(name, attributeList[name], charList)
+for class_name in attributeList:
+    create_class(class_name, attributeList[class_name], charList)

@@ -9,7 +9,7 @@ def display_health(character):
 
 
 def align(*lines, side=0):
-    functions = [lambda s: s, lambda s: s.center(textWidth[0]), lambda s: s.rjust(textWidth[0])]
+    functions = [lambda s1: s1, lambda s2: s2.center(textWidth[0]), lambda s3: s3.rjust(textWidth[0])]
     print_lines = []
     for line in lines:
         if type(line) in (list, tuple):
