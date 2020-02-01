@@ -32,18 +32,8 @@ class App(ShowBase):
         self.characterList = character_list
         self.buttons = []
         self.index = 0
-        self.setUpWorld()
-        self.characters = []
-        self.constraints = []
-        for i in (-1, 1):
-            node_pointer, constraint = self.createCharacter(i)
-            self.characters.append(node_pointer)
-            self.constraints.append(constraint)
-        self.taskMgr.add(self.update, 'update')
-        self.setUpGUI()
-        self.queryAction()
 
-    def setUpWorld(self):
+        # Set up the World
         # The World
         self.world = BulletWorld()
         self.world.setGravity(Vec3(0, 0, -9.81))
@@ -59,20 +49,58 @@ class App(ShowBase):
         self.world.attachRigidBody(np.node())
 
         # Debug
-        debugNode = BulletDebugNode('Debug')
-        debugNode.showWireframe(True)
-        debugNode.showConstraints(True)
-        debugNode.showBoundingBoxes(False)
-        debugNode.showNormals(False)
-        self.debugNP = render.attachNewNode(debugNode)
+        debug_node = BulletDebugNode('Debug')
+        debug_node.showWireframe(True)
+        debug_node.showConstraints(True)
+        debug_node.showBoundingBoxes(False)
+        debug_node.showNormals(False)
+        self.debugNP = render.attachNewNode(debug_node)
         self.debugNP.show()
         self.world.setDebugNode(self.debugNP.node())
-        debugObject = DirectObject()
-        debugObject.accept('f1', self.toggleDebug)
+        debug_object = DirectObject()
+        debug_object.accept('f1', self.toggle_debug)
 
-    def createCharacter(self, i):
+        self.characters = []
+        self.constraints = []
+        for i in (-1, 1):
+            node_pointer, constraint = self.create_character(i)
+            self.characters.append(node_pointer)
+            self.constraints.append(constraint)
+        self.taskMgr.add(self.update, 'update')
+
+        # Set up GUI
+        self.sharedInfo = OnscreenText(text="No information to display yet.",
+                                       pos=(0, 0.5), scale=0.07,
+                                       align=TextNode.ACenter, mayChange=1)
+        self.actionBoxes, self.infoBoxes, self.useButtons, self.healthBars = [], [], [], []
+        self.selectedAction, self.selection = None, None
+        for side in (-1, 1):
+            action_box = DirectFrame(frameColor=(0, 0, 0, 1),
+                                     frameSize=(-frame_width, frame_width, -frame_height, frame_height),
+                                     pos=(side * (window_width - frame_width), 0, -(window_height - frame_height)))
+            info_box = OnscreenText(text="No info available", scale=0.07,
+                                    align=TextNode.ACenter, mayChange=1)
+            info_box.reparentTo(action_box)
+            info_box.setPos(0, frame_height + 0.25)
+            use_button = DirectButton(frameSize=(-button_width, button_width, -button_height, button_height),
+                                      text="N/A", text_scale=0.1, borderWidth=(0.025, 0.025),
+                                      command=self.use_action, state=DGG.DISABLED)
+            use_button.reparentTo(action_box)
+            use_button.setPos(frame_width - button_width, 0, 0)
+            hp = self.characterList[0 if side < 0 else side].HP
+            bar = DirectWaitBar(text="", range=hp, value=hp,
+                                pos=(side * 0.5, 0, 0.75),
+                                frameSize=(side * -0.4, side * 0.5, 0, -0.05))
+            self.actionBoxes.append(action_box)
+            self.infoBoxes.append(info_box)
+            self.useButtons.append(use_button)
+            self.healthBars.append(bar)
+
+        self.query_action()
+
+    def create_character(self, i):
         # An Orb as a character placeholder
-        #   No mass means it cannot move
+        # No mass means it cannot move
         node = BulletRigidBodyNode('Orb')
         node.addShape(BulletSphereShape(0.5))
         node.setMass(1.0)
@@ -88,67 +116,40 @@ class App(ShowBase):
         self.world.doPhysics(dt)
         return Task.cont
 
-    def toggleDebug(self):
+    def toggle_debug(self):
         if self.debugNP.isHidden():
             self.debugNP.show()
         else:
             self.debugNP.hide()
 
-    def setUpGUI(self):
-        self.sharedInfo = OnscreenText(text="No information to display yet.",
-                                       pos=(0, 0.5), scale=0.07,
-                                       align=TextNode.ACenter, mayChange=1)
-        self.actionBoxes, self.infoBoxes, self.useButtons, self.healthBars = [], [], [], []
-        for side in (-1, 1):
-            actionBox = DirectFrame(frameColor=(0, 0, 0, 1),
-                                    frameSize=(-frame_width, frame_width, -frame_height, frame_height),
-                                    pos=(side * (window_width - frame_width), 0, -(window_height - frame_height)))
-            infoBox = OnscreenText(text="No info availible", scale=0.07,
-                                   align=TextNode.ACenter, mayChange=1)
-            infoBox.reparentTo(actionBox)
-            infoBox.setPos(0, frame_height + 0.25)
-            useButton = DirectButton(frameSize=(-button_width, button_width, -button_height, button_height),
-                                     text="N/A", text_scale=0.1, borderWidth=(0.025, 0.025),
-                                     command=self.useAction, state=DGG.DISABLED)
-            useButton.reparentTo(actionBox)
-            useButton.setPos(frame_width - button_width, 0, 0)
-            HP = self.characterList[0 if side < 0 else side].HP
-            bar = DirectWaitBar(text="", range=HP, value=HP,
-                                pos=(side * 0.5, 0, 0.75),
-                                frameSize=(side * -0.4, side * 0.5, 0, -0.05))
-            self.actionBoxes.append(actionBox)
-            self.infoBoxes.append(infoBox)
-            self.useButtons.append(useButton)
-            self.healthBars.append(bar)
-
-    def queryAction(self):
+    def query_action(self):
         character, frame = self.characterList[self.index], self.actionBoxes[self.index]
         actions = character.moveList
         for i, action in enumerate(actions):
             b = DirectButton(frameSize=(-button_width, button_width, -button_height, button_height),
                              text=action, text_scale=0.1, borderWidth=(0.025, 0.025),
-                             command=self.setAction, extraArgs=[character, action])
+                             command=self.set_action, extraArgs=[character, action])
             b.reparentTo(frame)
             b.setPos(-(frame_width - button_width), 0, frame_height - (2 * i + 1) * button_height)
             self.buttons.append(b)
 
-    def setAction(self, character, name):
+    def set_action(self, character, name):
         i = self.index
         self.selectedAction = character.moveList[name]
-        self.infoBoxes[i].setText(self.selectedAction.showStats())
+        self.infoBoxes[i].setText(self.selectedAction.show_stats())
         self.useButtons[i].setText("Use %s" % name)
         self.useButtons[i]["state"] = DGG.NORMAL
         self.selection = name
 
-    def useAction(self):
+    def use_action(self):
         for button in self.useButtons:
             button["state"] = DGG.DISABLED
             button["text"] = "N/A"
         user = self.characterList[self.index]
         name, move = self.selection, self.selectedAction
-        success = move.getAccuracy() > random.randint(0, 99)
+        success = move.get_accuracy() > random.randint(0, 99)
         if success:
-            damage = move.getDamage()
+            damage = move.get_damage()
             if random.randint(1, 100) <= 2:
                 damage *= 1.5
                 print("Critical Hit!".format(user.Name, name, damage))
@@ -172,7 +173,9 @@ class App(ShowBase):
             for button in self.useButtons:
                 button.destroy()
         else:
-            self.queryAction()
+            self.query_action()
+        # TODO: I would like to make this program focused entirely on graphics.
+        #  I.e., other computations are handled externally and relevant results passed to functions from here.
 
 
 def test():

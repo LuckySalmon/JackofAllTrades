@@ -4,20 +4,20 @@ import graphics
 textWidth = [100]
 
 
-def displayHP(character):
+def display_health(character):
     print(align("{}'s HP: {}".format(character.Name, character.HP), side=1))
 
 
 def align(*lines, side=0):
     functions = [lambda s: s, lambda s: s.center(textWidth[0]), lambda s: s.rjust(textWidth[0])]
-    l = []
+    print_lines = []
     for line in lines:
         if type(line) in (list, tuple):
             s = ' '.join(line)
         else:
             s = str(line)
-        l.append(functions[side](s) if s else '')
-    return '\n'.join(l)
+        print_lines.append(functions[side](s) if s else '')
+    return '\n'.join(print_lines)
 
 
 def choose_attack(character, side):
@@ -27,9 +27,9 @@ def choose_attack(character, side):
                 "Or type a move followed by a '?' for more information",
                 side=side))
     selection = input('').title()
-    while not selection in character.moveList:
+    while selection not in character.moveList:
         if selection[-1] == '?' and selection[:-1].title() in character.moveList:
-            character.moveList[selection[:-1].title()].showStats()
+            character.moveList[selection[:-1].title()].show_stats()
             selection = input('').title()
         else:
             selection = input(align('Please select a valid move.', '', side=side)).title()
@@ -41,7 +41,7 @@ def battle(ally, enemy):
     print(align((ally.Name, " VS ", enemy.Name), side=1))
     for Character in (ally, enemy):
         Character.HP = Character.BaseHP
-        displayHP(Character)
+        display_health(Character)
     app = graphics.App([enemy, ally] if enemy.Speed > ally.Speed else [ally, enemy])
     app.run()
 

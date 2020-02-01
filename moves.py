@@ -11,28 +11,29 @@ class Move:
         self.acc = int(attributes['accuracy'])
         self.status = attributes['status effect']
 
-    def getDamage(self):
-        return random.randint(
-            *self.dmg)  # what if we used triangular distribution (http://en.wikipedia.org/wiki/Triangular_distribution)? Perhaps even modify it based on accuracy?
+    def get_damage(self):
+        return random.randint(*self.dmg)
+        # what if we used triangular distribution (http://en.wikipedia.org/wiki/Triangular_distribution)?
+        # Perhaps even modify it based on accuracy?
 
-    def getAccuracy(self):
+    def get_accuracy(self):
         return self.acc
 
-    def getStatus(self):
+    def get_status(self):
         return self.status
 
-    def showStats(self):
+    def show_stats(self):
         return '{0}\nDamage: {1} - {2}\nAccuracy: {3}%'.format(self.name, self.dmg[0], self.dmg[1], str(self.acc))
 
 
 moves = {}
-with open('moves.csv', newline='') as csvfile:
-    reader = csv.DictReader(csvfile)
+with open('moves.csv', newline='') as file:
+    reader = csv.DictReader(file)
     for row in reader:
         moves[row['name']] = Move(row)
 sets = {}
-with open('sets.csv', newline='') as csvfile:
-    reader = csv.reader(csvfile)
+with open('sets.csv', newline='') as file:
+    reader = csv.reader(file)
     for row in reader:
         moveList = []
         for move in row[1:]:

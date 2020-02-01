@@ -27,16 +27,16 @@ def print_rows(rows, fieldnames):
 
 
 def add_entry(workspace):
-    with open(files[workspace], 'a', newline='') as csvfile:
+    with open(files[workspace], 'a', newline='') as file:
         entry = {}
         if workspace == 'sets':
-            writer = csv.writer(csvfile)
+            writer = csv.writer(file)
             entry = [low_input('Set Name: ')]
             for move in low_input('Moves: ').split(','):
                 entry.append(move.strip())
         else:
             fieldnames = attributes[workspace]
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer = csv.DictWriter(file, fieldnames=fieldnames)
             for field in fieldnames:
                 entry[field] = low_input(field + ': ')
             if workspace == 'char' and entry['name'][-4:] != 'jack':
@@ -45,41 +45,41 @@ def add_entry(workspace):
 
 
 def read_file(workspace):
-    with open(files[workspace], newline='') as csvfile:
+    with open(files[workspace], newline='') as file:
         if workspace == 'sets':
-            reader = csv.reader(csvfile)
+            reader = csv.reader(file)
             for row in reader:
                 print(row[0] + ':', ', '.join(row[1:]))
         else:
-            reader = csv.DictReader(csvfile)
+            reader = csv.DictReader(file)
             print_rows(reader, fieldnames=reader.fieldnames)
 
 
 def delete_entry(workspace):
-    entryName = low_input('What entry would you like to delete? ')
+    entry_name = low_input('What entry would you like to delete? ')
     rows = []
     deleted = []
-    with open(files[workspace], newline='') as csvfile:
+    with open(files[workspace], newline='') as file:
         if workspace == 'sets':
-            reader = csv.reader(csvfile)
+            reader = csv.reader(file)
             for row in reader:
-                if row[0] == entryName:
+                if row[0] == entry_name:
                     deleted.append(row)
                 else:
                     rows.append(row)
         else:
-            reader = csv.DictReader(csvfile)
+            reader = csv.DictReader(file)
             for row in reader:
-                if row['name'] == entryName:
+                if row['name'] == entry_name:
                     deleted.append(row)
                 else:
                     rows.append(row)
             fieldnames = reader.fieldnames
-    with open(files[workspace], 'w', newline='') as csvfile:
+    with open(files[workspace], 'w', newline='') as file:
         if workspace == 'sets':
-            writer = csv.writer(csvfile)
+            writer = csv.writer(file)
         else:
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer = csv.DictWriter(file, fieldnames=fieldnames)
             writer.writeheader()
         writer.writerows(rows)
     print('Successfully deleted the following entries:')
@@ -92,14 +92,14 @@ def delete_entry(workspace):
 
 def lower(file):
     rows = []
-    with open(file, newline='') as csvfile:
-        reader = csv.reader(csvfile)
+    with open(file, newline='') as file:
+        reader = csv.reader(file)
         for row in reader:
             for i, entry in enumerate(row):
                 row[i] = entry.lower()
             rows.append(row)
-    with open(file, 'w', newline='') as csvfile:
-        writer = csv.writer(csvfile)
+    with open(file, 'w', newline='') as file:
+        writer = csv.writer(file)
         writer.writerows(rows)
 
 
