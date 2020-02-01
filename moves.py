@@ -13,8 +13,9 @@ class Move:
 
     def get_damage(self):
         return random.randint(*self.dmg)
-        # what if we used triangular distribution (http://en.wikipedia.org/wiki/Triangular_distribution)?
-        # Perhaps even modify it based on accuracy?
+        # TODO:
+        #  what if we used triangular distribution (http://en.wikipedia.org/wiki/Triangular_distribution)?
+        #  Perhaps even modify it based on accuracy?
 
     def get_accuracy(self):
         return self.acc

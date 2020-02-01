@@ -158,7 +158,7 @@ class App(ShowBase):
             self.infoBoxes[self.index].setText("{}'s {} missed!".format(user.Name, name))
         self.index = (self.index + 1) % 2
         opponent = self.characterList[self.index]
-        damage = min(max(damage - opponent.Defense, 0), opponent.HP)  # is this how defense is supposed to work?
+        damage = min(max(damage - opponent.Defense, 0), opponent.HP)  # TODO: Find and use a better formula
         opponent.HP -= damage
         self.healthBars[self.index]["value"] -= damage
         self.infoBoxes[self.index].setText('{} took {} damage!'.format(opponent.Name, damage))
