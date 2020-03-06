@@ -5,10 +5,12 @@ textWidth = [100]
 
 
 def display_health(character):
+    """Print a character's health in a human-readable format."""
     print(align("{}'s HP: {}".format(character.Name, character.HP), side=1))
 
 
 def align(*lines, side=0):
+    """Format text such that it will appear aligned to a chosen side when printed."""
     functions = [lambda s1: s1, lambda s2: s2.center(textWidth[0]), lambda s3: s3.rjust(textWidth[0])]
     print_lines = []
     for line in lines:
@@ -21,6 +23,7 @@ def align(*lines, side=0):
 
 
 def choose_attack(character, side):
+    """Ask a player to input a move and return it."""
     print(align('',
                 'Select a move, %s:' % character.Name,
                 ('Available Moves:', ', '.join(character.moveList)),
@@ -38,6 +41,7 @@ def choose_attack(character, side):
 
 
 def battle(ally, enemy):
+    """Run a battle between Jacks."""
     print(align((ally.Name, " VS ", enemy.Name), side=1))
     for Character in (ally, enemy):
         Character.HP = Character.BaseHP
@@ -47,6 +51,7 @@ def battle(ally, enemy):
 
 
 def test():
+    """Have players choose Jacks, then run a game."""
     cont = input(align('Enter any character to play', 'Or nothing to quit', '', side=1))
     while cont:
         fighters = []
@@ -67,6 +72,7 @@ def test():
 
 
 def size_screen():
+    """Ask user to set the width of their console so that text can be properly aligned."""
     alignment = '100'
     while alignment.isdigit():
         textWidth[0] = int(alignment)

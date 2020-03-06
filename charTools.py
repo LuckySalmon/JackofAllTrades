@@ -15,10 +15,12 @@ files = dict(char='characters.csv', move='moves.csv', sets='sets.csv')
 
 
 def low_input(text):
+    """Request text input and return it in lowercase."""
     return input(text).lower()
 
 
 def print_rows(rows, fieldnames):
+    """Print a table of values."""
     print(*fieldnames, sep='\t\t')
     for row in rows:
         for field in fieldnames:
@@ -27,6 +29,7 @@ def print_rows(rows, fieldnames):
 
 
 def add_entry(workspace):
+    """Save a new entry to the CSV file."""
     with open(files[workspace], 'a', newline='') as file:
         entry = {}
         if workspace == 'sets':
@@ -45,6 +48,7 @@ def add_entry(workspace):
 
 
 def read_file(workspace):
+    """Print a file's information in a human-readable format."""
     with open(files[workspace], newline='') as file:
         if workspace == 'sets':
             reader = csv.reader(file)
@@ -56,6 +60,7 @@ def read_file(workspace):
 
 
 def delete_entry(workspace):
+    """Remove an entry from the CSV file."""
     entry_name = low_input('What entry would you like to delete? ')
     rows = []
     deleted = []
@@ -91,6 +96,7 @@ def delete_entry(workspace):
 
 
 def lower(file):
+    """Reformat a CSV file to be all lowercase."""
     rows = []
     with open(file, newline='') as file:
         reader = csv.reader(file)
@@ -104,6 +110,7 @@ def lower(file):
 
 
 def main():
+    """Allow the user to easily view and modify data files."""
     action = low_input(prompt)
     workspace = 'char'
     while action != 'quit':

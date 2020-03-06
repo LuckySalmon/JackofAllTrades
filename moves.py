@@ -12,18 +12,22 @@ class Move:
         self.status = attributes['status effect']
 
     def get_damage(self):
+        """Return a value within the damage bounds."""
         return random.randint(*self.dmg)
         # TODO:
         #  what if we used triangular distribution (http://en.wikipedia.org/wiki/Triangular_distribution)?
         #  Perhaps even modify it based on accuracy?
 
     def get_accuracy(self):
+        """Return the accuracy of the move."""
         return self.acc
 
     def get_status(self):
+        """Return the status effects of the move."""
         return self.status
 
     def show_stats(self):
+        """Return a string containing information about the move's damage and accuracy in a human-readable format."""
         return '{0}\nDamage: {1} - {2}\nAccuracy: {3}%'.format(self.name, self.dmg[0], self.dmg[1], str(self.acc))
 
 

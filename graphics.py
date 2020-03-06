@@ -99,8 +99,10 @@ class App(ShowBase):
         self.query_action()
 
     def create_character(self, i):
+        """Create a character placeholder and return a pointer to its node along with the constraint holding it up"""
         # An Orb as a character placeholder
         # No mass means it cannot move
+        # TODO: add an actual character skeleton and model
         node = BulletRigidBodyNode('Orb')
         node.addShape(BulletSphereShape(0.5))
         node.setMass(1.0)
@@ -112,17 +114,20 @@ class App(ShowBase):
         return np, attach
 
     def update(self, task):
+        """Update the world using physics."""
         dt = globalClock.getDt()
         self.world.doPhysics(dt)
         return Task.cont
 
     def toggle_debug(self):
+        """Toggle debug display for physical objects."""
         if self.debugNP.isHidden():
             self.debugNP.show()
         else:
             self.debugNP.hide()
 
     def query_action(self):
+        """Set up buttons for a player to choose an action."""
         character, frame = self.characterList[self.index], self.actionBoxes[self.index]
         for i, action in enumerate(actions := character.moveList):
             b = DirectButton(frameSize=(-button_width, button_width, -button_height, button_height),
@@ -133,6 +138,7 @@ class App(ShowBase):
             self.buttons.append(b)
 
     def set_action(self, character, name):
+        """Set an action to be selected."""
         i = self.index
         self.selectedAction = character.moveList[name]
         self.infoBoxes[i].setText(self.selectedAction.show_stats())
@@ -141,12 +147,14 @@ class App(ShowBase):
         self.selection = name
 
     def use_action(self):
+        """Make the character use the selected action, then move on to the next turn."""
         for button in self.useButtons:
             button["state"] = DGG.DISABLED
             button["text"] = "N/A"
         user = self.characterList[self.index]
         name, move = self.selection, self.selectedAction
 
+        # Result of move
         if success := (move.get_accuracy() > random.randint(0, 99)):
             damage = move.get_damage()
             if random.randint(1, 100) <= 2:
@@ -156,15 +164,21 @@ class App(ShowBase):
         else:
             damage = 0
             self.infoBoxes[self.index].setText("{}'s {} missed!".format(user.Name, name))
+
+        # Move over to other character and apply damage
         self.index = (self.index + 1) % 2
         opponent = self.characterList[self.index]
         damage = min(max(damage - opponent.Defense, 0), opponent.HP)  # TODO: Find and use a better formula
         opponent.HP -= damage
         self.healthBars[self.index]["value"] -= damage
         self.infoBoxes[self.index].setText('{} took {} damage!'.format(opponent.Name, damage))
+
+        # Reset GUI
         for button in self.buttons:
             button.destroy()
         self.buttons.clear()
+
+        # Move on to next step (KO or opponent response)
         if opponent.HP <= 0:
             self.sharedInfo.setText('%s wins!' % user.Name)
             self.constraints[self.index].setEnabled(False)
@@ -178,5 +192,6 @@ class App(ShowBase):
 
 
 def test():
+    """Run a battle between two test characters for debug purposes."""
     app = App([characters.charList['test'](), characters.charList['test']()])
     app.run()
