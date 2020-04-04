@@ -52,7 +52,7 @@ class App(ShowBase):
         self.world.setGravity(Vec3(0, 0, -9.81))
 
         # Camera
-        base.cam.setPos(0, -30, 10)
+        base.cam.setPos(0, -30, 4)
         base.cam.lookAt(0, 0, 2)
 
         # The Ground
@@ -73,12 +73,7 @@ class App(ShowBase):
         debug_object = DirectObject()
         debug_object.accept('f1', self.toggle_debug)
 
-        self.characters = []
-        self.constraints = []
-        for i in (-1, 1):
-            node_pointer, constraint = self.create_character(i)
-            self.characters.append(node_pointer)
-            self.constraints.append(constraint)
+        self.characters = [self.create_character(i) for i in (-1, 1)]
         self.taskMgr.add(self.update, 'update')
 
         # Set up GUI
@@ -112,19 +107,103 @@ class App(ShowBase):
         self.query_action()
 
     def create_character(self, i):
-        """Create a character placeholder and return a pointer to its node along with the constraint holding it up"""
-        # An Orb as a character placeholder
-        # No mass means it cannot move
-        # TODO: add an actual character skeleton and model
-        node = BulletRigidBodyNode('Orb')
-        node.addShape(BulletSphereShape(0.5))
-        node.setMass(1.0)
-        np = render.attachNewNode(node)
-        np.setPos(i * 2, 0, 1.5)
-        self.world.attachRigidBody(node)
-        attach = BulletSphericalConstraint(node, Point3(0, 0, 0.25))
-        self.world.attachConstraint(attach)
-        return np, attach
+        """Create a character skeleton and return a dictionary of pointers to its components"""
+        # Important numbers
+        head_radius = 0.5
+        head_elevation = 1.5
+        torso_x = 0.3
+        torso_y = 0.5
+        torso_z = 0.75
+        bicep_radius = 0.15
+        bicep_length = 0.75
+        shoulder_space = 0.05
+
+        shoulder_elevation = head_elevation - head_radius - 0.1 - bicep_radius
+        torso_elevation = head_elevation - head_radius - torso_z
+
+        # measurements below are in degrees
+        neck_yaw_limit = 90
+        neck_pitch_limit = 45
+        shoulder_twist_limit = 0  # limit for twisting arm along the bicep axis
+        shoulder_in_limit = 80  # maximum declination from T-pose towards torso
+        shoulder_out_limit = 90  # maximum elevation from T-pose away from torso
+        shoulder_forward_limit = 175  # maximum angle from down by side to pointing forward
+        shoulder_backward_limit = 90  # maximum angle from down by side to pointing backward
+
+        # Create a head
+        head_node = BulletRigidBodyNode('Head')
+        head_node.addShape(BulletSphereShape(head_radius))
+        head_node.setMass(1.0)
+        head_pointer = render.attachNewNode(head_node)
+        head_pointer.setPos(i * 2, 0, head_elevation)
+        self.world.attachRigidBody(head_node)
+
+        # Create a torso
+        torso_node = BulletRigidBodyNode('Torso')
+        torso_node.addShape(BulletBoxShape(Vec3(torso_x, torso_y, torso_z)))
+        torso_node.setMass(0.0)  # remain in place
+        torso_pointer = render.attachNewNode(torso_node)
+        torso_pointer.setPos(i * 2, 0, head_elevation - head_radius - torso_z)
+        self.world.attachRigidBody(torso_node)
+
+        # Create biceps
+        bicep_l_node = BulletRigidBodyNode('BicepL')
+        bicep_l_node.addShape(BulletCapsuleShape(bicep_radius, bicep_length, 1))
+        bicep_l_node.setMass(0.25)
+        bicep_l_pointer = render.attachNewNode(bicep_l_node)
+        bicep_l_pointer.setPos(i * 2, -i*(torso_y + bicep_radius + shoulder_space + bicep_length/2), shoulder_elevation)
+        self.world.attachRigidBody(bicep_l_node)
+
+        bicep_r_node = BulletRigidBodyNode('BicepR')
+        bicep_r_node.addShape(BulletCapsuleShape(bicep_radius, bicep_length, 1))
+        bicep_r_node.setMass(0.25)
+        bicep_r_pointer = render.attachNewNode(bicep_r_node)
+        bicep_r_pointer.setPos(i * 2, i*(torso_y + bicep_radius + shoulder_space + bicep_length/2), shoulder_elevation)
+        self.world.attachRigidBody(bicep_r_node)
+
+        # Attach the head to the torso
+        head_frame = TransformState.makePosHpr(Point3(0, 0, -head_radius), Vec3(0, 0, -90))
+        torso_frame = TransformState.makePosHpr(Point3(0, 0, torso_z), Vec3(0, 0, -90))
+        neck = BulletConeTwistConstraint(head_node, torso_node, head_frame, torso_frame)
+        neck.setDebugDrawSize(0.5)
+        neck.setLimit(neck_pitch_limit, neck_pitch_limit, neck_yaw_limit)
+        self.world.attachConstraint(neck)
+
+        # Attach the biceps to the torso
+        torso_frame = TransformState.makePosHpr(Point3(0, (torso_y + shoulder_space + bicep_radius) * -i,
+                                                       shoulder_elevation - torso_elevation), Vec3(90, 0, 0))
+        bicep_frame = TransformState.makePosHpr(Point3(0, i*bicep_length/2, 0), Vec3(90, 0, 0))
+        shoulder_l = BulletGenericConstraint(torso_node, bicep_l_node, torso_frame, bicep_frame, True)
+
+        torso_frame = TransformState.makePosHpr(Point3(0, (torso_y + shoulder_space + bicep_radius) * i,
+                                                       shoulder_elevation - torso_elevation), Vec3(90, 0, 0))
+        bicep_frame = TransformState.makePosHpr(Point3(0, -i * bicep_length / 2, 0), Vec3(90, 0, 0))
+        shoulder_r = BulletGenericConstraint(torso_node, bicep_r_node, torso_frame, bicep_frame, True)
+
+        shoulder_l.setAngularLimit(0, -shoulder_twist_limit, shoulder_twist_limit)
+        shoulder_r.setAngularLimit(0, -shoulder_twist_limit, shoulder_twist_limit)
+        if i < 0:
+            shoulder_l.setAngularLimit(1, -shoulder_in_limit, shoulder_out_limit)
+            shoulder_r.setAngularLimit(1, -shoulder_out_limit, shoulder_in_limit)
+            shoulder_l.setAngularLimit(2, -shoulder_backward_limit, shoulder_forward_limit)
+            shoulder_r.setAngularLimit(2, -shoulder_backward_limit, shoulder_forward_limit)
+        else:
+            shoulder_l.setAngularLimit(1, -shoulder_out_limit, shoulder_in_limit)
+            shoulder_r.setAngularLimit(1, -shoulder_in_limit, shoulder_out_limit)
+            shoulder_l.setAngularLimit(2, -shoulder_forward_limit, shoulder_backward_limit)
+            shoulder_r.setAngularLimit(2, -shoulder_forward_limit, shoulder_backward_limit)
+
+        shoulder_l.setDebugDrawSize(0.3)
+        self.world.attachConstraint(shoulder_l)
+        self.world.attachConstraint(shoulder_r)
+
+        # Move the arm to test things
+        shoulder_motor = shoulder_l.getRotationalLimitMotor(2)
+        shoulder_motor.setTargetVelocity(-5 * i)
+        shoulder_motor.setMaxMotorForce(100)
+        # shoulder_motor.setMotorEnabled(True)
+
+        return dict(head=head_pointer, torso=torso_pointer, bicep_l=bicep_l_pointer, bicep_r=bicep_r_pointer)
 
     def update(self, task):
         """Update the world using physics."""
@@ -194,8 +273,9 @@ class App(ShowBase):
         # Move on to next step (KO or opponent response)
         if opponent.HP <= 0:
             self.sharedInfo.setText('%s wins!' % user.Name)
-            self.constraints[self.index].setEnabled(False)
-            self.characters[self.index].node().setActive(True, False)
+            # I thought this would make the character fall, but it just glitches out
+            self.characters[self.index]['torso'].node().setMass(1.0)
+            self.characters[self.index]['torso'].node().setActive(True, False)
             for button in self.useButtons:
                 button.destroy()
         else:
