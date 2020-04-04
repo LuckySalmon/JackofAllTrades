@@ -1,18 +1,22 @@
+import math
+import random
+
 from direct.gui.DirectGui import *
 from direct.showbase.DirectObject import DirectObject
 from direct.showbase.ShowBase import ShowBase
+from direct.showbase.ShowBaseGlobal import globalClock
 from direct.task import Task
 from panda3d.bullet import BulletDebugNode
 from panda3d.bullet import BulletPlaneShape
 from panda3d.bullet import BulletRigidBodyNode
-from panda3d.bullet import BulletSphereShape
-from panda3d.bullet import BulletSphericalConstraint
+from panda3d.bullet import BulletSphereShape, BulletBoxShape, BulletCapsuleShape
+from panda3d.bullet import BulletSphericalConstraint, BulletConeTwistConstraint, BulletGenericConstraint
+from panda3d.bullet import BulletRotationalLimitMotor
 from panda3d.bullet import BulletWorld
 from panda3d.core import TextNode
-from panda3d.core import Vec3, Point3
+from panda3d.core import Vec3, Point3, TransformState, LQuaternion
 
 import characters
-import random
 
 frame_height = 0.5
 frame_width = 0.5
@@ -20,6 +24,15 @@ button_height = 0.1
 button_width = 0.25
 window_height = 1
 window_width = 4 / 3
+
+
+def create_quaternion(angle, axis):
+    """Create a quaternion with the given characteristics"""
+    radians = angle/360 * math.pi
+    cosine = math.cos(radians/2)
+    quaternion = LQuaternion(cosine, *axis)
+    quaternion.normalize()
+    return quaternion
 
 
 class App(ShowBase):
