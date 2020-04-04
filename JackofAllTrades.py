@@ -84,5 +84,5 @@ def size_screen():
                 alignment))
 
 
-size_screen()
-test()
+# size_screen()
+graphics.test()

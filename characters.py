@@ -2,7 +2,7 @@ import csv
 import moves
 import winsound
 
-enableSound = True
+enableSound = False
 
 
 def char_init(self, attributes, xp=0, char_moves=()):
