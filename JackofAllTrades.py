@@ -57,7 +57,7 @@ def test():
     """Have players choose Jacks, then run a game."""
     attribute_list = dict()
     with open('characters.csv', newline='') as file:
-        for row in (reader := csv.DictReader(file)):
+        for row in csv.DictReader(file):
             attribute_list[row['name'][:-5]] = row
     cont = input(align('Enter any character to play', 'Or nothing to quit', '', side=1))
     while cont:

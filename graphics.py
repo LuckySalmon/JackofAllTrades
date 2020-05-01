@@ -124,7 +124,7 @@ class App(ShowBase):
     def query_action(self):
         """Set up buttons for a player to choose an action."""
         character, frame = self.characterList[self.index], self.actionBoxes[self.index]
-        for i, action in enumerate(actions := character.moveList):
+        for i, action in enumerate(character.moveList):
             b = DirectButton(frameSize=(-button_width, button_width, -button_height, button_height),
                              text=action, text_scale=0.1, borderWidth=(0.025, 0.025),
                              command=self.set_action, extraArgs=[character, action])
@@ -150,7 +150,7 @@ class App(ShowBase):
         name, move = self.selection, self.selectedAction
 
         # Result of move
-        if success := (move.get_accuracy() > random.randint(0, 99)):
+        if move.get_accuracy() > random.randint(0, 99):
             damage = move.get_damage()
             if random.randint(1, 100) <= 2:
                 damage *= 1.5
