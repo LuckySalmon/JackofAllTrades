@@ -6,6 +6,7 @@ from panda3d.bullet import BulletSphereShape, BulletBoxShape, BulletCapsuleShape
 from panda3d.core import Vec3, TransformState, Point3
 
 enableSound = False
+charList = ['regular', 'boxer', 'psycho', 'test']
 
 
 class Character(object):
@@ -21,8 +22,12 @@ class Character(object):
         self.moveList = {}
         for move in char_moves:
             self.add_move(move)
+        self.head = None
+        self.torso = None
+        self.bicep_l, self.bicep_r = None, None
+        self.shoulder_l, self.shoulder_r = None, None
 
-    def insert(self, world, render, i):
+    def insert(self, world, render, i, pos):
         # Important numbers
         head_radius = 0.5
         head_elevation = 1.5
@@ -35,6 +40,8 @@ class Character(object):
 
         shoulder_elevation = head_elevation - head_radius - 0.1 - bicep_radius
         torso_elevation = head_elevation - head_radius - torso_z
+
+        x, y = pos
 
         # measurements below are in degrees
         neck_yaw_limit = 90
@@ -50,7 +57,7 @@ class Character(object):
         head_node.addShape(BulletSphereShape(head_radius))
         head_node.setMass(1.0)
         head_pointer = render.attachNewNode(head_node)
-        head_pointer.setPos(i * 2, 0, head_elevation)
+        head_pointer.setPos(x, y, head_elevation)
         world.attachRigidBody(head_node)
 
         # Create a torso
@@ -58,7 +65,7 @@ class Character(object):
         torso_node.addShape(BulletBoxShape(Vec3(torso_x, torso_y, torso_z)))
         torso_node.setMass(0.0)  # remain in place
         torso_pointer = render.attachNewNode(torso_node)
-        torso_pointer.setPos(i * 2, 0, head_elevation - head_radius - torso_z)
+        torso_pointer.setPos(x, y, head_elevation - head_radius - torso_z)
         world.attachRigidBody(torso_node)
 
         # Create biceps
@@ -66,7 +73,7 @@ class Character(object):
         bicep_l_node.addShape(BulletCapsuleShape(bicep_radius, bicep_length, 1))
         bicep_l_node.setMass(0.25)
         bicep_l_pointer = render.attachNewNode(bicep_l_node)
-        bicep_l_pointer.setPos(i * 2, -i * (torso_y + bicep_radius + shoulder_space + bicep_length / 2),
+        bicep_l_pointer.setPos(x, y - i*(torso_y + bicep_radius + shoulder_space + bicep_length / 2),
                                shoulder_elevation)
         world.attachRigidBody(bicep_l_node)
 
@@ -74,7 +81,7 @@ class Character(object):
         bicep_r_node.addShape(BulletCapsuleShape(bicep_radius, bicep_length, 1))
         bicep_r_node.setMass(0.25)
         bicep_r_pointer = render.attachNewNode(bicep_r_node)
-        bicep_r_pointer.setPos(i * 2, i * (torso_y + bicep_radius + shoulder_space + bicep_length / 2),
+        bicep_r_pointer.setPos(x, y + i*(torso_y + bicep_radius + shoulder_space + bicep_length / 2),
                                shoulder_elevation)
         world.attachRigidBody(bicep_r_node)
 
@@ -156,14 +163,12 @@ class Character(object):
     # TODO: create various status affects
 
 
-charList = {'regular', 'boxer', 'psycho', 'test'}
-
-
 # def create_class(name, attributes, char_list):
 #     """Insert a character into the list of those available."""
 #     set_name = name + ' basic'
 #     move_set = moves.sets[set_name] if set_name in moves.sets else moves.defaultBasic
-#     char_list[name] = type(name, (Character,), {'__init__': lambda self: char_init(self, attributes, char_moves=move_set)})
+#     char_list[name] = type(name, (Character,), {'__init__': lambda self: char_init(self,
+#                                                                                    attributes, char_moves=move_set)})
 #
 #
 # for class_name in attributeList:

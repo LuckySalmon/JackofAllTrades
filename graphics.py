@@ -60,8 +60,8 @@ class App(ShowBase):
         self.world.attachRigidBody(np.node())
 
         # Characters
-        character_list[0].insert(self.world, render, -1)
-        character_list[1].insert(self.world, render, 1)
+        character_list[0].insert(self.world, render, -1, (-2, 0))
+        character_list[1].insert(self.world, render, 1, (2, 0))
 
         # Debug
         debug_node = BulletDebugNode('Debug')
