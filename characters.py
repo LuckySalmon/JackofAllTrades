@@ -1,4 +1,4 @@
-import winsound
+import winsound, math
 
 from panda3d.bullet import BulletConeTwistConstraint, BulletGenericConstraint
 from panda3d.bullet import BulletRigidBodyNode
@@ -128,10 +128,38 @@ class Character(object):
 
         self.head = head_pointer
         self.torso = torso_pointer
-        self.bicep_l = bicep_l_pointer
-        self.bicep_r = bicep_r_pointer
-        self.shoulder_l = shoulder_l
-        self.shoulder_r = shoulder_r
+        self.bicep_l, self.bicep_r = bicep_l_pointer, bicep_r_pointer
+        self.shoulder_l, self.shoulder_r = shoulder_l, shoulder_r
+
+    def arms_up(self, i):
+        for j in range(2):
+            shoulder = self.shoulder_l if j == 0 else self.shoulder_r
+            motor = shoulder.getRotationalLimitMotor(1)
+            sign = (-1) ** (i + j)
+            motor.setTargetVelocity(sign)
+            motor.setMotorEnabled(True)
+            (self.bicep_l if j == 0 else self.bicep_r).node().setActive(True, False)
+            if limit := motor.current_limit > 0:
+                print('left shoulder' if j == 0 else 'right shoulder', 'is at',
+                      'low' if limit == 1 else 'high', 'limit')
+                print(motor.getCurrentPosition() / math.pi * 180)
+
+    def arms_down(self):
+        for j in range(2):
+            shoulder = self.shoulder_l if j == 0 else self.shoulder_r
+            motor = shoulder.getRotationalLimitMotor(1)
+            motor.setMotorEnabled(False)
+            (self.bicep_l if j == 0 else self.bicep_r).node().setActive(True, False)
+
+    def arms_forward(self):
+        for j in range(2):
+            shoulder = self.shoulder_l if j == 0 else self.shoulder_r
+            motor = shoulder.getRotationalLimitMotor(2)
+            sign = (-1) ** j
+            motor.setTargetVelocity(sign)
+            motor.setMotorEnabled(True)
+            if motor.getCurrentLimit() > 0:
+                print('left shoulder' if j == 0 else 'right shoulder', 'is at limit')
 
     def list_moves(self):  # isn't this redundant?
         """Check what moves this character has and return a list of available moves."""

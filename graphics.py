@@ -37,6 +37,9 @@ class App(ShowBase):
 
     def __init__(self, character_list):
         ShowBase.__init__(self)
+
+        self.clock = 0
+
         for character in character_list:
             character.HP = character.BaseHP
             # displayHP(Character)
@@ -75,7 +78,14 @@ class App(ShowBase):
         debug_object = DirectObject()
         debug_object.accept('f1', self.toggle_debug)
 
-        self.characters = [self.create_character(i) for i in (-1, 1)]
+        # Testing Controls
+        arms_up_object = DirectObject()
+        arms_up_object.accept('arrow_up', self.arms_up)
+        arms_down_object = DirectObject()
+        arms_down_object.accept('arrow_down', self.arms_down)
+        arms_forward_object = DirectObject()
+        arms_forward_object.accept('arrow_right', self.arms_forward)
+
         self.taskMgr.add(self.update, 'update')
 
         # Set up GUI
@@ -112,7 +122,20 @@ class App(ShowBase):
         """Update the world using physics."""
         dt = globalClock.getDt()
         self.world.doPhysics(dt)
+        self.clock += 1
         return Task.cont
+
+    def arms_up(self):
+        for i, character in enumerate(self.characterList):
+            character.arms_up(i)
+
+    def arms_down(self):
+        for character in self.characterList:
+            character.arms_down()
+
+    def arms_forward(self):
+        for character in self.characterList:
+            character.arms_forward()
 
     def toggle_debug(self):
         """Toggle debug display for physical objects."""
