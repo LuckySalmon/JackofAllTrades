@@ -31,8 +31,8 @@ class Character(object):
         # Important numbers
         head_radius = 0.5
         head_elevation = 1.5
-        torso_x = 0.3
-        torso_y = 0.5
+        torso_x = 0.5
+        torso_y = 0.3
         torso_z = 0.75
         bicep_radius = 0.15
         bicep_length = 0.75
@@ -47,10 +47,12 @@ class Character(object):
         neck_yaw_limit = 90
         neck_pitch_limit = 45
         shoulder_twist_limit = 0  # limit for twisting arm along the bicep axis
-        shoulder_in_limit = 80  # maximum declination from T-pose towards torso
+        shoulder_in_limit = 100  # maximum declination from T-pose towards torso
         shoulder_out_limit = 90  # maximum elevation from T-pose away from torso
-        shoulder_forward_limit = 175  # maximum angle from down by side to pointing forward
-        shoulder_backward_limit = 90  # maximum angle from down by side to pointing backward
+        # These next ones have to be within (-90, 90) to avoid gimbal lock. I'm working on finding a way to move the
+        # limited axis to the one corresponding to twisting, which would naturally fall within that range
+        shoulder_forward_limit = 89  # maximum angle from down by side to pointing forward
+        shoulder_backward_limit = 89  # maximum angle from down by side to pointing backward
 
         # Create a head
         head_node = BulletRigidBodyNode('Head')
@@ -70,18 +72,18 @@ class Character(object):
 
         # Create biceps
         bicep_l_node = BulletRigidBodyNode('BicepL')
-        bicep_l_node.addShape(BulletCapsuleShape(bicep_radius, bicep_length, 1))
+        bicep_l_node.addShape(BulletCapsuleShape(bicep_radius, bicep_length, 0))
         bicep_l_node.setMass(0.25)
         bicep_l_pointer = render.attachNewNode(bicep_l_node)
-        bicep_l_pointer.setPos(x, y - i*(torso_y + bicep_radius + shoulder_space + bicep_length / 2),
+        bicep_l_pointer.setPos(x - i*(torso_y + bicep_radius + shoulder_space + bicep_length / 2), y,
                                shoulder_elevation)
         world.attachRigidBody(bicep_l_node)
 
         bicep_r_node = BulletRigidBodyNode('BicepR')
-        bicep_r_node.addShape(BulletCapsuleShape(bicep_radius, bicep_length, 1))
+        bicep_r_node.addShape(BulletCapsuleShape(bicep_radius, bicep_length, 0))
         bicep_r_node.setMass(0.25)
         bicep_r_pointer = render.attachNewNode(bicep_r_node)
-        bicep_r_pointer.setPos(x, y + i*(torso_y + bicep_radius + shoulder_space + bicep_length / 2),
+        bicep_r_pointer.setPos(x + i*(torso_y + bicep_radius + shoulder_space + bicep_length / 2), y,
                                shoulder_elevation)
         world.attachRigidBody(bicep_r_node)
 
@@ -94,28 +96,28 @@ class Character(object):
         world.attachConstraint(neck)
 
         # Attach the biceps to the torso
-        torso_frame = TransformState.makePosHpr(Point3(0, (torso_y + shoulder_space + bicep_radius) * -i,
-                                                       shoulder_elevation - torso_elevation), Vec3(90, 0, 0))
-        bicep_frame = TransformState.makePosHpr(Point3(0, i * bicep_length / 2, 0), Vec3(90, 0, 0))
+        torso_frame = TransformState.makePosHpr(Point3((torso_x + shoulder_space + bicep_radius) * -i, 0,
+                                                       shoulder_elevation - torso_elevation), Vec3(0, 90, 0))
+        bicep_frame = TransformState.makePosHpr(Point3(i * bicep_length / 2, 0, 0), Vec3(0, 90, 0))
         shoulder_l = BulletGenericConstraint(torso_node, bicep_l_node, torso_frame, bicep_frame, True)
 
-        torso_frame = TransformState.makePosHpr(Point3(0, (torso_y + shoulder_space + bicep_radius) * i,
-                                                       shoulder_elevation - torso_elevation), Vec3(90, 0, 0))
-        bicep_frame = TransformState.makePosHpr(Point3(0, -i * bicep_length / 2, 0), Vec3(90, 0, 0))
+        torso_frame = TransformState.makePosHpr(Point3((torso_x + shoulder_space + bicep_radius) * i, 0,
+                                                       shoulder_elevation - torso_elevation), Vec3(0, 90, 0))
+        bicep_frame = TransformState.makePosHpr(Point3(-i * bicep_length / 2, 0, 0), Vec3(0, 90, 0))
         shoulder_r = BulletGenericConstraint(torso_node, bicep_r_node, torso_frame, bicep_frame, True)
 
         shoulder_l.setAngularLimit(0, -shoulder_twist_limit, shoulder_twist_limit)
         shoulder_r.setAngularLimit(0, -shoulder_twist_limit, shoulder_twist_limit)
         if i < 0:
-            shoulder_l.setAngularLimit(1, -shoulder_in_limit, shoulder_out_limit)
-            shoulder_r.setAngularLimit(1, -shoulder_out_limit, shoulder_in_limit)
-            shoulder_l.setAngularLimit(2, -shoulder_backward_limit, shoulder_forward_limit)
-            shoulder_r.setAngularLimit(2, -shoulder_backward_limit, shoulder_forward_limit)
+            shoulder_l.setAngularLimit(2, -shoulder_out_limit, shoulder_in_limit)
+            shoulder_r.setAngularLimit(2, -shoulder_in_limit, shoulder_out_limit)
+            shoulder_l.setAngularLimit(1, -shoulder_forward_limit, shoulder_backward_limit)
+            shoulder_r.setAngularLimit(1, -shoulder_backward_limit, shoulder_forward_limit)
         else:
-            shoulder_l.setAngularLimit(1, -shoulder_out_limit, shoulder_in_limit)
-            shoulder_r.setAngularLimit(1, -shoulder_in_limit, shoulder_out_limit)
-            shoulder_l.setAngularLimit(2, -shoulder_forward_limit, shoulder_backward_limit)
-            shoulder_r.setAngularLimit(2, -shoulder_forward_limit, shoulder_backward_limit)
+            shoulder_l.setAngularLimit(2, -shoulder_in_limit, shoulder_out_limit)
+            shoulder_r.setAngularLimit(2, -shoulder_out_limit, shoulder_in_limit)
+            shoulder_l.setAngularLimit(1, -shoulder_forward_limit, shoulder_backward_limit)
+            shoulder_r.setAngularLimit(1, -shoulder_backward_limit, shoulder_forward_limit)
 
         shoulder_l.setDebugDrawSize(0.3)
         world.attachConstraint(shoulder_l)
@@ -134,8 +136,8 @@ class Character(object):
     def arms_up(self, i):
         for j in range(2):
             shoulder = self.shoulder_l if j == 0 else self.shoulder_r
-            motor = shoulder.getRotationalLimitMotor(1)
-            sign = (-1) ** (i + j)
+            motor = shoulder.getRotationalLimitMotor(2)
+            sign = (-1) ** (i + j + 1)
             motor.setTargetVelocity(sign)
             motor.setMotorEnabled(True)
             (self.bicep_l if j == 0 else self.bicep_r).node().setActive(True, False)
@@ -147,15 +149,15 @@ class Character(object):
     def arms_down(self):
         for j in range(2):
             shoulder = self.shoulder_l if j == 0 else self.shoulder_r
-            motor = shoulder.getRotationalLimitMotor(1)
+            motor = shoulder.getRotationalLimitMotor(2)
             motor.setMotorEnabled(False)
             (self.bicep_l if j == 0 else self.bicep_r).node().setActive(True, False)
 
     def arms_forward(self):
         for j in range(2):
             shoulder = self.shoulder_l if j == 0 else self.shoulder_r
-            motor = shoulder.getRotationalLimitMotor(2)
-            sign = (-1) ** j
+            motor = shoulder.getRotationalLimitMotor(1)
+            sign = (-1) ** (j + 1)
             motor.setTargetVelocity(sign)
             motor.setMotorEnabled(True)
             if motor.getCurrentLimit() > 0:

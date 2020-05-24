@@ -23,6 +23,8 @@ button_width = 0.25
 window_height = 1
 window_width = 4 / 3
 
+gravity = 9.81
+
 
 def create_quaternion(angle, axis):
     """Create a quaternion with the given characteristics"""
@@ -50,10 +52,10 @@ class App(ShowBase):
         # Set up the World
         # The World
         self.world = BulletWorld()
-        self.world.setGravity(Vec3(0, 0, -9.81))
+        self.world.setGravity(Vec3(0, 0, -gravity))
 
         # Camera
-        base.cam.setPos(0, -30, 4)
+        base.cam.setPos(-30, 0, 4)
         base.cam.lookAt(0, 0, 2)
 
         # The Ground
@@ -63,8 +65,8 @@ class App(ShowBase):
         self.world.attachRigidBody(np.node())
 
         # Characters
-        character_list[0].insert(self.world, render, -1, (-2, 0))
-        character_list[1].insert(self.world, render, 1, (2, 0))
+        character_list[0].insert(self.world, render, -1, (0, -2))
+        character_list[1].insert(self.world, render, 1, (0, 2))
 
         # Debug
         debug_node = BulletDebugNode('Debug')
