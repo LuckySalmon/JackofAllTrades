@@ -43,11 +43,10 @@ class ShoulderMovingObject(DirectObject):
             for i, key in enumerate(keys):
                 self.accept(key, self.move_arms, [axis, (-1) ** i])
                 self.accept(key + '-up', self.move_arms, [axis, 0])
-        self.accept('s', self.move_arms, [1, 0])
 
     def move_arms(self, axis, speed):
-        for character in self.character_list:
-            character.set_shoulder_motion(axis, speed)
+        for i, character in enumerate(self.character_list):
+            character.set_shoulder_motion(axis, (-1) ** (i+1) * speed)
 
 
 class App(ShowBase):
@@ -96,12 +95,8 @@ class App(ShowBase):
         debug_object.accept('f1', self.toggle_debug)
 
         # Testing Controls
-        arms_up_object = DirectObject()
-        arms_up_object.accept('arrow_up', self.arms_up)
         arms_down_object = DirectObject()
         arms_down_object.accept('arrow_down', self.arms_down)
-        arms_forward_object = DirectObject()
-        arms_forward_object.accept('arrow_right', self.arms_forward)
         shoulder_moving_object = ShoulderMovingObject(character_list)
 
         self.taskMgr.add(self.update, 'update')

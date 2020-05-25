@@ -137,33 +137,18 @@ class Character(object):
         for i in range(2):
             shoulder = self.shoulder_l if i == 0 else self.shoulder_r
             motor = shoulder.getRotationalLimitMotor(axis)
-            motor.setTargetVelocity(speed)
+            sign = (-1) ** i if axis == 0 else 1
+            motor.setTargetVelocity(sign * speed)
             motor.setMotorEnabled(True)
             (self.bicep_l if i == 0 else self.bicep_r).node().setActive(True, False)
-
-    def arms_up(self, i):
-        for j in range(2):
-            shoulder = self.shoulder_l if j == 0 else self.shoulder_r
-            motor = shoulder.getRotationalLimitMotor(0)
-            sign = (-1) ** (i + j + 1)
-            motor.setTargetVelocity(sign)
-            motor.setMotorEnabled(True)
-            (self.bicep_l if j == 0 else self.bicep_r).node().setActive(True, False)
-            if limit := motor.current_limit > 0:
-                print('left shoulder' if j == 0 else 'right shoulder', 'is at',
-                      'low' if limit == 1 else 'high', 'limit')
-                print(motor.getCurrentPosition() / math.pi * 180)
 
     def arms_down(self):
         for i in range(2):
             shoulder = self.shoulder_l if i == 0 else self.shoulder_r
-            for j in range(2):
+            for j in range(3):
                 motor = shoulder.getRotationalLimitMotor(j)
                 motor.setMotorEnabled(False)
             (self.bicep_l if i == 0 else self.bicep_r).node().setActive(True, False)
-
-    def arms_forward(self, i):
-        self.set_shoulder_motion(2, (-1) ** (i+1))
 
     def list_moves(self):  # isn't this redundant?
         """Check what moves this character has and return a list of available moves."""
