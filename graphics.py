@@ -35,6 +35,21 @@ def create_quaternion(angle, axis):
     return quaternion
 
 
+class ShoulderMovingObject(DirectObject):
+    def __init__(self, character_list):
+        self.character_list = character_list
+        bindings = [('q', 'e'), ('a', 'd'), ('z', 'c')]
+        for axis, keys in enumerate(bindings):
+            for i, key in enumerate(keys):
+                self.accept(key, self.move_arms, [axis, (-1) ** i])
+                self.accept(key + '-up', self.move_arms, [axis, 0])
+        self.accept('s', self.move_arms, [1, 0])
+
+    def move_arms(self, axis, speed):
+        for character in self.character_list:
+            character.set_shoulder_motion(axis, speed)
+
+
 class App(ShowBase):
 
     def __init__(self, character_list):
@@ -55,7 +70,7 @@ class App(ShowBase):
         self.world.setGravity(Vec3(0, 0, -gravity))
 
         # Camera
-        base.cam.setPos(-30, 0, 4)
+        base.cam.setPos(0, -30, 4)
         base.cam.lookAt(0, 0, 2)
 
         # The Ground
@@ -65,8 +80,8 @@ class App(ShowBase):
         self.world.attachRigidBody(np.node())
 
         # Characters
-        character_list[0].insert(self.world, render, -1, (0, -2))
-        character_list[1].insert(self.world, render, 1, (0, 2))
+        character_list[0].insert(self.world, render, -1, (-2, 0))
+        character_list[1].insert(self.world, render, 1, (2, 0))
 
         # Debug
         debug_node = BulletDebugNode('Debug')
@@ -87,6 +102,7 @@ class App(ShowBase):
         arms_down_object.accept('arrow_down', self.arms_down)
         arms_forward_object = DirectObject()
         arms_forward_object.accept('arrow_right', self.arms_forward)
+        shoulder_moving_object = ShoulderMovingObject(character_list)
 
         self.taskMgr.add(self.update, 'update')
 
@@ -136,8 +152,8 @@ class App(ShowBase):
             character.arms_down()
 
     def arms_forward(self):
-        for character in self.characterList:
-            character.arms_forward()
+        for i, character in enumerate(self.characterList):
+            character.arms_forward(i)
 
     def toggle_debug(self):
         """Toggle debug display for physical objects."""
