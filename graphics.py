@@ -138,17 +138,9 @@ class App(ShowBase):
         self.clock += 1
         return Task.cont
 
-    def arms_up(self):
-        for i, character in enumerate(self.characterList):
-            character.arms_up(i)
-
     def arms_down(self):
         for character in self.characterList:
             character.arms_down()
-
-    def arms_forward(self):
-        for i, character in enumerate(self.characterList):
-            character.arms_forward(i)
 
     def toggle_debug(self):
         """Toggle debug display for physical objects."""

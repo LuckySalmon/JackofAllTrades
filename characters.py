@@ -1,4 +1,4 @@
-import winsound, math
+import winsound
 
 from panda3d.bullet import BulletConeTwistConstraint, BulletGenericConstraint
 from panda3d.bullet import BulletRigidBodyNode
