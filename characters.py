@@ -8,6 +8,11 @@ from panda3d.core import Vec3, TransformState, Point3
 enableSound = False
 charList = ['regular', 'boxer', 'psycho', 'test']
 
+def arms(character):
+    for suffix in ('_l', '_r'):
+        bicep = getattr(character, 'bicep' + suffix)
+        shoulder = getattr(character, 'shoulder' + suffix)
+        yield bicep, shoulder # This statement turns the whole function into a generator
 
 class Character(object):
     def __init__(self, attributes, xp=0, char_moves=()):
@@ -124,9 +129,8 @@ class Character(object):
         world.attachConstraint(shoulder_r)
 
         for shoulder in (shoulder_l, shoulder_r):
-            for j in range(3):
-                shoulder_motor = shoulder.getRotationalLimitMotor(j)
-                shoulder_motor.setMaxMotorForce(200)
+            for i in range(3):
+                shoulder.getRotationalLimitMotor(i).setMaxMotorForce(200)
 
         self.head = head_pointer
         self.torso = torso_pointer
@@ -134,21 +138,18 @@ class Character(object):
         self.shoulder_l, self.shoulder_r = shoulder_l, shoulder_r
 
     def set_shoulder_motion(self, axis, speed):
-        for i in range(2):
-            shoulder = self.shoulder_l if i == 0 else self.shoulder_r
+        for i, (bicep, shoulder) in enumerate(arms(self)):
             motor = shoulder.getRotationalLimitMotor(axis)
             sign = (-1) ** i if axis == 0 else 1
             motor.setTargetVelocity(sign * speed)
             motor.setMotorEnabled(True)
-            (self.bicep_l if i == 0 else self.bicep_r).node().setActive(True, False)
+            bicep.node().setActive(True, False)
 
     def arms_down(self):
-        for i in range(2):
-            shoulder = self.shoulder_l if i == 0 else self.shoulder_r
-            for j in range(3):
-                motor = shoulder.getRotationalLimitMotor(j)
-                motor.setMotorEnabled(False)
-            (self.bicep_l if i == 0 else self.bicep_r).node().setActive(True, False)
+        for bicep, shoulder in arms(self):
+            for i in range(3):
+                shoulder.getRotationalLimitMotor(i).setMotorEnabled(False)
+            bicep.node().setActive(True, False)
 
     def list_moves(self):  # isn't this redundant?
         """Check what moves this character has and return a list of available moves."""

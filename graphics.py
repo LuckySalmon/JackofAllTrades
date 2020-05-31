@@ -43,10 +43,15 @@ class ShoulderMovingObject(DirectObject):
             for i, key in enumerate(keys):
                 self.accept(key, self.move_arms, [axis, (-1) ** i])
                 self.accept(key + '-up', self.move_arms, [axis, 0])
+        self.accept('s', self.arms_down)
 
     def move_arms(self, axis, speed):
         for i, character in enumerate(self.character_list):
             character.set_shoulder_motion(axis, (-1) ** (i+1) * speed)
+
+    def arms_down(self):
+        for character in self.character_list:
+            character.arms_down()
 
 
 class App(ShowBase):
@@ -95,8 +100,6 @@ class App(ShowBase):
         debug_object.accept('f1', self.toggle_debug)
 
         # Testing Controls
-        arms_down_object = DirectObject()
-        arms_down_object.accept('arrow_down', self.arms_down)
         shoulder_moving_object = ShoulderMovingObject(character_list)
 
         self.taskMgr.add(self.update, 'update')
@@ -137,10 +140,6 @@ class App(ShowBase):
         self.world.doPhysics(dt)
         self.clock += 1
         return Task.cont
-
-    def arms_down(self):
-        for character in self.characterList:
-            character.arms_down()
 
     def toggle_debug(self):
         """Toggle debug display for physical objects."""
