@@ -1,0 +1,8 @@
+{
+  "name": "boxer basic",
+  "moves": [
+    "jab",
+    "cross",
+    "hook"
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "name": "jab",
+  "damage": [5, 10],
+  "accuracy": 95,
+  "effects": []
+}

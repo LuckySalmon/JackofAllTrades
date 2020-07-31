@@ -1,0 +1,6 @@
+{
+  "name": "yardstick sweep",
+  "damage": [10, 25],
+  "accuracy": 80,
+  "effects": []
+}

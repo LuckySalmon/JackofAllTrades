@@ -1,0 +1,6 @@
+{
+  "name": "slice",
+  "damage": [15, 20],
+  "accuracy": 85,
+  "effects": []
+}

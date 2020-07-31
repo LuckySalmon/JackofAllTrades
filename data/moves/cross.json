@@ -1,0 +1,6 @@
+{
+  "name": "cross",
+  "damage": [8, 20],
+  "accuracy": 85,
+  "effects": []
+}

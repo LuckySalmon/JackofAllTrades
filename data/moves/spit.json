@@ -1,0 +1,6 @@
+{
+  "name": "spit",
+  "damage": [0, 0],
+  "accuracy": 55,
+  "effects": ["gross"]
+}
