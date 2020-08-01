@@ -1,4 +1,6 @@
 import csv
+import json
+import os
 
 import characters
 import graphics
@@ -56,9 +58,10 @@ def battle(ally, enemy):
 def test():
     """Have players choose Jacks, then run a game."""
     attribute_list = dict()
-    with open('characters.csv', newline='') as file:
-        for row in csv.DictReader(file):
-            attribute_list[row['name'][:-5]] = row
+    for file in os.scandir('data\\characters'):
+        with open(file) as f:
+            j = json.load(f)
+            attribute_list[j['trade']] = j
     cont = input(align('Enter any character to play', 'Or nothing to quit', '', side=1))
     while cont:
         fighters = []
