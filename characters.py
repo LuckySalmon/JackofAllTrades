@@ -1,4 +1,6 @@
 import winsound
+import json
+import moves
 
 from panda3d.bullet import BulletConeTwistConstraint, BulletGenericConstraint
 from panda3d.bullet import BulletRigidBodyNode
@@ -26,6 +28,13 @@ class Character(object):
         self.torso = None
         self.bicep_l, self.bicep_r = None, None
         self.shoulder_l, self.shoulder_r = None, None
+
+    @classmethod
+    def from_json(cls, file):
+        attributes = json.load(file)
+        move_names = attributes.pop('basic_moves')
+        move_set = [moves.moves[move_name] for move_name in move_names]
+        return cls(attributes, char_moves=move_set)
 
     def insert(self, world, render, i, pos):
         # Important numbers

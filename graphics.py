@@ -217,8 +217,8 @@ class App(ShowBase):
 
 def test():
     """Run a battle between two test characters for debug purposes."""
-    attributes = dict(name='Test Jack', hp=10, speed=1, defense=1)
-    char1 = characters.Character(attributes, char_moves=moves.defaultBasic)
-    char2 = characters.Character(attributes, char_moves=moves.defaultBasic)
+    with open('data\\characters\\test.json') as file:
+        char = characters.Character.from_json(file)
+        char1, char2 = char, char
     app = App([char1, char2])
     app.run()
