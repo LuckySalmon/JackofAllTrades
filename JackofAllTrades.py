@@ -58,10 +58,13 @@ def battle(ally, enemy):
 def test():
     """Have players choose Jacks, then run a game."""
     attribute_list = dict()
+    move_sets = dict()
     for file in os.scandir('data\\characters'):
         with open(file) as f:
-            j = json.load(f)
-            attribute_list[j['trade']] = j
+            d = json.load(f)
+            trade = d['trade']
+            move_sets[trade] = d.pop('basic_moves')
+            attribute_list[trade] = d
     cont = input(align('Enter any character to play', 'Or nothing to quit', '', side=1))
     while cont:
         fighters = []
@@ -72,11 +75,12 @@ def test():
                 for j in i:
                     print(j, end="")
             print("\n")
+
             name = input('%s Jack of choice: ' % player).lower()
             while name not in characters.charList:
                 name = input('Please choose a valid character: ').lower()
-            set_name = name + ' basic'
-            move_set = moves.sets[set_name] if set_name in moves.sets else moves.defaultBasic
+
+            move_set = move_sets[name] if name in move_sets else moves.defaultBasic
             fighters.append(characters.Character(attribute_list[name], char_moves=move_set))
         print('\n')
         battle(*fighters)
