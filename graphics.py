@@ -1,5 +1,6 @@
 import math
 import random
+from itertools import product
 
 from direct.gui.DirectGui import *
 from direct.showbase.DirectObject import DirectObject
@@ -24,6 +25,10 @@ window_height = 1
 window_width = 4 / 3
 
 gravity = 9.81
+
+sides = ['l', 'r']
+coords = [[1, 1, 1], [1, -1, 1], [-1, -1, 1], [-1, 1, 1]]
+targets = [Vec3(x, y, z).normalized() * 2 for x, y, z in coords]
 
 
 def create_quaternion(angle, axis):
@@ -74,8 +79,8 @@ class App(ShowBase):
         self.world.setGravity(Vec3(0, 0, -gravity))
 
         # Camera
-        base.cam.setPos(0, -30, 4)
-        base.cam.lookAt(0, 0, 2)
+        base.cam.setPos(0, -15, 2)
+        base.cam.lookAt(0, 0, 0)
 
         # The Ground
         np = render.attachNewNode(BulletRigidBodyNode('Ground'))
@@ -101,6 +106,7 @@ class App(ShowBase):
 
         # Testing Controls
         shoulder_moving_object = ShoulderMovingObject(character_list)
+        self.targeting = True
 
         self.taskMgr.add(self.update, 'update')
 
@@ -139,6 +145,9 @@ class App(ShowBase):
         dt = globalClock.getDt()
         self.world.doPhysics(dt)
         self.clock += 1
+        if self.targeting and self.clock % 10 == 0:
+            for (character, side), target in zip(product(self.characterList, sides), targets):
+                character.position_shoulder(side, target)
         return Task.cont
 
     def toggle_debug(self):
@@ -221,3 +230,7 @@ def test():
     char2 = characters.Character(attributes, char_moves=moves.defaultBasic)
     app = App([char1, char2])
     app.run()
+
+
+if __name__ == "__main__":
+    test()

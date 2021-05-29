@@ -1,18 +1,58 @@
+import math
 import winsound
 
 from panda3d.bullet import BulletConeTwistConstraint, BulletGenericConstraint
 from panda3d.bullet import BulletRigidBodyNode
 from panda3d.bullet import BulletSphereShape, BulletBoxShape, BulletCapsuleShape
-from panda3d.core import Vec3, TransformState, Point3
+from panda3d.core import Vec3, TransformState, Point3, LMatrix3
 
 enableSound = False
 charList = ['regular', 'boxer', 'psycho', 'test']
+
+identity = LMatrix3(1, 0, 0, 0, 1, 0, 0, 0, 1)
+
 
 def arms(character):
     for suffix in ('_l', '_r'):
         bicep = getattr(character, 'bicep' + suffix)
         shoulder = getattr(character, 'shoulder' + suffix)
-        yield bicep, shoulder # This statement turns the whole function into a generator
+        yield bicep, shoulder  # This statement turns the whole function into a generator
+
+
+def shoulder_angles(origin, point, theta, transform=identity):
+    point -= origin
+    point = transform.xform(point)
+
+    l1, l2 = 1, 1
+    q = point.normalized()
+    dist = point.length()
+    if dist > l1+l2:
+        # cap the distance of the target to l1+l2
+        dist = l1 + l2
+        point = q * dist
+    x, y, z = point
+
+    # u1 and u2 form a basis for the plane perpendicular to OQ
+    u1 = Vec3(z, 0, -x).normalized()
+    u2 = Vec3(x*y, -x**2 - z**2, y*z).normalized()
+
+    sp = (dist+l1+l2)/2                                     # semi-perimeter of OPQ
+    r = (2/dist)*math.sqrt(sp*(sp-dist)*(sp-l1)*(sp-l2))    # distance from OQ to P
+    d = (dist**2 + l1**2 - l2**2)/(2*dist)                  # length of projection of OP onto OQ
+    elbow = u1*r*math.cos(theta) + u2*r*math.sin(theta) + q*d
+
+    # e1, e2, and e3 describe a rotation matrix
+    e1 = elbow.normalized()
+    e2 = (point - e1*point.dot(e1)).normalized()
+    e3 = e1.cross(e2)
+
+    # alpha, beta, and gamma are the shoulder angles, while phi is the elbow angle
+    alpha = math.atan2(e3[1], e1[1])
+    beta = math.atan2(e2[1], e1[1]/math.cos(alpha))
+    gamma = math.atan2(-e2[2]/math.cos(beta), -e2[0]/math.cos(beta))
+    phi = math.acos((l1**2 + l2**2 - dist**2)/(2*l1*l2)) - math.pi
+    return alpha, beta, gamma, phi
+
 
 class Character(object):
     def __init__(self, attributes, xp=0, char_moves=()):
@@ -31,6 +71,8 @@ class Character(object):
         self.torso = None
         self.bicep_l, self.bicep_r = None, None
         self.shoulder_l, self.shoulder_r = None, None
+        self.shoulder_l_transform = LMatrix3(-1, 0, 0, 0, 1, 0, 0, 0, 1)
+        self.shoulder_r_transform = LMatrix3(1, 0, 0, 0, -1, 0, 0, 0, -1)
 
     def insert(self, world, render, i, pos):
         # Important numbers
@@ -51,8 +93,8 @@ class Character(object):
         # measurements below are in degrees
         neck_yaw_limit = 90
         neck_pitch_limit = 45
-        shoulder_twist_limit = 0  # limit for twisting arm along the bicep axis
-        shoulder_in_limit = 100  # maximum declination from T-pose towards torso
+        shoulder_twist_limit = 90  # limit for twisting arm along the bicep axis
+        shoulder_in_limit = 180  # maximum declination from T-pose towards torso
         shoulder_out_limit = 90  # maximum elevation from T-pose away from torso
         shoulder_forward_limit = 175  # maximum angle from down by side to pointing forward
         shoulder_backward_limit = 90  # maximum angle from down by side to pointing backward
@@ -125,25 +167,46 @@ class Character(object):
             shoulder_r.setAngularLimit(2, -shoulder_backward_limit, shoulder_forward_limit)
 
         shoulder_l.setDebugDrawSize(0.3)
-        world.attachConstraint(shoulder_l)
-        world.attachConstraint(shoulder_r)
+        world.attachConstraint(shoulder_l, True)
+        world.attachConstraint(shoulder_r, True)
 
         for shoulder in (shoulder_l, shoulder_r):
-            for i in range(3):
-                shoulder.getRotationalLimitMotor(i).setMaxMotorForce(200)
+            for axis in range(3):
+                shoulder.getRotationalLimitMotor(axis).setMaxMotorForce(200)
 
         self.head = head_pointer
         self.torso = torso_pointer
         self.bicep_l, self.bicep_r = bicep_l_pointer, bicep_r_pointer
         self.shoulder_l, self.shoulder_r = shoulder_l, shoulder_r
+        self.shoulder_l_transform *= -i
+        self.shoulder_r_transform *= -i
 
     def set_shoulder_motion(self, axis, speed):
         for i, (bicep, shoulder) in enumerate(arms(self)):
             motor = shoulder.getRotationalLimitMotor(axis)
-            sign = (-1) ** i if axis == 0 else 1
+            sign = (-1) ** i if axis < 2 else 1
             motor.setTargetVelocity(sign * speed)
             motor.setMotorEnabled(True)
             bicep.node().setActive(True, False)
+
+    def position_shoulder(self, side, target):
+        tol = 0.1
+        speed = 1
+        pos = Vec3(0, 0, 0)
+        bicep = getattr(self, 'bicep_' + side)
+        shoulder = getattr(self, 'shoulder_' + side)
+        transform = getattr(self, 'shoulder_' + side + '_transform')
+        target_angles = shoulder_angles(pos, target, 0, transform)
+        for axis in range(3):
+            motor = shoulder.getRotationalLimitMotor(axis)
+            angle = shoulder.getAngle(axis)
+            diff = target_angles[axis] - angle
+            if abs(diff) > tol:
+                motor.setTargetVelocity(speed * diff)
+            else:
+                motor.setTargetVelocity(0)
+            motor.setMotorEnabled(True)
+        bicep.node().setActive(True, False)
 
     def arms_down(self):
         for bicep, shoulder in arms(self):
