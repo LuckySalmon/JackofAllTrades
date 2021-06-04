@@ -49,10 +49,19 @@ class ShoulderMovingObject(DirectObject):
                 self.accept(key, self.move_arms, [axis, (-1) ** i])
                 self.accept(key + '-up', self.move_arms, [axis, 0])
         self.accept('s', self.arms_down)
+        self.accept('r', self.bend_arms, [math.pi / 2])
+        self.accept('v', self.bend_arms, [0.0])
 
     def move_arms(self, axis, speed):
         for i, character in enumerate(self.character_list):
             character.set_shoulder_motion(axis, (-1) ** (i+1) * speed)
+
+    def bend_arms(self, angle):
+        for character in self.character_list:
+            for arm in character.arm_l, character.arm_r:
+                arm.elbow.enableMotor(True)
+                arm.elbow.setMotorTarget(angle, 0.5)
+                arm.forearm.node().setActive(True, False)
 
     def arms_down(self):
         for character in self.character_list:

@@ -1,7 +1,7 @@
 import math
 import winsound
 
-from panda3d.bullet import BulletConeTwistConstraint, BulletGenericConstraint
+from panda3d.bullet import BulletConeTwistConstraint, BulletGenericConstraint, BulletHingeConstraint
 from panda3d.bullet import BulletRigidBodyNode
 from panda3d.bullet import BulletSphereShape, BulletBoxShape, BulletCapsuleShape
 from panda3d.core import Vec3, TransformState, Point3, LMatrix3
@@ -50,10 +50,12 @@ class Arm(object):
     def __init__(self, world, render, position, direction, side, torso, limits):
         radius = 0.15
         bicep_length = 0.75
+        forearm_length = 0.75
         in_limit, out_limit, forward_limit, backward_limit, twist_limit = limits
         torso_pos = torso.getPos()
         x, y, z = position
         bicep_y = y + direction * bicep_length / 2
+        forearm_y = y + direction * bicep_length + forearm_length / 2
 
         bicep_node = BulletRigidBodyNode('Bicep')
         bicep_node.addShape(BulletCapsuleShape(radius, bicep_length, 1))
@@ -61,6 +63,13 @@ class Arm(object):
         bicep_pointer = render.attachNewNode(bicep_node)
         bicep_pointer.setPos(x, bicep_y, z)
         world.attachRigidBody(bicep_node)
+
+        forearm_node = BulletRigidBodyNode('Forearm')
+        forearm_node.addShape(BulletCapsuleShape(radius, forearm_length, 1))
+        forearm_node.setMass(0.25)
+        forearm_pointer = render.attachNewNode(forearm_node)
+        forearm_pointer.setPos(x, forearm_y, z)
+        world.attachRigidBody(forearm_node)
 
         orientation = Vec3(0, 90, 0)
         bicep_xform_dir = Point3(0, -direction * bicep_length / 2, 0)
@@ -72,8 +81,17 @@ class Arm(object):
         shoulder.setDebugDrawSize(0.3)
         world.attachConstraint(shoulder, True)
 
+        elbow_axis = Vec3(0, 0, side)
+        forearm_to_elbow = Point3(0, -direction * forearm_length / 2, 0)
+        bicep_to_elbow = Point3(0, direction * bicep_length / 2, 0)
+        elbow = BulletHingeConstraint(bicep_node, forearm_node, bicep_to_elbow, forearm_to_elbow,
+                                      elbow_axis, elbow_axis, True)
+        elbow.setDebugDrawSize(0.3)
+        world.attachConstraint(elbow, True)
+
         for axis in range(3):
             shoulder.getRotationalLimitMotor(axis).setMaxMotorForce(200)
+        elbow.setMaxMotorImpulse(200)
 
         shoulder.setAngularLimit(1, -twist_limit, twist_limit)
 
@@ -87,8 +105,12 @@ class Arm(object):
         else:
             shoulder.setAngularLimit(2, -backward_limit, forward_limit)
 
+        elbow.setLimit(0, 180)
+
         self.bicep = bicep_pointer
+        self.forearm = forearm_pointer
         self.shoulder = shoulder
+        self.elbow = elbow
         self.transform = LMatrix3(-direction, 0, 0, 0, direction, 0, 0, 0, direction)
         self.side = side
 
@@ -113,11 +135,14 @@ class Arm(object):
             else:
                 motor.setTargetVelocity(0)
             motor.setMotorEnabled(True)
+        self.elbow.enableMotor(True)
+        self.elbow.setMotorTarget(target_angles[3], dt)
         self.bicep.node().setActive(True, False)
 
     def go_limp(self):
         for axis in range(3):
             self.shoulder.getRotationalLimitMotor(axis).setMotorEnabled(False)
+        self.elbow.enableMotor(False)
         self.bicep.node().setActive(True, False)
 
 
