@@ -4,11 +4,28 @@ import winsound
 from panda3d.bullet import BulletConeTwistConstraint, BulletGenericConstraint, BulletHingeConstraint
 from panda3d.bullet import BulletRigidBodyNode
 from panda3d.bullet import BulletSphereShape, BulletBoxShape, BulletCapsuleShape
-from panda3d.core import Vec3, TransformState, Point3, LMatrix3
+from panda3d.core import Vec3, VBase4, TransformState, Point3, LMatrix3
+from direct.directtools.DirectGeometry import LineNodePath
 
 enableSound = False
 charList = ['regular', 'boxer', 'psycho', 'test']
 LEFT, RIGHT = -1, 1
+
+
+def draw_lines(lines: LineNodePath, *paths: dict, origin=None, relative=True):
+    if origin is None:
+        origin = lines.getCurrentPosition()
+    lines.reset()
+    for path in paths:
+        if 'color' in path:
+            lines.setColor(*path['color'])
+        points = path['points']
+        lines.moveTo(*origin)
+        for point in points:
+            if relative:
+                point += origin
+            lines.drawTo(*point)
+    lines.create()
 
 
 def shoulder_angles(origin, point, theta, transform=LMatrix3.identMat()):
@@ -107,12 +124,23 @@ class Arm(object):
 
         elbow.setLimit(0, 180)
 
+        self.render = render
+        self.position = position
         self.bicep = bicep_pointer
         self.forearm = forearm_pointer
         self.shoulder = shoulder
         self.elbow = elbow
         self.transform = LMatrix3(-direction, 0, 0, 0, direction, 0, 0, 0, direction)
         self.side = side
+
+        self.lines = LineNodePath(name='debug', parent=self.render, colorVec=VBase4(0.2, 0.2, 0.5, 1))
+
+        axes = LineNodePath(name='axes', parent=self.render)
+        paths = [dict(color=VBase4(1, 0, 0, 1)), dict(color=VBase4(0, 1, 0, 1)), dict(color=VBase4(0, 0, 1, 1))]
+        for i in range(3):
+            axis = shoulder.getAxis(i) * 0.25
+            paths[i]['points'] = [axis]
+        draw_lines(axes, *paths, origin=position)
 
     def set_shoulder_motion(self, axis, speed):
         """Set the shoulder motor along the given axis to the given speed."""
@@ -138,6 +166,7 @@ class Arm(object):
         self.elbow.enableMotor(True)
         self.elbow.setMotorTarget(target_angles[3], dt)
         self.bicep.node().setActive(True, False)
+        draw_lines(self.lines, dict(points=[hand_pos]), origin=self.position)
 
     def go_limp(self):
         for axis in range(3):

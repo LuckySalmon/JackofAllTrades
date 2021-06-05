@@ -27,8 +27,9 @@ window_width = 4 / 3
 gravity = 9.81
 
 sides = ['l', 'r']
-coords = [[1, 1, 1], [1, -1, 1], [-1, -1, 1], [-1, 1, 1]]
-targets = [Vec3(x, y, z).normalized() * 2 for x, y, z in coords]
+DefaultTargetPos = (1, 1, 0)
+TARGETING = [False]
+LEFT, RIGHT = -1, 1
 
 
 def create_quaternion(angle, axis):
@@ -40,8 +41,47 @@ def create_quaternion(angle, axis):
     return quaternion
 
 
+def toggle_targeting():
+    TARGETING[0] = not TARGETING[0]
+
+
+class TargetMovingObject(DirectObject):
+    def __init__(self):
+        super().__init__()
+        self.xyz = (0, 0, 0)
+        self.targets = []
+        bindings = (('7-repeat', '1-repeat'), ('8-repeat', '2-repeat'), ('9-repeat', '3-repeat'))
+        for axis, keys in enumerate(bindings):
+            for i, key in enumerate(keys):
+                self.accept(key, self.modify_coordinate, [axis, 0.01 * (-1)**i])
+        self.accept('4-repeat', self.scale_targets, [0.99])
+        self.accept('6-repeat', self.scale_targets, [1.01])
+
+    def update(self):
+        x, y, z = self.xyz
+        coordinates = [[x, y, z], [x, -y, z], [-x, -y, z], [-x, y, z]]
+        self.targets.clear()
+        targets = [Vec3(x, y, z) for x, y, z in coordinates]
+        self.targets += targets
+
+    def set_targets(self, x, y, z):
+        self.xyz = [x, y, z]
+        self.update()
+        return self.targets
+
+    def modify_coordinate(self, axis, delta):
+        self.xyz[axis] += delta
+        self.update()
+
+    def scale_targets(self, scale):
+        for axis in range(3):
+            self.xyz[axis] *= scale
+        self.update()
+
+
 class ShoulderMovingObject(DirectObject):
     def __init__(self, character_list):
+        super().__init__()
         self.character_list = character_list
         bindings = [('q', 'e'), ('a', 'd'), ('z', 'c')]
         for axis, keys in enumerate(bindings):
@@ -51,6 +91,8 @@ class ShoulderMovingObject(DirectObject):
         self.accept('s', self.arms_down)
         self.accept('r', self.bend_arms, [math.pi / 2])
         self.accept('v', self.bend_arms, [0.0])
+        self.accept('p', self.print_angles)
+        self.accept('space', toggle_targeting)
 
     def move_arms(self, axis, speed):
         for i, character in enumerate(self.character_list):
@@ -66,6 +108,20 @@ class ShoulderMovingObject(DirectObject):
     def arms_down(self):
         for character in self.character_list:
             character.arms_down()
+
+    def print_angles(self):
+        for character in self.character_list:
+            for arm in character.arm_l, character.arm_r:
+                angles = [arm.shoulder.getAngle(i) for i in range(3)]
+                print('angles: {:.4f}, {:.4f}, {:.4f}'.format(*angles))
+                angles[2] *= -1
+                c3, c2, c1 = [math.cos(angle) for angle in angles]
+                s3, s2, s1 = [math.sin(angle) for angle in angles]
+                calculated_point = Vec3(c1 * c3 * s2 + s1 * s3, -c2 * c3, -c1 * s3 + c3 * s1 * s2) * 0.375
+                print('calculated bicep pos: ({: .4f}, {: .4f}, {: .4f})'.format(*calculated_point))
+                actual_point = arm.bicep.getPos() - arm.position
+                print('    actual bicep pos: ({: .4f}, {: .4f}, {: .4f})'.format(*actual_point))
+                print()
 
 
 class App(ShowBase):
@@ -104,7 +160,7 @@ class App(ShowBase):
         # Debug
         debug_node = BulletDebugNode('Debug')
         debug_node.showWireframe(True)
-        debug_node.showConstraints(True)
+        debug_node.showConstraints(False)
         debug_node.showBoundingBoxes(False)
         debug_node.showNormals(False)
         self.debugNP = render.attachNewNode(debug_node)
@@ -115,7 +171,10 @@ class App(ShowBase):
 
         # Testing Controls
         shoulder_moving_object = ShoulderMovingObject(character_list)
-        self.targeting = True
+        target_moving_object = TargetMovingObject()
+        self.targets = target_moving_object.set_targets(*DefaultTargetPos)
+        for i in range(3):
+            shoulder_moving_object.move_arms(i, 0)
 
         self.taskMgr.add(self.update, 'update')
 
@@ -125,7 +184,7 @@ class App(ShowBase):
                                        align=TextNode.ACenter, mayChange=1)
         self.actionBoxes, self.infoBoxes, self.useButtons, self.healthBars = [], [], [], []
         self.selectedAction, self.selection = None, None
-        for side in (-1, 1):
+        for side in (LEFT, RIGHT):
             action_box = DirectFrame(frameColor=(0, 0, 0, 1),
                                      frameSize=(-frame_width, frame_width, -frame_height, frame_height),
                                      pos=(side * (window_width - frame_width), 0, -(window_height - frame_height)))
@@ -154,8 +213,8 @@ class App(ShowBase):
         dt = globalClock.getDt()
         self.world.doPhysics(dt)
         self.clock += 1
-        if self.targeting and self.clock % 10 == 0:
-            for (character, side), target in zip(product(self.characterList, sides), targets):
+        if TARGETING[0] and self.clock % 10 == 0:
+            for (character, side), target in zip(product(self.characterList, sides), self.targets):
                 character.position_shoulder(side, target)
         return Task.cont
 
