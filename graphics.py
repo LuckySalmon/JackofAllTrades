@@ -24,7 +24,7 @@ button_width = 0.25
 window_height = 1
 window_width = 4 / 3
 
-gravity = 9.81
+gravity = 0
 
 sides = ['l', 'r']
 DefaultTargetPos = (1, 1, 0)
@@ -96,7 +96,7 @@ class ShoulderMovingObject(DirectObject):
 
     def move_arms(self, axis, speed):
         for i, character in enumerate(self.character_list):
-            character.set_shoulder_motion(axis, (-1) ** (i+1) * speed)
+            character.set_shoulder_motion(axis, speed)
 
     def bend_arms(self, angle):
         for character in self.character_list:

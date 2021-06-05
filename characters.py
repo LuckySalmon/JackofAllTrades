@@ -4,7 +4,7 @@ import winsound
 from panda3d.bullet import BulletConeTwistConstraint, BulletGenericConstraint, BulletHingeConstraint
 from panda3d.bullet import BulletRigidBodyNode
 from panda3d.bullet import BulletSphereShape, BulletBoxShape, BulletCapsuleShape
-from panda3d.core import Vec3, VBase4, TransformState, Point3, LMatrix3
+from panda3d.core import Vec3, VBase4, TransformState, Point3, LMatrix3, LMatrix4
 from direct.directtools.DirectGeometry import LineNodePath
 
 enableSound = False
@@ -28,11 +28,17 @@ def draw_lines(lines: LineNodePath, *paths: dict, origin=None, relative=True):
     lines.create()
 
 
+def make_rigid_transform(rotation, translation):
+    """Return a TransformState comprising the given rotation followed by the given translation"""
+    return TransformState.makeMat(LMatrix4(rotation, translation))
+
+
 def shoulder_angles(origin, point, theta, transform=LMatrix3.identMat()):
+    """Return the shoulder and elbow angles required to place the hand at the given point."""
     point -= origin
     point = transform.xform(point)
 
-    l1, l2 = 1, 1
+    l1, l2 = 0.75, 0.75
     q = point.normalized()
     dist = point.length()
     if dist > l1+l2:
@@ -43,7 +49,7 @@ def shoulder_angles(origin, point, theta, transform=LMatrix3.identMat()):
 
     # u1 and u2 form a basis for the plane perpendicular to OQ
     u1 = Vec3(z, 0, -x).normalized()
-    u2 = Vec3(x*y, -x**2 - z**2, y*z).normalized()
+    u2 = Vec3(x*y, -x*x - z*z, y*z).normalized()
 
     sp = (dist+l1+l2)/2                                     # semi-perimeter of OPQ
     r = (2/dist)*math.sqrt(sp*(sp-dist)*(sp-l1)*(sp-l2))    # distance from OQ to P
@@ -52,15 +58,20 @@ def shoulder_angles(origin, point, theta, transform=LMatrix3.identMat()):
 
     # e1, e2, and e3 describe a rotation matrix
     e1 = elbow.normalized()
-    e2 = (point - e1*point.dot(e1)).normalized()
+    e2 = (point - e1*point.dot(e1))
+    if e2.length() < 1e-06:
+        e2 = Vec3(-e1[2], 0, e1[0]).normalized()
+    else:
+        e2 = e2.normalized()
     e3 = e1.cross(e2)
 
     # alpha, beta, and gamma are the shoulder angles, while phi is the elbow angle
-    alpha = math.atan2(e3[1], e1[1])
-    beta = math.atan2(e2[1], e1[1]/math.cos(alpha))
-    gamma = math.atan2(-e2[2]/math.cos(beta), -e2[0]/math.cos(beta))
-    phi = math.acos((l1**2 + l2**2 - dist**2)/(2*l1*l2)) - math.pi
-    return alpha, beta, gamma, phi
+    alpha = math.atan2(e2[2], e2[0])
+    beta = math.atan2(e2[1], e2[0]/math.cos(alpha))
+    gamma = math.atan2(-e3[1]/math.cos(beta), -e1[1]/math.cos(beta))
+    phi = abs(math.acos((l1**2 + l2**2 - dist**2)/(2*l1*l2)) - math.pi)
+
+    return -gamma, beta, alpha, phi
 
 
 class Arm(object):
@@ -88,13 +99,12 @@ class Arm(object):
         forearm_pointer.setPos(x, forearm_y, z)
         world.attachRigidBody(forearm_node)
 
-        orientation = Vec3(0, 90, 0)
-        bicep_xform_dir = Point3(0, -direction * bicep_length / 2, 0)
-        torso_xform_dir = Point3(0, y + torso_pos[1], z - torso_pos[2])
-        bicep_frame = TransformState.makePosHpr(bicep_xform_dir, orientation)
-        torso_frame = TransformState.makePosHpr(torso_xform_dir, orientation)
-        shoulder = BulletGenericConstraint(torso.node(), bicep_node, torso_frame, bicep_frame, True)
-
+        rotation = LMatrix3((-direction, 0, 0), (0, 0, -side), (0, -side*direction, 0))
+        bicep_to_shoulder = Vec3(0, -direction * bicep_length / 2, 0)
+        torso_to_shoulder = Vec3(0, y + torso_pos[1], z - torso_pos[2])
+        bicep_shoulder_frame = make_rigid_transform(rotation, bicep_to_shoulder)
+        torso_shoulder_frame = make_rigid_transform(rotation, torso_to_shoulder)
+        shoulder = BulletGenericConstraint(torso.node(), bicep_node, torso_shoulder_frame, bicep_shoulder_frame, True)
         shoulder.setDebugDrawSize(0.3)
         world.attachConstraint(shoulder, True)
 
@@ -110,17 +120,9 @@ class Arm(object):
             shoulder.getRotationalLimitMotor(axis).setMaxMotorForce(200)
         elbow.setMaxMotorImpulse(200)
 
+        shoulder.setAngularLimit(0, -in_limit, out_limit)
         shoulder.setAngularLimit(1, -twist_limit, twist_limit)
-
-        if direction == -1:
-            shoulder.setAngularLimit(0, -in_limit, out_limit)
-        else:
-            shoulder.setAngularLimit(0, -out_limit, in_limit)
-
-        if side*direction == -1:
-            shoulder.setAngularLimit(2, -forward_limit, backward_limit)
-        else:
-            shoulder.setAngularLimit(2, -backward_limit, forward_limit)
+        shoulder.setAngularLimit(2, -backward_limit, forward_limit)
 
         elbow.setLimit(0, 180)
 
@@ -130,7 +132,7 @@ class Arm(object):
         self.forearm = forearm_pointer
         self.shoulder = shoulder
         self.elbow = elbow
-        self.transform = LMatrix3(-direction, 0, 0, 0, direction, 0, 0, 0, direction)
+        self.transform = LMatrix3(-side*direction, 0, 0, 0, -direction, 0, 0, 0, 1)
         self.side = side
 
         self.lines = LineNodePath(name='debug', parent=self.render, colorVec=VBase4(0.2, 0.2, 0.5, 1))
@@ -254,7 +256,7 @@ class Character(object):
 
     def set_shoulder_motion(self, axis, speed):
         self.arm_l.set_shoulder_motion(axis, speed)
-        self.arm_r.set_shoulder_motion(axis, -speed if axis < 2 else speed)
+        self.arm_r.set_shoulder_motion(axis, speed)
 
     def position_shoulder(self, side, target):
         arm = getattr(self, 'arm_' + side)
