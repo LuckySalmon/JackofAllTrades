@@ -127,7 +127,7 @@ class ShoulderMovingObject(DirectObject):
 class App(ShowBase):
 
     def __init__(self, character_list):
-        ShowBase.__init__(self)
+        super().__init__(self)
 
         self.clock = 0
 
@@ -144,18 +144,18 @@ class App(ShowBase):
         self.world.setGravity(Vec3(0, 0, -gravity))
 
         # Camera
-        base.cam.setPos(0, -15, 2)
-        base.cam.lookAt(0, 0, 0)
+        self.cam.setPos(0, -15, 2)
+        self.cam.lookAt(0, 0, 0)
 
         # The Ground
-        np = render.attachNewNode(BulletRigidBodyNode('Ground'))
+        np = self.render.attachNewNode(BulletRigidBodyNode('Ground'))
         np.node().addShape(BulletPlaneShape(Vec3(0, 0, 1), 1))
         np.setPos(0, 0, -2)
         self.world.attachRigidBody(np.node())
 
         # Characters
-        character_list[0].insert(self.world, render, -1, (-2, 0))
-        character_list[1].insert(self.world, render, 1, (2, 0))
+        character_list[0].insert(self.world, self.render, -1, (-2, 0))
+        character_list[1].insert(self.world, self.render, 1, (2, 0))
 
         # Debug
         debug_node = BulletDebugNode('Debug')
@@ -163,7 +163,7 @@ class App(ShowBase):
         debug_node.showConstraints(False)
         debug_node.showBoundingBoxes(False)
         debug_node.showNormals(False)
-        self.debugNP = render.attachNewNode(debug_node)
+        self.debugNP = self.render.attachNewNode(debug_node)
         self.debugNP.show()
         self.world.setDebugNode(self.debugNP.node())
         debug_object = DirectObject()
