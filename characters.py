@@ -12,6 +12,11 @@ from direct.directtools.DirectGeometry import LineNodePath
 enableSound = False
 charList = ['regular', 'boxer', 'psycho', 'test']
 LEFT, RIGHT = -1, 1
+shape_constructors = dict(sphere=BulletSphereShape,
+                          box=lambda *args: BulletBoxShape(Vec3(*args)),
+                          capsule_x=lambda *args: BulletCapsuleShape(*args, 0),
+                          capsule_y=lambda *args: BulletCapsuleShape(*args, 1),
+                          capsule_z=lambda *args: BulletCapsuleShape(*args, 2))
 
 
 def draw_lines(lines: LineNodePath, *paths: dict, origin=None, relative=True):
@@ -33,6 +38,18 @@ def draw_lines(lines: LineNodePath, *paths: dict, origin=None, relative=True):
 def make_rigid_transform(rotation, translation):
     """Return a TransformState comprising the given rotation followed by the given translation"""
     return TransformState.makeMat(LMatrix4(rotation, translation))
+
+
+def make_body(name, shape, dimensions, mass, position, render, world):
+    constructor = shape_constructors[shape]
+    node = BulletRigidBodyNode(name)
+    shape = constructor(*dimensions)
+    node.addShape(shape)
+    node.setMass(mass)
+    pointer = render.attachNewNode(node)
+    pointer.setPos(*position)
+    world.attachRigidBody(node)
+    return pointer
 
 
 def shoulder_angles(origin, point, theta, transform=LMatrix3.identMat()):
@@ -82,38 +99,26 @@ class Arm(object):
         bicep_length = 0.75
         forearm_length = 0.75
         in_limit, out_limit, forward_limit, backward_limit, twist_limit = limits
-        torso_pos = torso.getPos()
         x, y, z = position
-        bicep_y = y + direction * bicep_length / 2
-        forearm_y = y + direction * bicep_length + forearm_length / 2
+        bicep_pos = Vec3(x, y + direction * bicep_length / 2, z)
+        forearm_pos = Vec3(x, y + direction * bicep_length + forearm_length / 2, z)
 
-        bicep_node = BulletRigidBodyNode('Bicep')
-        bicep_node.addShape(BulletCapsuleShape(radius, bicep_length, 1))
-        bicep_node.setMass(0.25)
-        bicep_pointer = render.attachNewNode(bicep_node)
-        bicep_pointer.setPos(x, bicep_y, z)
-        world.attachRigidBody(bicep_node)
-
-        forearm_node = BulletRigidBodyNode('Forearm')
-        forearm_node.addShape(BulletCapsuleShape(radius, forearm_length, 1))
-        forearm_node.setMass(0.25)
-        forearm_pointer = render.attachNewNode(forearm_node)
-        forearm_pointer.setPos(x, forearm_y, z)
-        world.attachRigidBody(forearm_node)
+        bicep = make_body('Bicep', 'capsule_y', [radius, bicep_length], 0.25, bicep_pos, render, world)
+        forearm = make_body('Forearm', 'capsule_y', [radius, forearm_length], 0.25, forearm_pos, render, world)
 
         rotation = LMatrix3((-direction, 0, 0), (0, 0, -side), (0, -side*direction, 0))
         bicep_to_shoulder = Vec3(0, -direction * bicep_length / 2, 0)
         torso_to_shoulder = Vec3(0, y + torso_pos[1], z - torso_pos[2])
         bicep_shoulder_frame = make_rigid_transform(rotation, bicep_to_shoulder)
         torso_shoulder_frame = make_rigid_transform(rotation, torso_to_shoulder)
-        shoulder = BulletGenericConstraint(torso.node(), bicep_node, torso_shoulder_frame, bicep_shoulder_frame, True)
+        shoulder = BulletGenericConstraint(torso.node(), bicep.node(), torso_shoulder_frame, bicep_shoulder_frame, True)
         shoulder.setDebugDrawSize(0.3)
         world.attachConstraint(shoulder, True)
 
         elbow_axis = Vec3(0, 0, side)
         forearm_to_elbow = Point3(0, -direction * forearm_length / 2, 0)
         bicep_to_elbow = Point3(0, direction * bicep_length / 2, 0)
-        elbow = BulletHingeConstraint(bicep_node, forearm_node, bicep_to_elbow, forearm_to_elbow,
+        elbow = BulletHingeConstraint(bicep.node(), forearm.node(), bicep_to_elbow, forearm_to_elbow,
                                       elbow_axis, elbow_axis, True)
         elbow.setDebugDrawSize(0.3)
         world.attachConstraint(elbow, True)
@@ -130,8 +135,8 @@ class Arm(object):
 
         self.render = render
         self.position = position
-        self.bicep = bicep_pointer
-        self.forearm = forearm_pointer
+        self.bicep = bicep
+        self.forearm = forearm
         self.shoulder = shoulder
         self.elbow = elbow
         self.transform = LMatrix3(-side*direction, 0, 0, 0, -direction, 0, 0, 0, 1)
@@ -228,25 +233,17 @@ class Character(object):
         shoulder_backward_limit = 90  # maximum angle from down by side to pointing backward
 
         # Create a head
-        head_node = BulletRigidBodyNode('Head')
-        head_node.addShape(BulletSphereShape(head_radius))
-        head_node.setMass(1.0)
-        head_pointer = render.attachNewNode(head_node)
-        head_pointer.setPos(x, y, head_elevation)
-        world.attachRigidBody(head_node)
+        head_pos = Vec3(x, y, head_elevation)
+        head = make_body('Head', 'sphere', [0.5], 1, head_pos, render, world)
 
         # Create a torso
-        torso_node = BulletRigidBodyNode('Torso')
-        torso_node.addShape(BulletBoxShape(Vec3(torso_x, torso_y, torso_z)))
-        torso_node.setMass(0.0)  # remain in place
-        torso_pointer = render.attachNewNode(torso_node)
-        torso_pointer.setPos(x, y, torso_elevation)
-        world.attachRigidBody(torso_node)
+        torso_pos = Vec3(x, y, torso_elevation)
+        torso = make_body('Torso', 'box', [torso_x, torso_y, torso_z], 0, torso_pos, render, world)
 
         # Attach the head to the torso
         head_frame = TransformState.makePosHpr(Point3(0, 0, -head_radius), Vec3(0, 0, -90))
         torso_frame = TransformState.makePosHpr(Point3(0, 0, torso_z), Vec3(0, 0, -90))
-        neck = BulletConeTwistConstraint(head_node, torso_node, head_frame, torso_frame)
+        neck = BulletConeTwistConstraint(head.node(), torso.node(), head_frame, torso_frame)
         neck.setDebugDrawSize(0.5)
         neck.setLimit(neck_pitch_limit, neck_pitch_limit, neck_yaw_limit)
         world.attachConstraint(neck)
@@ -256,11 +253,11 @@ class Character(object):
         shoulder_pos_r = Point3(x, y + i*(torso_y + shoulder_space + arm_radius), shoulder_elevation)
         limits = (shoulder_in_limit, shoulder_out_limit, shoulder_forward_limit, shoulder_backward_limit,
                   shoulder_twist_limit)
-        arm_l = Arm(world, render, shoulder_pos_l, -i, LEFT, torso_pointer, limits)
-        arm_r = Arm(world, render, shoulder_pos_r, i, RIGHT, torso_pointer, limits)
+        arm_l = Arm(world, render, shoulder_pos_l, -i, LEFT, torso, limits)
+        arm_r = Arm(world, render, shoulder_pos_r, i, RIGHT, torso, limits)
 
-        self.head = head_pointer
-        self.torso = torso_pointer
+        self.head = head
+        self.torso = torso
         self.arm_l, self.arm_r = arm_l, arm_r
 
     def set_shoulder_motion(self, axis, speed):
