@@ -293,10 +293,13 @@ class App(ShowBase):
 
 def test():
     """Run a battle between two test characters for debug purposes."""
-    with open('data\\characters\\test.json') as file:
-        char = characters.Character.from_json(file)
-        char1, char2 = char, char
-    app = App([char1, char2])
+    filepath = 'data\\characters\\test.json'
+    char_list = []
+    for _ in range(2):
+        with open(filepath) as file:
+            char = characters.Character.from_json(file)
+            char_list.append(char)
+    app = App(char_list)
     app.run()
 
 
