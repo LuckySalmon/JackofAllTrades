@@ -8,5 +8,6 @@
     "shank",
     "stab",
     "slice"
-  ]
+  ],
+  "skeleton": "default"
 }

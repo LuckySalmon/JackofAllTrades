@@ -7,5 +7,6 @@
   "basic_moves": [
     "ruler slap",
     "yardstick sweep"
-  ]
+  ],
+  "skeleton": "default"
 }

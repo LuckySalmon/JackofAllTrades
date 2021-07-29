@@ -8,5 +8,6 @@
     "flick",
     "punch",
     "spit"
-  ]
+  ],
+  "skeleton": "default"
 }

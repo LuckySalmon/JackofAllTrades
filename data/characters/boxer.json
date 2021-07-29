@@ -8,5 +8,6 @@
     "jab",
     "cross",
     "hook"
-  ]
+  ],
+  "skeleton": "default"
 }

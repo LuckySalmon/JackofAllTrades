@@ -12,6 +12,8 @@ from direct.directtools.DirectGeometry import LineNodePath
 enableSound = False
 charList = ['regular', 'boxer', 'psycho', 'test']
 LEFT, RIGHT = -1, 1
+with open('data\\skeletons\\default.json') as f:
+    default_skeleton = json.load(f)
 shape_constructors = dict(sphere=BulletSphereShape,
                           box=lambda *args: BulletBoxShape(Vec3(*args)),
                           capsule_x=lambda *args: BulletCapsuleShape(*args, 0),
@@ -94,19 +96,21 @@ def shoulder_angles(origin, point, theta, transform=LMatrix3.identMat()):
 
 
 class Arm(object):
-    def __init__(self, world, render, side, torso, limits):
-        radius = 0.15
-        shoulder_space = 0.05
-        bicep_length = 0.75
-        forearm_length = 0.75
-        in_limit, out_limit, forward_limit, backward_limit, twist_limit = limits
-        shoulder_pos = Vec3(0, -side*(0.5+shoulder_space+radius), 0.5)
-        bicep_pos = shoulder_pos + Vec3(0, -side * bicep_length / 2, 0)
-        elbow_pos = shoulder_pos + Vec3(0, -side * bicep_length, 0)
-        forearm_pos = elbow_pos + Vec3(0, -side * forearm_length / 2, 0)
+    def __init__(self, world, render, side, torso, skeleton=default_skeleton):
+        string = 'left' if side == LEFT else 'right'
+        shoulder_data = skeleton['constraints'][string + ' shoulder']
+        elbow_data = skeleton['constraints'][string + ' elbow']
+        bicep_data = skeleton['bodies'][string + ' bicep']
+        forearm_data = skeleton['bodies'][string + ' forearm']
 
-        bicep = make_body('Bicep', 'capsule_y', [radius, bicep_length], 0.25, bicep_pos, torso, world)
-        forearm = make_body('Forearm', 'capsule_y', [radius, forearm_length], 0.25, forearm_pos, torso, world)
+        in_limit, out_limit, forward_limit, backward_limit, twist_limit = shoulder_data['limits']
+        shoulder_pos = Vec3(*shoulder_data['position'])
+        bicep_pos = Vec3(*bicep_data['position'])
+        elbow_pos = Vec3(*elbow_data['position'])
+        forearm_pos = Vec3(*forearm_data['position'])
+
+        bicep = make_body('Bicep', **bicep_data, parent=torso, world=world)
+        forearm = make_body('Forearm', **forearm_data, parent=torso, world=world)
 
         rotation = LMatrix3(side, 0, 0, 0, 0, -side, 0, 1, 0)
         bicep_to_shoulder = shoulder_pos - bicep_pos
@@ -129,11 +133,11 @@ class Arm(object):
             shoulder.getRotationalLimitMotor(axis).setMaxMotorForce(200)
         elbow.setMaxMotorImpulse(200)
 
-        shoulder.setAngularLimit(0, -in_limit, out_limit)
-        shoulder.setAngularLimit(1, -twist_limit, twist_limit)
-        shoulder.setAngularLimit(2, -backward_limit, forward_limit)
+        shoulder.setAngularLimit(0, -in_limit, out_limit)               # limits for moving toward torso from T-pose
+        shoulder.setAngularLimit(1, -twist_limit, twist_limit)          # limit for twisting along the bicep axis
+        shoulder.setAngularLimit(2, -backward_limit, forward_limit)     # limits for moving forward from down by side
 
-        elbow.setLimit(0, 180)
+        elbow.setLimit(*elbow_data['limits'])
 
         torso_xform = torso.getMat(render)
         self.position = torso_xform.xform(VBase4(shoulder_pos, 1)).getXyz()
@@ -187,7 +191,7 @@ class Arm(object):
 
 
 class Character(object):
-    def __init__(self, attributes, xp=0, char_moves=()):
+    def __init__(self, attributes, xp=0, char_moves=(), skeleton=default_skeleton):
         self.Name = attributes['name'].title()
         self.BaseHP = int(attributes['hp'])
         self.HP = int(attributes['hp'])
@@ -199,6 +203,7 @@ class Character(object):
         self.moveList = {}
         for move in char_moves:
             self.add_move(move)
+        self.skeleton = skeleton
         self.head = None
         self.torso = None
         self.arm_l, self.arm_r = None, None
@@ -208,54 +213,46 @@ class Character(object):
         attributes = json.load(file)
         move_names = attributes.pop('basic_moves')
         move_set = [moves.moves[move_name] for move_name in move_names]
-        return cls(attributes, char_moves=move_set)
+        skeleton_name = attributes.pop('skeleton')
+        with open('data\\skeletons\\{}.json'.format(skeleton_name)) as skeleton_file:
+            skeleton = json.load(skeleton_file)
+        return cls(attributes, char_moves=move_set, skeleton=skeleton)
 
     def insert(self, world, render, i, pos):
         # Important numbers
-        head_radius = 0.5
-        head_elevation = 1.5
-        torso_x = 0.3
-        torso_y = 0.5
-        torso_z = 0.75
-        torso_elevation = head_elevation - head_radius - torso_z
+        bodies = self.skeleton['bodies']
+        constraints = self.skeleton['constraints']
 
         x, y = pos
         offset = Vec3(x, y, 0)
         rotation = LMatrix3((-i, 0, 0), (0, -i, 0), (0, 0, 1))
         coord_xform = LMatrix4(rotation, offset)
 
-        # measurements below are in degrees
-        neck_yaw_limit = 90
-        neck_pitch_limit = 45
-        shoulder_twist_limit = 90  # limit for twisting arm along the bicep axis
-        shoulder_in_limit = 175  # maximum declination from T-pose towards torso
-        shoulder_out_limit = 90  # maximum elevation from T-pose away from torso
-        shoulder_forward_limit = 175  # maximum angle from down by side to pointing forward
-        shoulder_backward_limit = 90  # maximum angle from down by side to pointing backward
-
         # Create a torso
-        torso_pos = Vec3(0, 0, torso_elevation)
-        torso = make_body('Torso', 'box', [torso_x, torso_y, torso_z], 0, torso_pos, render, world)
+        torso_data = bodies['torso']
+        torso_pos = Vec3(*torso_data['position'])
+        torso = make_body('Torso', **torso_data, parent=render, world=world)
         xform = TransformState.makeMat(coord_xform)
         torso.setTransform(torso, xform)
 
         # Create a head
-        head_pos = Vec3(0, 0, head_elevation - torso_elevation)
-        head = make_body('Head', 'sphere', [0.5], 1, head_pos, torso, world)
+        head_data = bodies['head']
+        head_pos = Vec3(*head_data['position'])
+        head = make_body('Head', **head_data, parent=torso, world=world)
 
         # Attach the head to the torso
-        head_frame = TransformState.makePosHpr(Point3(0, 0, -head_radius), Vec3(0, 0, -90))
-        torso_frame = TransformState.makePosHpr(Point3(0, 0, torso_z), Vec3(0, 0, -90))
+        neck_params = constraints['neck']
+        neck_pos = Vec3(*neck_params['position'])
+        head_frame = TransformState.makePosHpr(neck_pos - head_pos, Vec3(0, 0, -90))
+        torso_frame = TransformState.makePosHpr(neck_pos - torso_pos, Vec3(0, 0, -90))
         neck = BulletConeTwistConstraint(head.node(), torso.node(), head_frame, torso_frame)
         neck.setDebugDrawSize(0.5)
-        neck.setLimit(neck_pitch_limit, neck_pitch_limit, neck_yaw_limit)
+        neck.setLimit(*neck_params['limits'])
         world.attachConstraint(neck)
 
         # Create arms
-        limits = (shoulder_in_limit, shoulder_out_limit, shoulder_forward_limit, shoulder_backward_limit,
-                  shoulder_twist_limit)
-        arm_l = Arm(world, render, LEFT, torso, limits)
-        arm_r = Arm(world, render, RIGHT, torso, limits)
+        arm_l = Arm(world, render, LEFT, torso, self.skeleton)
+        arm_r = Arm(world, render, RIGHT, torso, self.skeleton)
 
         self.head = head
         self.torso = torso
