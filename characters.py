@@ -6,7 +6,7 @@ import moves
 from panda3d.bullet import BulletConeTwistConstraint, BulletGenericConstraint, BulletHingeConstraint
 from panda3d.bullet import BulletRigidBodyNode
 from panda3d.bullet import BulletSphereShape, BulletBoxShape, BulletCapsuleShape
-from panda3d.core import Vec3, VBase4, TransformState, Point3, LMatrix3, LMatrix4
+from panda3d.core import Vec3, VBase4, TransformState, LMatrix3, LMatrix4
 from direct.directtools.DirectGeometry import LineNodePath
 
 enableSound = False
@@ -298,15 +298,4 @@ class Character(object):
         return self.Level
 
     # TODO: create various status affects
-
-
-# def create_class(name, attributes, char_list):
-#     """Insert a character into the list of those available."""
-#     set_name = name + ' basic'
-#     move_set = moves.sets[set_name] if set_name in moves.sets else moves.defaultBasic
-#     char_list[name] = type(name, (Character,), {'__init__': lambda self: char_init(self,
-#                                                                                    attributes, char_moves=move_set)})
-#
-#
-# for class_name in attributeList:
-#     create_class(class_name, attributeList[class_name], charList)
+    # (later)

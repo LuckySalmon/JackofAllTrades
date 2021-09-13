@@ -1,10 +1,5 @@
-import csv
-import json
-import os
-
 import characters
 import graphics
-import moves
 
 textWidth = [100]
 

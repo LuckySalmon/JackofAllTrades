@@ -15,7 +15,6 @@ from panda3d.core import TextNode
 from panda3d.core import Vec3, LQuaternion
 
 import characters
-import moves
 
 frame_height = 0.5
 frame_width = 0.5

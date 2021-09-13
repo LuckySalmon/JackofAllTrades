@@ -1,4 +1,3 @@
-import csv
 import random
 import os
 import json
@@ -38,11 +37,3 @@ for file in os.scandir('data\\moves'):
     with open(file) as f:
         j = json.load(f)
         moves[j['name']] = Move(j)
-
-sets = {}
-for file in os.scandir('data\\sets'):
-    with open(file) as f:
-        j = json.load(f)
-        sets[j['name']] = j['moves']
-
-defaultBasic = [moves['flick'], moves['punch'], moves['spit']]
