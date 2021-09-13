@@ -1,0 +1,6 @@
+{
+  "name": "burrito bonk",
+  "damage": [1, 100],
+  "accuracy": 60,
+  "effects": ["tasty"]
+}
