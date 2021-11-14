@@ -4,15 +4,11 @@ from itertools import product
 
 from direct.showbase.DirectObject import DirectObject
 from direct.showbase.ShowBase import ShowBase
-from direct.showbase.ShowBaseGlobal import globalClock
-from direct.task import Task
 from panda3d.bullet import BulletDebugNode
-from panda3d.bullet import BulletPlaneShape
-from panda3d.bullet import BulletRigidBodyNode
-from panda3d.bullet import BulletWorld
-from panda3d.core import Vec3, LQuaternion
+from panda3d.core import Vec3
 
 import characters
+import physics
 import ui
 
 gravity = 0
@@ -21,15 +17,6 @@ sides = ['l', 'r']
 DefaultTargetPos = (1, 1, 0)
 TARGETING = [False]
 LEFT, RIGHT = -1, 1
-
-
-def create_quaternion(angle, axis):
-    """Create a quaternion with the given characteristics"""
-    radians = angle/360 * math.pi
-    cosine = math.cos(radians/2)
-    quaternion = LQuaternion(cosine, *axis)
-    quaternion.normalize()
-    return quaternion
 
 
 def toggle_targeting():
@@ -131,18 +118,11 @@ class App(ShowBase):
 
         # Set up the World
         # The World
-        self.world = BulletWorld()
-        self.world.setGravity(Vec3(0, 0, -gravity))
+        self.world = physics.make_world(gravity, self.render)
 
         # Camera
         self.cam.setPos(0, -15, 2)
         self.cam.lookAt(0, 0, 0)
-
-        # The Ground
-        np = self.render.attachNewNode(BulletRigidBodyNode('Ground'))
-        np.node().addShape(BulletPlaneShape(Vec3(0, 0, 1), 1))
-        np.setPos(0, 0, -2)
-        self.world.attachRigidBody(np.node())
 
         # Characters
         character_list[0].insert(self.world, self.render, -1, (-2, 0))
@@ -177,13 +157,11 @@ class App(ShowBase):
 
     def update(self, task):
         """Update the world using physics."""
-        dt = globalClock.getDt()
-        self.world.doPhysics(dt)
         self.clock += 1
         if TARGETING[0] and self.clock % 10 == 0:
             for (character, side), target in zip(product(self.characterList, sides), self.targets):
                 character.position_shoulder(side, target)
-        return Task.cont
+        return physics.update_physics(self.world, task)
 
     def toggle_debug(self):
         """Toggle debug display for physical objects."""

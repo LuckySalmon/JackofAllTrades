@@ -2,10 +2,9 @@ import math
 import winsound
 import json
 import moves
+import physics
 
 from panda3d.bullet import BulletConeTwistConstraint, BulletGenericConstraint, BulletHingeConstraint
-from panda3d.bullet import BulletRigidBodyNode
-from panda3d.bullet import BulletSphereShape, BulletBoxShape, BulletCapsuleShape
 from panda3d.core import Vec3, VBase4, TransformState, LMatrix3, LMatrix4
 from direct.directtools.DirectGeometry import LineNodePath
 
@@ -14,11 +13,6 @@ charList = ['regular', 'boxer', 'psycho', 'test']
 LEFT, RIGHT = -1, 1
 with open('data\\skeletons\\default.json') as f:
     default_skeleton = json.load(f)
-shape_constructors = dict(sphere=BulletSphereShape,
-                          box=lambda *args: BulletBoxShape(Vec3(*args)),
-                          capsule_x=lambda *args: BulletCapsuleShape(*args, 0),
-                          capsule_y=lambda *args: BulletCapsuleShape(*args, 1),
-                          capsule_z=lambda *args: BulletCapsuleShape(*args, 2))
 
 
 def draw_lines(lines: LineNodePath, *paths: dict, origin=None, relative=True):
@@ -35,23 +29,6 @@ def draw_lines(lines: LineNodePath, *paths: dict, origin=None, relative=True):
                 point += origin
             lines.drawTo(*point)
     lines.create()
-
-
-def make_rigid_transform(rotation, translation):
-    """Return a TransformState comprising the given rotation followed by the given translation"""
-    return TransformState.makeMat(LMatrix4(rotation, translation))
-
-
-def make_body(name, shape, dimensions, mass, position, parent, world):
-    constructor = shape_constructors[shape]
-    node = BulletRigidBodyNode(name)
-    shape = constructor(*dimensions)
-    node.addShape(shape)
-    node.setMass(mass)
-    pointer = parent.attachNewNode(node)
-    pointer.setPos(*position)
-    world.attachRigidBody(node)
-    return pointer
 
 
 def shoulder_angles(origin, point, theta, transform=LMatrix3.identMat()):
@@ -109,14 +86,14 @@ class Arm(object):
         elbow_pos = Vec3(*elbow_data['position'])
         forearm_pos = Vec3(*forearm_data['position'])
 
-        bicep = make_body('Bicep', **bicep_data, parent=torso, world=world)
-        forearm = make_body('Forearm', **forearm_data, parent=torso, world=world)
+        bicep = physics.make_body('Bicep', **bicep_data, parent=torso, world=world)
+        forearm = physics.make_body('Forearm', **forearm_data, parent=torso, world=world)
 
         rotation = LMatrix3(side, 0, 0, 0, 0, -side, 0, 1, 0)
         bicep_to_shoulder = shoulder_pos - bicep_pos
         torso_to_shoulder = shoulder_pos
-        bicep_shoulder_frame = make_rigid_transform(rotation, bicep_to_shoulder)
-        torso_shoulder_frame = make_rigid_transform(rotation, torso_to_shoulder)
+        bicep_shoulder_frame = physics.make_rigid_transform(rotation, bicep_to_shoulder)
+        torso_shoulder_frame = physics.make_rigid_transform(rotation, torso_to_shoulder)
         shoulder = BulletGenericConstraint(torso.node(), bicep.node(), torso_shoulder_frame, bicep_shoulder_frame, True)
         shoulder.setDebugDrawSize(0.3)
         world.attachConstraint(shoulder, True)
@@ -219,6 +196,7 @@ class Character(object):
         return cls(attributes, char_moves=move_set, skeleton=skeleton)
 
     def insert(self, world, render, i, pos):
+        """Place the character in the world."""
         # Important numbers
         bodies = self.skeleton['bodies']
         constraints = self.skeleton['constraints']
@@ -231,14 +209,14 @@ class Character(object):
         # Create a torso
         torso_data = bodies['torso']
         torso_pos = Vec3(*torso_data['position'])
-        torso = make_body('Torso', **torso_data, parent=render, world=world)
+        torso = physics.make_body('Torso', **torso_data, parent=render, world=world)
         xform = TransformState.makeMat(coord_xform)
         torso.setTransform(torso, xform)
 
         # Create a head
         head_data = bodies['head']
         head_pos = Vec3(*head_data['position'])
-        head = make_body('Head', **head_data, parent=torso, world=world)
+        head = physics.make_body('Head', **head_data, parent=torso, world=world)
 
         # Attach the head to the torso
         neck_params = constraints['neck']
