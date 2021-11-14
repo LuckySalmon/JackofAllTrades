@@ -2,7 +2,6 @@ import math
 import random
 from itertools import product
 
-from direct.gui.DirectGui import *
 from direct.showbase.DirectObject import DirectObject
 from direct.showbase.ShowBase import ShowBase
 from direct.showbase.ShowBaseGlobal import globalClock
@@ -11,17 +10,10 @@ from panda3d.bullet import BulletDebugNode
 from panda3d.bullet import BulletPlaneShape
 from panda3d.bullet import BulletRigidBodyNode
 from panda3d.bullet import BulletWorld
-from panda3d.core import TextNode
 from panda3d.core import Vec3, LQuaternion
 
 import characters
-
-frame_height = 0.5
-frame_width = 0.5
-button_height = 0.1
-button_width = 0.25
-window_height = 1
-window_width = 4 / 3
+import ui
 
 gravity = 0
 
@@ -178,32 +170,8 @@ class App(ShowBase):
         self.taskMgr.add(self.update, 'update')
 
         # Set up GUI
-        self.sharedInfo = OnscreenText(text="No information to display yet.",
-                                       pos=(0, 0.5), scale=0.07,
-                                       align=TextNode.ACenter, mayChange=1)
-        self.actionBoxes, self.infoBoxes, self.useButtons, self.healthBars = [], [], [], []
+        self.ui = ui.BattleInterface(self.characterList, self.use_action)
         self.selectedAction, self.selection = None, None
-        for side in (LEFT, RIGHT):
-            action_box = DirectFrame(frameColor=(0, 0, 0, 1),
-                                     frameSize=(-frame_width, frame_width, -frame_height, frame_height),
-                                     pos=(side * (window_width - frame_width), 0, -(window_height - frame_height)))
-            info_box = OnscreenText(text="No info available", scale=0.07,
-                                    align=TextNode.ACenter, mayChange=1)
-            info_box.reparentTo(action_box)
-            info_box.setPos(0, frame_height + 0.25)
-            use_button = DirectButton(frameSize=(-button_width, button_width, -button_height, button_height),
-                                      text="N/A", text_scale=0.1, borderWidth=(0.025, 0.025),
-                                      command=self.use_action, state=DGG.DISABLED)
-            use_button.reparentTo(action_box)
-            use_button.setPos(frame_width - button_width, 0, 0)
-            hp = self.characterList[0 if side < 0 else side].HP
-            bar = DirectWaitBar(text="", range=hp, value=hp,
-                                pos=(side * 0.5, 0, 0.75),
-                                frameSize=(side * -0.4, side * 0.5, 0, -0.05))
-            self.actionBoxes.append(action_box)
-            self.infoBoxes.append(info_box)
-            self.useButtons.append(use_button)
-            self.healthBars.append(bar)
 
         self.query_action()
 
@@ -226,29 +194,20 @@ class App(ShowBase):
 
     def query_action(self):
         """Set up buttons for a player to choose an action."""
-        character, frame = self.characterList[self.index], self.actionBoxes[self.index]
-        for i, action in enumerate(character.moveList):
-            b = DirectButton(frameSize=(-button_width, button_width, -button_height, button_height),
-                             text=action, text_scale=0.1, borderWidth=(0.025, 0.025),
-                             command=self.set_action, extraArgs=[character, action])
-            b.reparentTo(frame)
-            b.setPos(-(frame_width - button_width), 0, frame_height - (2 * i + 1) * button_height)
-            self.buttons.append(b)
+        character = self.characterList[self.index]
+        self.ui.query_action(character, self.index, self.set_action)
 
     def set_action(self, character, name):
         """Set an action to be selected."""
         i = self.index
         self.selectedAction = character.moveList[name]
-        self.infoBoxes[i].setText(self.selectedAction.show_stats())
-        self.useButtons[i].setText("Use %s" % name)
-        self.useButtons[i]["state"] = DGG.NORMAL
+        self.ui.output_info(i, self.selectedAction.show_stats())
+        self.ui.select_action(i, name)
         self.selection = name
 
     def use_action(self):
         """Make the character use the selected action, then move on to the next turn."""
-        for button in self.useButtons:
-            button["state"] = DGG.DISABLED
-            button["text"] = "N/A"
+        self.ui.remove_query()
         user = self.characterList[self.index]
         name, move = self.selection, self.selectedAction
 
@@ -258,32 +217,24 @@ class App(ShowBase):
             if random.randint(1, 100) <= 2:
                 damage *= 1.5
                 print("Critical Hit!".format(user.Name, name, damage))
-            self.infoBoxes[self.index].setText("{}'s {} hit for {} damage!".format(user.Name, name, damage))
+            self.ui.output_info(self.index, f"{user.Name}'s {name} hit for {damage} damage!")
         else:
             damage = 0
-            self.infoBoxes[self.index].setText("{}'s {} missed!".format(user.Name, name))
+            self.ui.output_info(self.index, f"{user.Name}'s {name} missed!")
 
         # Move over to other character and apply damage
         self.index = (self.index + 1) % 2
         opponent = self.characterList[self.index]
         damage = min(max(damage - opponent.Defense, 0), opponent.HP)  # TODO: Find and use a better formula
         opponent.HP -= damage
-        self.healthBars[self.index]["value"] -= damage
-        self.infoBoxes[self.index].setText('{} took {} damage!'.format(opponent.Name, damage))
-
-        # Reset GUI
-        for button in self.buttons:
-            button.destroy()
-        self.buttons.clear()
+        self.ui.apply_damage(self.index, damage, opponent.Name)
 
         # Move on to next step (KO or opponent response)
         if opponent.HP <= 0:
-            self.sharedInfo.setText('%s wins!' % user.Name)
+            self.ui.announce_win(user.Name)
             # I thought this would make the character fall, but it just glitches out
             self.characterList[self.index].torso.node().setMass(1.0)
             self.characterList[self.index].torso.node().setActive(True, False)
-            for button in self.useButtons:
-                button.destroy()
         else:
             self.query_action()
         # TODO: I would like to make this program focused entirely on graphics.
