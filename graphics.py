@@ -74,22 +74,22 @@ class ShoulderMovingObject(DirectObject):
 
     def move_arms(self, axis, speed):
         for i, character in enumerate(self.character_list):
-            character.set_shoulder_motion(axis, speed)
+            character.skeleton.set_shoulder_motion(axis, speed)
 
     def bend_arms(self, angle):
         for character in self.character_list:
-            for arm in character.arm_l, character.arm_r:
+            for arm in character.skeleton.arm_l, character.skeleton.arm_r:
                 arm.elbow.enableMotor(True)
                 arm.elbow.setMotorTarget(angle, 0.5)
                 arm.forearm.node().setActive(True, False)
 
     def arms_down(self):
         for character in self.character_list:
-            character.arms_down()
+            character.skeleton.arms_down()
 
     def print_angles(self):
         for character in self.character_list:
-            for arm in character.arm_l, character.arm_r:
+            for arm in character.skeleton.arm_l, character.skeleton.arm_r:
                 angles = [arm.shoulder.getAngle(i) for i in range(3)]
                 print('angles: {:.4f}, {:.4f}, {:.4f}'.format(*angles))
                 angles[2] *= -1
@@ -160,7 +160,7 @@ class App(ShowBase):
         self.clock += 1
         if TARGETING[0] and self.clock % 10 == 0:
             for (character, side), target in zip(product(self.characterList, sides), self.targets):
-                character.position_shoulder(side, target)
+                character.skeleton.position_shoulder(side, target)
         return physics.update_physics(self.world, task)
 
     def toggle_debug(self):
@@ -211,8 +211,8 @@ class App(ShowBase):
         if opponent.HP <= 0:
             self.ui.announce_win(user.Name)
             # I thought this would make the character fall, but it just glitches out
-            self.characterList[self.index].torso.node().setMass(1.0)
-            self.characterList[self.index].torso.node().setActive(True, False)
+            self.characterList[self.index].skeleton.torso.node().setMass(1.0)
+            self.characterList[self.index].skeleton.torso.node().setActive(True, False)
         else:
             self.query_action()
         # TODO: I would like to make this program focused entirely on graphics.
