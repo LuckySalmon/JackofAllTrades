@@ -1,8 +1,5 @@
-import csv
-
 import characters
 import graphics
-import moves
 
 textWidth = [100]
 
@@ -55,10 +52,6 @@ def battle(ally, enemy):
 
 def test():
     """Have players choose Jacks, then run a game."""
-    attribute_list = dict()
-    with open('characters.csv', newline='') as file:
-        for row in csv.DictReader(file):
-            attribute_list[row['name'][:-5]] = row
     cont = input(align('Enter any character to play', 'Or nothing to quit', '', side=1))
     while cont:
         fighters = []
@@ -69,12 +62,13 @@ def test():
                 for j in i:
                     print(j, end="")
             print("\n")
+
             name = input('%s Jack of choice: ' % player).lower()
             while name not in characters.charList:
                 name = input('Please choose a valid character: ').lower()
-            set_name = name + ' basic'
-            move_set = moves.sets[set_name] if set_name in moves.sets else moves.defaultBasic
-            fighters.append(characters.Character(attribute_list[name], char_moves=move_set))
+
+            with open('data\\characters\\{}.json'.format(name)) as file:
+                fighters.append(characters.Character.from_json(file))
         print('\n')
         battle(*fighters)
         cont = input(align('', 'Enter any character to play again', 'Or nothing to quit.', '', side=1))

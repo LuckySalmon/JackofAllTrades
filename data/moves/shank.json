@@ -1,0 +1,6 @@
+{
+  "name": "shank",
+  "damage": [20, 25],
+  "accuracy": 75,
+  "effects": []
+}

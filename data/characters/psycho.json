@@ -1,0 +1,13 @@
+{
+  "trade": "psycho",
+  "name": "psycho jack",
+  "hp": 40,
+  "speed": 2,
+  "defense": 1,
+  "basic_moves": [
+    "shank",
+    "stab",
+    "slice"
+  ],
+  "skeleton": "default"
+}

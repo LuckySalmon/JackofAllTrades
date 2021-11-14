@@ -1,0 +1,62 @@
+{
+  "bodies": {
+    "head": {
+      "shape": "sphere",
+      "dimensions": [0.5],
+      "position": [0, 0, 1.25],
+      "mass": 1
+    },
+    "torso": {
+      "shape": "box",
+      "dimensions": [0.3, 0.5, 0.75],
+      "position": [0, 0, 0.25],
+      "mass": 0
+    },
+    "left bicep": {
+      "shape": "capsule_y",
+      "dimensions": [0.15, 0.75],
+      "position": [0, 1.125, 0.5],
+      "mass": 0.25
+    },
+    "right bicep": {
+      "shape": "capsule_y",
+      "dimensions": [0.15, 0.75],
+      "position": [0, -1.125, 0.5],
+      "mass": 0.25
+    },
+    "left forearm": {
+      "shape": "capsule_y",
+      "dimensions": [0.15, 0.75],
+      "position": [0, 1.875, 0.5],
+      "mass": 0.25
+    },
+    "right forearm": {
+      "shape": "capsule_y",
+      "dimensions": [0.15, 0.75],
+      "position": [0, -1.875, 0.5],
+      "mass": 0.25
+    }
+  },
+  "constraints": {
+    "neck": {
+      "limits": [45, 45, 90],
+      "position": [0, 0, 1]
+    },
+    "left shoulder": {
+      "limits": [175, 90, 175, 90, 90],
+      "position": [0, 0.75, 0.5]
+    },
+    "right shoulder": {
+      "limits": [175, 90, 175, 90, 90],
+      "position": [0, -0.75, 0.5]
+    },
+    "left elbow": {
+      "limits": [0, 180],
+      "position": [0, 1.5, 0.5]
+    },
+    "right elbow": {
+      "limits": [0, 180],
+      "position": [0, -1.5, 0.5]
+    }
+  }
+}

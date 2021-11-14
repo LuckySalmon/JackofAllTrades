@@ -15,7 +15,6 @@ from panda3d.core import TextNode
 from panda3d.core import Vec3, LQuaternion
 
 import characters
-import moves
 
 frame_height = 0.5
 frame_width = 0.5
@@ -293,10 +292,13 @@ class App(ShowBase):
 
 def test():
     """Run a battle between two test characters for debug purposes."""
-    attributes = dict(name='Test Jack', hp=10, speed=1, defense=1)
-    char1 = characters.Character(attributes, char_moves=moves.defaultBasic)
-    char2 = characters.Character(attributes, char_moves=moves.defaultBasic)
-    app = App([char1, char2])
+    filepath = 'data\\characters\\test.json'
+    char_list = []
+    for _ in range(2):
+        with open(filepath) as file:
+            char = characters.Character.from_json(file)
+            char_list.append(char)
+    app = App(char_list)
     app.run()
 
 

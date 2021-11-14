@@ -1,5 +1,6 @@
-import csv
 import random
+import os
+import json
 
 
 # The class "Move" should be entirely self sufficient, and not require any numbers or variables outside of the class.
@@ -7,9 +8,9 @@ import random
 class Move:
     def __init__(self, attributes):
         self.name = attributes['name'].title()
-        self.dmg = (int(attributes['lower damage']), int(attributes['upper damage']))
+        self.dmg = attributes['damage']
         self.acc = int(attributes['accuracy'])
-        self.status = attributes['status effect']
+        self.status = attributes['effects']
 
     def get_damage(self):
         """Return a value within the damage bounds."""
@@ -32,17 +33,7 @@ class Move:
 
 
 moves = {}
-with open('moves.csv', newline='') as file:
-    reader = csv.DictReader(file)
-    for row in reader:
-        moves[row['name']] = Move(row)
-
-sets = {}
-with open('sets.csv', newline='') as file:
-    for row in (reader := csv.reader(file)):
-        moveList = []
-        for move in row[1:]:
-            moveList.append(moves[move])
-        sets[row[0]] = moveList
-
-defaultBasic = [moves['flick'], moves['punch'], moves['spit']]
+for file in os.scandir('data\\moves'):
+    with open(file) as f:
+        j = json.load(f)
+        moves[j['name']] = Move(j)

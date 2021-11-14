@@ -1,0 +1,6 @@
+{
+  "name": "flick",
+  "damage": [0, 1],
+  "accuracy": 100,
+  "effects": []
+}

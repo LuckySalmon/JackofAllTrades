@@ -1,0 +1,13 @@
+{
+  "trade": "boxer",
+  "name": "boxer jack",
+  "hp": 50,
+  "speed": 2,
+  "defense": 2,
+  "basic_moves": [
+    "jab",
+    "cross",
+    "hook"
+  ],
+  "skeleton": "default"
+}

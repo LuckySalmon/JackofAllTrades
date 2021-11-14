@@ -1,0 +1,6 @@
+{
+  "name": "ruler slap",
+  "damage": [5, 15],
+  "accuracy": 90,
+  "effects": []
+}
