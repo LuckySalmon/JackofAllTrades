@@ -103,16 +103,15 @@ class ShoulderMovingObject(DirectObject):
 
 
 class App(ShowBase):
-
-    def __init__(self, character_list):
+    def __init__(self, fighters):
         super().__init__(self)
 
         self.clock = 0
 
-        for character in character_list:
-            character.HP = character.BaseHP
+        for fighter in fighters:
+            fighter.HP = fighter.BaseHP
             # displayHP(Character)
-        self.characterList = character_list
+        self.fighters = fighters
         self.buttons = []
         self.index = 0
 
@@ -125,8 +124,8 @@ class App(ShowBase):
         self.cam.lookAt(0, 0, 0)
 
         # Characters
-        character_list[0].insert(self.world, self.render, -1, (-2, 0))
-        character_list[1].insert(self.world, self.render, 1, (2, 0))
+        fighters[0].insert(self.world, self.render, -1, (-2, 0))
+        fighters[1].insert(self.world, self.render, 1, (2, 0))
 
         # Debug
         debug_node = BulletDebugNode('Debug')
@@ -141,7 +140,7 @@ class App(ShowBase):
         debug_object.accept('f1', self.toggle_debug)
 
         # Testing Controls
-        shoulder_moving_object = ShoulderMovingObject(character_list)
+        shoulder_moving_object = ShoulderMovingObject(fighters)
         target_moving_object = TargetMovingObject()
         self.targets = target_moving_object.set_targets(*DefaultTargetPos)
         for i in range(3):
@@ -150,7 +149,7 @@ class App(ShowBase):
         self.taskMgr.add(self.update, 'update')
 
         # Set up GUI
-        self.ui = ui.BattleInterface(self.characterList, self.use_action)
+        self.ui = ui.BattleInterface(self.fighters, self.use_action)
         self.selectedAction, self.selection = None, None
 
         self.query_action()
@@ -159,8 +158,8 @@ class App(ShowBase):
         """Update the world using physics."""
         self.clock += 1
         if TARGETING[0] and self.clock % 10 == 0:
-            for (character, side), target in zip(product(self.characterList, sides), self.targets):
-                character.skeleton.position_shoulder(side, target)
+            for (fighter, side), target in zip(product(self.fighters, sides), self.targets):
+                fighter.skeleton.position_shoulder(side, target)
         return physics.update_physics(self.world, task)
 
     def toggle_debug(self):
@@ -172,13 +171,13 @@ class App(ShowBase):
 
     def query_action(self):
         """Set up buttons for a player to choose an action."""
-        character = self.characterList[self.index]
-        self.ui.query_action(character, self.index, self.set_action)
+        fighter = self.fighters[self.index]
+        self.ui.query_action(fighter, self.index, self.set_action)
 
-    def set_action(self, character, name):
+    def set_action(self, fighter, name):
         """Set an action to be selected."""
         i = self.index
-        self.selectedAction = character.moveList[name]
+        self.selectedAction = fighter.moveList[name]
         self.ui.output_info(i, self.selectedAction.show_stats())
         self.ui.select_action(i, name)
         self.selection = name
@@ -186,7 +185,7 @@ class App(ShowBase):
     def use_action(self):
         """Make the character use the selected action, then move on to the next turn."""
         self.ui.remove_query()
-        user = self.characterList[self.index]
+        user = self.fighters[self.index]
         name, move = self.selection, self.selectedAction
 
         # Result of move
@@ -202,7 +201,7 @@ class App(ShowBase):
 
         # Move over to other character and apply damage
         self.index = (self.index + 1) % 2
-        opponent = self.characterList[self.index]
+        opponent = self.fighters[self.index]
         damage = min(max(damage - opponent.Defense, 0), opponent.HP)  # TODO: Find and use a better formula
         opponent.HP -= damage
         self.ui.apply_damage(self.index, damage, opponent.Name)
@@ -211,8 +210,8 @@ class App(ShowBase):
         if opponent.HP <= 0:
             self.ui.announce_win(user.Name)
             # I thought this would make the character fall, but it just glitches out
-            self.characterList[self.index].skeleton.torso.node().setMass(1.0)
-            self.characterList[self.index].skeleton.torso.node().setActive(True, False)
+            self.fighters[self.index].skeleton.torso.node().setMass(1.0)
+            self.fighters[self.index].skeleton.torso.node().setActive(True, False)
         else:
             self.query_action()
         # TODO: I would like to make this program focused entirely on graphics.
@@ -222,12 +221,12 @@ class App(ShowBase):
 def test():
     """Run a battle between two test characters for debug purposes."""
     filepath = 'data\\characters\\test.json'
-    char_list = []
+    fighter_list = []
     for _ in range(2):
         with open(filepath) as file:
-            char = characters.Character.from_json(file)
-            char_list.append(char)
-    app = App(char_list)
+            fighter = characters.Fighter.from_json(file)
+            fighter_list.append(fighter)
+    app = App(fighter_list)
     app.run()
 
 

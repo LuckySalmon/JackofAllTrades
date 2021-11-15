@@ -10,9 +10,8 @@ charList = ['regular', 'boxer', 'psycho', 'test']
 
 
 class Character(object):
-    def __init__(self, attributes, xp=0, char_moves=(), skeleton_params=None):
+    def __init__(self, attributes, xp=0, char_moves=(), skeleton=None):
         self.Name = attributes['name'].title()
-        self.BaseHP = int(attributes['hp'])
         self.HP = int(attributes['hp'])
         self.Speed = int(attributes['speed'])
         self.Defense = int(attributes['defense'])
@@ -22,26 +21,15 @@ class Character(object):
         self.moveList = {}
         for move in char_moves:
             self.add_move(move)
-        self.skeleton = Skeleton(skeleton_params)
+        self.skeleton = skeleton
 
     @classmethod
     def from_json(cls, file):
         attributes = json.load(file)
         move_names = attributes.pop('basic_moves')
         move_set = [moves.moves[move_name] for move_name in move_names]
-        skeleton_name = attributes.pop('skeleton')
-        with open('data\\skeletons\\{}.json'.format(skeleton_name)) as skeleton_file:
-            skeleton = json.load(skeleton_file)
-        return cls(attributes, char_moves=move_set, skeleton_params=skeleton)
-
-    def insert(self, world, render, i, pos):
-        """Place the character in the world."""
-        x, y = pos
-        offset = Vec3(x, y, 0)
-        rotation = LMatrix3((-i, 0, 0), (0, -i, 0), (0, 0, 1))
-        coord_xform = LMatrix4(rotation, offset)
-
-        self.skeleton.insert(world, render, coord_xform)
+        skeleton = attributes.pop('skeleton')
+        return cls(attributes, char_moves=move_set, skeleton=skeleton)
 
     def list_moves(self):  # isn't this redundant?
         """Check what moves this character has and return a list of available moves."""
@@ -69,6 +57,34 @@ class Character(object):
             self.Level += 1
             self.XP -= threshold
         return self.Level
+
+
+class Fighter(object):
+    def __init__(self, character):
+        self.Name = character.Name
+        hp = character.HP
+        self.BaseHP = hp
+        self.HP = hp
+        self.Speed = character.Speed
+        self.Defense = character.Defense
+        self.moveList = character.moveList
+        with open(f'data\\skeletons\\{character.skeleton}.json') as skeleton_file:
+            skeleton_params = json.load(skeleton_file)
+        self.skeleton = Skeleton(skeleton_params)
+
+    @classmethod
+    def from_json(cls, file):
+        character = Character.from_json(file)
+        return cls(character)
+
+    def insert(self, world, render, i, pos):
+        """Place the character in the world."""
+        x, y = pos
+        offset = Vec3(x, y, 0)
+        rotation = LMatrix3((-i, 0, 0), (0, -i, 0), (0, 0, 1))
+        coord_xform = LMatrix4(rotation, offset)
+
+        self.skeleton.insert(world, render, coord_xform)
 
     # TODO: create various status affects
     # (later)
