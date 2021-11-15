@@ -1,5 +1,5 @@
 import characters
-import graphics
+import battle
 
 textWidth = [100]
 
@@ -40,13 +40,13 @@ def choose_attack(character, side):
     return selection
 
 
-def battle(ally, enemy):
+def start_battle(ally, enemy):
     """Run a battle between Jacks."""
     print(align((ally.Name, " VS ", enemy.Name), side=1))
     for Character in (ally, enemy):
         Character.HP = Character.BaseHP
         display_health(Character)
-    app = graphics.App([enemy, ally] if enemy.Speed > ally.Speed else [ally, enemy])
+    app = battle.App([enemy, ally] if enemy.Speed > ally.Speed else [ally, enemy])
     app.run()
 
 
@@ -70,7 +70,7 @@ def test():
             with open('data\\characters\\{}.json'.format(name)) as file:
                 fighters.append(characters.Character.from_json(file))
         print('\n')
-        battle(*fighters)
+        start_battle(*fighters)
         cont = input(align('', 'Enter any character to play again', 'Or nothing to quit.', '', side=1))
 
 
