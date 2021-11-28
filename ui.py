@@ -1,7 +1,6 @@
 from direct.gui.DirectGui import *
 from panda3d.core import TextNode
 
-
 LEFT, RIGHT = -1, 1
 
 frame_height = 0.5
@@ -14,6 +13,30 @@ window_width = 4 / 3
 default_button_args = dict(frameSize=(-button_width, button_width, -button_height, button_height),
                            borderWidth=(0.025, 0.025),
                            text_scale=0.1)
+
+
+class MainMenu:
+    def __init__(self, battle_command, quit_command):
+        self.backdrop = DirectFrame(frameColor=(0, 0, 0, 0),
+                                    frameSize=(-1, 1, -1, 1),
+                                    pos=(0, 0, 0))
+        self.battleButton = DirectButton(text='Start Battle',
+                                         command=battle_command,
+                                         pos=(0, 0, 0.2),
+                                         frameSize=(-0.4, 0.4, -0.15, 0.15),
+                                         borderWidth=(0.05, 0.05),
+                                         text_scale=0.1,
+                                         parent=self.backdrop)
+        self.quitButton = DirectButton(text='Quit',
+                                       command=quit_command,
+                                       pos=(0, 0, -0.2),
+                                       frameSize=(-0.4, 0.4, -0.15, 0.15),
+                                       borderWidth=(0.05, 0.05),
+                                       text_scale=0.1,
+                                       parent=self.backdrop)
+
+    def hide(self):
+        self.backdrop.hide()
 
 
 class BattleInterface:
@@ -85,5 +108,3 @@ class BattleInterface:
         self.sharedInfo.setText(f'{winner} wins!')
         for button in self.useButtons:
             button.destroy()
-
-

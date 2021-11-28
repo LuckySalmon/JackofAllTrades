@@ -120,9 +120,11 @@ class App(ShowBase):
         self.ui = None
         self.selectedAction, self.selection = None, None
 
-        self.start_battle(fighters)
+        self.menu = ui.MainMenu(lambda: self.start_battle(fighters), self.userExit)
 
     def start_battle(self, fighters):
+        self.menu.hide()
+
         fighters.sort(key=lambda x: x.Speed, reverse=True)
         for fighter in fighters:
             fighter.HP = fighter.BaseHP
