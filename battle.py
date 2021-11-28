@@ -108,12 +108,25 @@ class App(ShowBase):
 
         self.clock = 0
 
-        for fighter in fighters:
-            fighter.HP = fighter.BaseHP
-            # displayHP(Character)
-        self.fighters = fighters
+        self.fighters = []
         self.buttons = []
         self.index = 0
+
+        self.world = None
+        self.debugNP = None
+
+        self.targets = []
+
+        self.ui = None
+        self.selectedAction, self.selection = None, None
+
+        self.start_battle(fighters)
+
+    def start_battle(self, fighters):
+        fighters.sort(key=lambda x: x.Speed, reverse=True)
+        for fighter in fighters:
+            fighter.HP = fighter.BaseHP
+        self.fighters = fighters
 
         # Set up the World
         # The World
@@ -150,7 +163,6 @@ class App(ShowBase):
 
         # Set up GUI
         self.ui = ui.BattleInterface(self.fighters, self.use_action)
-        self.selectedAction, self.selection = None, None
 
         self.query_action()
 

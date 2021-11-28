@@ -44,9 +44,8 @@ def start_battle(ally, enemy):
     """Run a battle between Jacks."""
     print(align((ally.Name, " VS ", enemy.Name), side=1))
     for fighter in (ally, enemy):
-        fighter.HP = fighter.BaseHP
         display_health(fighter)
-    app = battle.App([enemy, ally] if enemy.Speed > ally.Speed else [ally, enemy])
+    app = battle.App([ally, enemy])
     app.run()
 
 
