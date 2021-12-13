@@ -225,7 +225,7 @@ class Character(object):
 
         x, y = pos
         offset = Vec3(x, y, 0)
-        rotation = LMatrix3((-i, 0, 0), (0, -i, 0), (0, 0, 1))
+        rotation = LMatrix3(-i, 0, 0, 0, -i, 0, 0, 0, 1)
         coord_xform = LMatrix4(rotation, offset)
 
         # Create a torso

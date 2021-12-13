@@ -6,7 +6,6 @@ from direct.gui.DirectGui import *
 from direct.showbase.DirectObject import DirectObject
 from direct.showbase.ShowBase import ShowBase
 from direct.showbase.ShowBaseGlobal import globalClock
-from direct.task import Task
 from panda3d.bullet import BulletDebugNode
 from panda3d.bullet import BulletPlaneShape
 from panda3d.bullet import BulletRigidBodyNode
@@ -126,7 +125,7 @@ class ShoulderMovingObject(DirectObject):
 class App(ShowBase):
 
     def __init__(self, character_list):
-        super().__init__(self)
+        super().__init__()
 
         self.clock = 0
 
@@ -180,7 +179,7 @@ class App(ShowBase):
         # Set up GUI
         self.sharedInfo = OnscreenText(text="No information to display yet.",
                                        pos=(0, 0.5), scale=0.07,
-                                       align=TextNode.ACenter, mayChange=1)
+                                       align=TextNode.ACenter, mayChange=True)
         self.actionBoxes, self.infoBoxes, self.useButtons, self.healthBars = [], [], [], []
         self.selectedAction, self.selection = None, None
         for side in (LEFT, RIGHT):
@@ -188,9 +187,9 @@ class App(ShowBase):
                                      frameSize=(-frame_width, frame_width, -frame_height, frame_height),
                                      pos=(side * (window_width - frame_width), 0, -(window_height - frame_height)))
             info_box = OnscreenText(text="No info available", scale=0.07,
-                                    align=TextNode.ACenter, mayChange=1)
+                                    align=TextNode.ACenter, mayChange=True)
             info_box.reparentTo(action_box)
-            info_box.setPos(0, frame_height + 0.25)
+            info_box.setTextPos(0, frame_height + 0.25)
             use_button = DirectButton(frameSize=(-button_width, button_width, -button_height, button_height),
                                       text="N/A", text_scale=0.1, borderWidth=(0.025, 0.025),
                                       command=self.use_action, state=DGG.DISABLED)
@@ -215,7 +214,7 @@ class App(ShowBase):
         if TARGETING[0] and self.clock % 10 == 0:
             for (character, side), target in zip(product(self.characterList, sides), self.targets):
                 character.position_shoulder(side, target)
-        return Task.cont
+        return task.cont
 
     def toggle_debug(self):
         """Toggle debug display for physical objects."""
