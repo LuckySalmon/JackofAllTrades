@@ -1,4 +1,5 @@
 from direct.gui.DirectGui import *
+from direct.showbase.MessengerGlobal import messenger
 from panda3d.core import TextNode
 
 LEFT, RIGHT = -1, 1
@@ -16,19 +17,19 @@ default_button_args = dict(frameSize=(-button_width, button_width, -button_heigh
 
 
 class MainMenu:
-    def __init__(self, battle_command, quit_command):
+    def __init__(self):
         self.backdrop = DirectFrame(frameColor=(0, 0, 0, 0),
                                     frameSize=(-1, 1, -1, 1),
                                     pos=(0, 0, 0))
         self.battleButton = DirectButton(text='Start Battle',
-                                         command=battle_command,
+                                         command=lambda: messenger.send('start_battle'),
                                          pos=(0, 0, 0.2),
                                          frameSize=(-0.4, 0.4, -0.15, 0.15),
                                          borderWidth=(0.05, 0.05),
                                          text_scale=0.1,
                                          parent=self.backdrop)
         self.quitButton = DirectButton(text='Quit',
-                                       command=quit_command,
+                                       command=lambda: messenger.send('quit'),
                                        pos=(0, 0, -0.2),
                                        frameSize=(-0.4, 0.4, -0.15, 0.15),
                                        borderWidth=(0.05, 0.05),
@@ -40,7 +41,7 @@ class MainMenu:
 
 
 class BattleInterface:
-    def __init__(self, character_list, use_action):
+    def __init__(self, character_list):
         self.buttons = []
         self.sharedInfo = OnscreenText(pos=(0, 0.5), scale=0.07, align=TextNode.ACenter)
         self.characterList = character_list
@@ -57,7 +58,7 @@ class BattleInterface:
                                     parent=action_box)
 
             use_button = DirectButton(text='',
-                                      command=use_action,
+                                      command=lambda: messenger.send('use_action'),
                                       pos=(frame_width - button_width, 0, 0),
                                       state=DGG.DISABLED,
                                       parent=action_box,
@@ -73,12 +74,12 @@ class BattleInterface:
             self.useButtons.append(use_button)
             self.healthBars.append(bar)
 
-    def query_action(self, character, index, command):
+    def query_action(self, character, index):
         """Set up buttons for a player to choose an action."""
         for i, action in enumerate(character.moveList):
             button = DirectButton(text=action,
-                                  command=command,
-                                  extraArgs=[character, action],
+                                  command=messenger.send,
+                                  extraArgs=['set_action', [character, action]],
                                   pos=(-(frame_width - button_width), 0, frame_height - (2 * i + 1) * button_height),
                                   parent=self.actionBoxes[index],
                                   **default_button_args)

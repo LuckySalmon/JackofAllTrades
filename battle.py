@@ -120,7 +120,13 @@ class App(ShowBase):
         self.ui = None
         self.selectedAction, self.selection = None, None
 
-        self.menu = ui.MainMenu(lambda: self.start_battle(fighters), self.userExit)
+        self.accept('start_battle', lambda: self.start_battle(fighters))
+        self.accept('set_fighter', self.set_fighter)
+        self.accept('set_action', self.set_action)
+        self.accept('use_action', self.use_action)
+        self.accept('quit', self.userExit)
+
+        self.menu = ui.MainMenu()
 
     def start_battle(self, fighters):
         self.menu.hide()
@@ -164,7 +170,7 @@ class App(ShowBase):
         self.taskMgr.add(self.update, 'update')
 
         # Set up GUI
-        self.ui = ui.BattleInterface(self.fighters, self.use_action)
+        self.ui = ui.BattleInterface(self.fighters)
 
         self.query_action()
 
@@ -186,7 +192,7 @@ class App(ShowBase):
     def query_action(self):
         """Set up buttons for a player to choose an action."""
         fighter = self.fighters[self.index]
-        self.ui.query_action(fighter, self.index, self.set_action)
+        self.ui.query_action(fighter, self.index)
 
     def set_action(self, fighter, name):
         """Set an action to be selected."""
