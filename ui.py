@@ -1,6 +1,7 @@
 from direct.gui.DirectGui import *
 from direct.showbase.MessengerGlobal import messenger
 from panda3d.core import TextNode
+from itertools import product
 
 LEFT, RIGHT = -1, 1
 
@@ -14,6 +15,16 @@ window_width = 4 / 3
 default_button_args = dict(frameSize=(-button_width, button_width, -button_height, button_height),
                            borderWidth=(0.025, 0.025),
                            text_scale=0.1)
+
+
+def even_spacing(dimensions, spacing):
+    transforms = []
+    for dim, space in zip(dimensions, spacing):
+        shift = (dim - 1) / 2
+        transforms.append(lambda i, d=shift, k=space: (i - d) * k)
+    for index in product(*(range(d) for d in dimensions)):
+        point = tuple(t(i) for i, t in zip(index, transforms))
+        yield point
 
 
 class MainMenu:
@@ -76,11 +87,13 @@ class BattleInterface:
 
     def query_action(self, character, index):
         """Set up buttons for a player to choose an action."""
-        for i, action in enumerate(character.moveList):
+        count = len(character.moveList)
+        heights = even_spacing((count,), (2*button_height,))
+        for action, (y,) in zip(character.moveList, heights):
             button = DirectButton(text=action,
                                   command=messenger.send,
                                   extraArgs=['set_action', [character, action]],
-                                  pos=(-(frame_width - button_width), 0, frame_height - (2 * i + 1) * button_height),
+                                  pos=(-(frame_width - button_width), 0, frame_height - count*button_height - y),
                                   parent=self.actionBoxes[index],
                                   **default_button_args)
             self.buttons.append(button)
