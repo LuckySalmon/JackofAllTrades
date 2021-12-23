@@ -32,8 +32,9 @@ class MainMenu:
         self.backdrop = DirectFrame(frameColor=(0, 0, 0, 0),
                                     frameSize=(-1, 1, -1, 1),
                                     pos=(0, 0, 0))
-        self.battleButton = DirectButton(text='Start Battle',
-                                         command=lambda: messenger.send('start_battle'),
+        self.battleButton = DirectButton(text='Go To Battle',
+                                         command=messenger.send,
+                                         extraArgs=['fighter_selection', ['split_screen']],
                                          pos=(0, 0, 0.2),
                                          frameSize=(-0.4, 0.4, -0.15, 0.15),
                                          borderWidth=(0.05, 0.05),
@@ -46,6 +47,27 @@ class MainMenu:
                                        borderWidth=(0.05, 0.05),
                                        text_scale=0.1,
                                        parent=self.backdrop)
+
+    def hide(self):
+        self.backdrop.hide()
+
+
+class FighterSelectionMenu:
+    def __init__(self, title, characters, mode):
+        self.backdrop = DirectFrame(frameColor=(0, 0, 0, 0),
+                                    frameSize=(-1, 1, -1, 1),
+                                    pos=(0, 0, 0))
+        self.buttons = []
+        for character, (x, y) in zip(characters, even_spacing((4, 4), (0.5, 0.5))):
+            button = DirectButton(text=character.Name,
+                                  command=messenger.send,
+                                  extraArgs=['set_fighter', [character, mode]],
+                                  pos=(y, 0, -x),
+                                  frameSize=(-4, 4, -4, 4),
+                                  borderWidth=(0.25, 0.25),
+                                  scale=0.05,
+                                  parent=self.backdrop)
+            self.buttons.append(button)
 
     def hide(self):
         self.backdrop.hide()

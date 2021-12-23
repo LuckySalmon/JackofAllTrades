@@ -18,6 +18,11 @@ DefaultTargetPos = (1, 1, 0)
 TARGETING = [False]
 LEFT, RIGHT = -1, 1
 
+CHARACTERS = []
+for char in characters.charList:
+    with open(f'data\\characters\\{char}.json') as f:
+        CHARACTERS.append(characters.Character.from_json(f))
+
 
 def toggle_targeting():
     TARGETING[0] = not TARGETING[0]
@@ -103,7 +108,7 @@ class ShoulderMovingObject(DirectObject):
 
 
 class App(ShowBase):
-    def __init__(self, fighters):
+    def __init__(self, fighters=None):
         super().__init__(self)
 
         self.clock = 0
@@ -120,16 +125,37 @@ class App(ShowBase):
         self.ui = None
         self.selectedAction, self.selection = None, None
 
-        self.accept('start_battle', lambda: self.start_battle(fighters))
+        self.accept('fighter_selection', self.select_fighter, [CHARACTERS])
         self.accept('set_fighter', self.set_fighter)
         self.accept('set_action', self.set_action)
         self.accept('use_action', self.use_action)
         self.accept('quit', self.userExit)
 
-        self.menu = ui.MainMenu()
+        self.fighter_selection = None
+        if fighters is None:
+            self.menu = ui.MainMenu()
+        else:
+            self.menu = None
+            self.start_battle(fighters)
+
+    def select_fighter(self, character_list, mode):
+        if self.menu is not None:
+            self.menu.hide()
+        self.fighter_selection = ui.FighterSelectionMenu('Select Fighter', character_list, mode)
+
+    def set_fighter(self, character, mode):
+        match mode:
+            case 'split_screen':
+                self.fighters.append(characters.Fighter(character))
+                if len(self.fighters) > 1:
+                    self.start_battle(self.fighters)
+            case 'copy':
+                fighters = [characters.Fighter(character) for _ in range(2)]
+                self.start_battle(fighters)
 
     def start_battle(self, fighters):
-        self.menu.hide()
+        if self.fighter_selection is not None:
+            self.fighter_selection.hide()
 
         fighters.sort(key=lambda x: x.Speed, reverse=True)
         for fighter in fighters:
