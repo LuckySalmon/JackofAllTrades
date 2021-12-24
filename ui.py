@@ -1,4 +1,10 @@
-from direct.gui.DirectGui import *
+from direct.gui.DirectGui import (
+    DGG,
+    DirectButton,
+    DirectFrame,
+    DirectWaitBar,
+    OnscreenText,
+)
 from panda3d.core import TextNode
 
 

@@ -1,9 +1,10 @@
 import winsound
 import json
-import moves
 
+from panda3d.core import Vec3, Mat3, Mat4
+
+import moves
 from skeletons import Skeleton
-from panda3d.core import Vec3, LMatrix3, LMatrix4
 
 enableSound = False
 charList = ['regular', 'boxer', 'psycho', 'test']
@@ -81,8 +82,8 @@ class Fighter(object):
         """Place the character in the world."""
         x, y = pos
         offset = Vec3(x, y, 0)
-        rotation = LMatrix3((-i, 0, 0), (0, -i, 0), (0, 0, 1))
-        coord_xform = LMatrix4(rotation, offset)
+        rotation = Mat3((-i, 0, 0), (0, -i, 0), (0, 0, 1))
+        coord_xform = Mat4(rotation, offset)
 
         self.skeleton.insert(world, render, coord_xform)
 

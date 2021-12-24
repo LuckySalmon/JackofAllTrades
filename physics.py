@@ -1,9 +1,19 @@
 import math
-from panda3d.bullet import BulletPlaneShape
-from panda3d.bullet import BulletRigidBodyNode
-from panda3d.bullet import BulletSphereShape, BulletBoxShape, BulletCapsuleShape
-from panda3d.bullet import BulletWorld
-from panda3d.core import Vec3, LQuaternion, TransformState, LMatrix4
+
+from panda3d.bullet import (
+    BulletPlaneShape,
+    BulletRigidBodyNode,
+    BulletSphereShape,
+    BulletBoxShape,
+    BulletCapsuleShape,
+    BulletWorld
+)
+from panda3d.core import (
+    Vec3,
+    Quat,
+    Mat4,
+    TransformState,
+)
 from direct.showbase.ShowBaseGlobal import globalClock
 
 
@@ -18,14 +28,14 @@ def make_quaternion(angle, axis):
     """Return a quaternion with the given characteristics"""
     radians = angle/360 * math.pi
     cosine = math.cos(radians/2)
-    quaternion = LQuaternion(cosine, *axis)
+    quaternion = Quat(cosine, *axis)
     quaternion.normalize()
     return quaternion
 
 
 def make_rigid_transform(rotation, translation):
     """Return a TransformState comprising the given rotation followed by the given translation"""
-    return TransformState.makeMat(LMatrix4(rotation, translation))
+    return TransformState.makeMat(Mat4(rotation, translation))
 
 
 def make_body(name, shape, dimensions, mass, position, parent, world):

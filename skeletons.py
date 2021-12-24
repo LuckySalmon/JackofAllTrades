@@ -1,10 +1,20 @@
 import math
 import json
-import physics
 
-from panda3d.bullet import BulletConeTwistConstraint, BulletGenericConstraint, BulletHingeConstraint
-from panda3d.core import Vec3, VBase4, TransformState, LMatrix3
+from panda3d.bullet import (
+    BulletConeTwistConstraint,
+    BulletGenericConstraint,
+    BulletHingeConstraint,
+)
+from panda3d.core import (
+    Vec3,
+    VBase4,
+    Mat3,
+    TransformState,
+)
 from direct.directtools.DirectGeometry import LineNodePath
+
+import physics
 
 enableSound = False
 charList = ['regular', 'boxer', 'psycho', 'test']
@@ -29,7 +39,7 @@ def draw_lines(lines: LineNodePath, *paths: dict, origin=None, relative=True):
     lines.create()
 
 
-def shoulder_angles(origin, point, theta, transform=LMatrix3.identMat()):
+def shoulder_angles(origin, point, theta, transform=Mat3.identMat()):
     """Return the shoulder and elbow angles required to place the hand at the given point."""
     point -= origin
     point = transform.xform(point)
@@ -87,7 +97,7 @@ class Arm(object):
         bicep = physics.make_body('Bicep', **bicep_data, parent=torso, world=world)
         forearm = physics.make_body('Forearm', **forearm_data, parent=torso, world=world)
 
-        rotation = LMatrix3(side, 0, 0, 0, 0, -side, 0, 1, 0)
+        rotation = Mat3(side, 0, 0, 0, 0, -side, 0, 1, 0)
         bicep_to_shoulder = shoulder_pos - bicep_pos
         torso_to_shoulder = shoulder_pos
         bicep_shoulder_frame = physics.make_rigid_transform(rotation, bicep_to_shoulder)
@@ -120,7 +130,7 @@ class Arm(object):
         self.forearm = forearm
         self.shoulder = shoulder
         self.elbow = elbow
-        self.transform = (torso_xform * LMatrix3(1, 0, 0, 0, side, 0, 0, 0, 1)).getUpper3()
+        self.transform = (torso_xform * Mat3(1, 0, 0, 0, side, 0, 0, 0, 1)).getUpper3()
         self.side = side
 
         self.lines = LineNodePath(name='debug', parent=render, colorVec=VBase4(0.2, 0.2, 0.5, 1))
