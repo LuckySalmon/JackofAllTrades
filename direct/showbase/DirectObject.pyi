@@ -1,0 +1,6 @@
+from typing import Callable
+
+class DirectObject:
+    def __init__(self) -> None: ...
+
+    def accept(self, event: str, method: Callable, extraArgs: list | None = None) -> None: ...
