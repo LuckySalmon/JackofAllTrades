@@ -260,21 +260,8 @@ class App(ShowBase):
             self.fighters[self.index].skeleton.torso.node().setActive(True, False)
         else:
             self.query_action()
-        # TODO: I would like to make this program focused entirely on graphics.
-        #  I.e., other computations are handled externally and relevant results passed to functions from here.
-
-
-def test():
-    """Run a battle between two test characters for debug purposes."""
-    filepath = 'data\\characters\\test.json'
-    fighter_list = []
-    for _ in range(2):
-        with open(filepath) as file:
-            fighter = characters.Fighter.from_json(file)
-            fighter_list.append(fighter)
-    app = App(fighter_list)
-    app.run()
 
 
 if __name__ == "__main__":
-    test()
+    app = App()
+    app.run()
