@@ -6,6 +6,7 @@ from direct.showbase.DirectObject import DirectObject
 from direct.showbase.ShowBase import ShowBase
 from panda3d.bullet import BulletDebugNode
 from panda3d.core import Vec3
+from direct.fsm.FSM import FSM
 
 import characters
 import physics
@@ -107,9 +108,10 @@ class ShoulderMovingObject(DirectObject):
                 print()
 
 
-class App(ShowBase):
+class App(ShowBase, FSM):
     def __init__(self, fighters=None):
-        super().__init__(self)
+        ShowBase.__init__(self)
+        FSM.__init__(self, 'GameFSM')
 
         self.clock = 0
 
@@ -125,38 +127,45 @@ class App(ShowBase):
         self.ui = None
         self.selectedAction, self.selection = None, None
 
-        self.accept('fighter_selection', self.select_fighter, [CHARACTERS])
+        self.accept('fighter_selection', self.request, ['FighterSelection', CHARACTERS])
         self.accept('set_fighter', self.set_fighter)
         self.accept('set_action', self.set_action)
         self.accept('use_action', self.use_action)
         self.accept('quit', self.userExit)
 
+        self.menu = None
         self.fighter_selection = None
-        if fighters is None:
-            self.menu = ui.MainMenu()
-        else:
-            self.menu = None
-            self.start_battle(fighters)
 
-    def select_fighter(self, character_list, mode):
+        if fighters is None:
+            self.request('MainMenu')
+        else:
+            self.request('Battle', fighters)
+
+    def enterMainMenu(self):
+        self.menu = ui.MainMenu()
+
+    def exitMainMenu(self):
         if self.menu is not None:
             self.menu.hide()
+
+    def enterFighterSelection(self, character_list, mode):
         self.fighter_selection = ui.FighterSelectionMenu('Select Fighter', character_list, mode)
+
+    def exitFighterSelection(self):
+        if self.fighter_selection is not None:
+            self.fighter_selection.hide()
 
     def set_fighter(self, character, mode):
         match mode:
             case 'split_screen':
                 self.fighters.append(characters.Fighter(character))
                 if len(self.fighters) > 1:
-                    self.start_battle(self.fighters)
+                    self.request('Battle', self.fighters)
             case 'copy':
                 fighters = [characters.Fighter(character) for _ in range(2)]
-                self.start_battle(fighters)
+                self.request('Battle', fighters)
 
-    def start_battle(self, fighters):
-        if self.fighter_selection is not None:
-            self.fighter_selection.hide()
-
+    def enterBattle(self, fighters):
         fighters.sort(key=lambda x: x.Speed, reverse=True)
         for fighter in fighters:
             fighter.HP = fighter.BaseHP
