@@ -9,4 +9,5 @@ from .BulletHingeConstraint import BulletHingeConstraint as BulletHingeConstrain
 from .BulletRigidBodyNode import BulletRigidBodyNode as BulletRigidBodyNode
 from .BulletShape import BulletShape as BulletShape
 from .BulletSphereShape import BulletSphereShape as BulletSphereShape
+from .BulletPlaneShape import BulletPlaneShape as BulletPlaneShape
 from .BulletWorld import BulletWorld as BulletWorld
