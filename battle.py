@@ -104,7 +104,7 @@ class ShoulderMovingObject(DirectObject):
 
 class App(ShowBase):
     def __init__(self, fighters):
-        super().__init__(self)
+        super().__init__()
 
         self.clock = 0
 

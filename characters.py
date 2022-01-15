@@ -82,7 +82,7 @@ class Fighter(object):
         """Place the character in the world."""
         x, y = pos
         offset = Vec3(x, y, 0)
-        rotation = Mat3((-i, 0, 0), (0, -i, 0), (0, 0, 1))
+        rotation = Mat3(-i, 0, 0, 0, -i, 0, 0, 0, 1)
         coord_xform = Mat4(rotation, offset)
 
         self.skeleton.insert(world, render, coord_xform)
