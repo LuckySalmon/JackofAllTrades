@@ -9,8 +9,11 @@ The game is written in Python using [Panda3D](https://www.panda3d.org/).
 ## Why?
 
 Y'know how some people are named Jack? But, like, other people are also named Jack? How do you know which one is the real Jack? Trial by combat, of course.
+
 The name is a sort of play on words. It doesn't make much sense if you think about it too hard, but why would you do that?
+
 It's written in Python because Python is neat. Also, it was the only programming language any of us had any significant experience with at the time.
+
 The purpose of the physics simulation is to convert mathematics into slapstick humor.
 
 ## Where is it headed?
