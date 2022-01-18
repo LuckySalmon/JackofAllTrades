@@ -2,25 +2,14 @@ import math
 import random
 from itertools import product
 
-from direct.gui.DirectGui import *
 from direct.showbase.DirectObject import DirectObject
 from direct.showbase.ShowBase import ShowBase
-from direct.showbase.ShowBaseGlobal import globalClock
 from panda3d.bullet import BulletDebugNode
-from panda3d.bullet import BulletPlaneShape
-from panda3d.bullet import BulletRigidBodyNode
-from panda3d.bullet import BulletWorld
-from panda3d.core import TextNode
-from panda3d.core import Vec3, LQuaternion
+from panda3d.core import Vec3
 
 import characters
-
-frame_height = 0.5
-frame_width = 0.5
-button_height = 0.1
-button_width = 0.25
-window_height = 1
-window_width = 4 / 3
+import physics
+import ui
 
 gravity = 0
 
@@ -28,15 +17,6 @@ sides = ['l', 'r']
 DefaultTargetPos = (1, 1, 0)
 TARGETING = [False]
 LEFT, RIGHT = -1, 1
-
-
-def create_quaternion(angle, axis):
-    """Create a quaternion with the given characteristics"""
-    radians = angle/360 * math.pi
-    cosine = math.cos(radians/2)
-    quaternion = LQuaternion(cosine, *axis)
-    quaternion.normalize()
-    return quaternion
 
 
 def toggle_targeting():
@@ -94,22 +74,22 @@ class ShoulderMovingObject(DirectObject):
 
     def move_arms(self, axis, speed):
         for i, character in enumerate(self.character_list):
-            character.set_shoulder_motion(axis, speed)
+            character.skeleton.set_shoulder_motion(axis, speed)
 
     def bend_arms(self, angle):
         for character in self.character_list:
-            for arm in character.arm_l, character.arm_r:
+            for arm in character.skeleton.arm_l, character.skeleton.arm_r:
                 arm.elbow.enableMotor(True)
                 arm.elbow.setMotorTarget(angle, 0.5)
                 arm.forearm.node().setActive(True, False)
 
     def arms_down(self):
         for character in self.character_list:
-            character.arms_down()
+            character.skeleton.arms_down()
 
     def print_angles(self):
         for character in self.character_list:
-            for arm in character.arm_l, character.arm_r:
+            for arm in character.skeleton.arm_l, character.skeleton.arm_r:
                 angles = [arm.shoulder.getAngle(i) for i in range(3)]
                 print('angles: {:.4f}, {:.4f}, {:.4f}'.format(*angles))
                 angles[2] *= -1
@@ -123,37 +103,42 @@ class ShoulderMovingObject(DirectObject):
 
 
 class App(ShowBase):
-
-    def __init__(self, character_list):
+    def __init__(self, fighters):
         super().__init__()
 
         self.clock = 0
 
-        for character in character_list:
-            character.HP = character.BaseHP
-            # displayHP(Character)
-        self.characterList = character_list
+        self.fighters = []
         self.buttons = []
         self.index = 0
 
+        self.world = None
+        self.debugNP = None
+
+        self.targets = []
+
+        self.ui = None
+        self.selectedAction, self.selection = None, None
+
+        self.start_battle(fighters)
+
+    def start_battle(self, fighters):
+        fighters.sort(key=lambda x: x.Speed, reverse=True)
+        for fighter in fighters:
+            fighter.HP = fighter.BaseHP
+        self.fighters = fighters
+
         # Set up the World
         # The World
-        self.world = BulletWorld()
-        self.world.setGravity(Vec3(0, 0, -gravity))
+        self.world = physics.make_world(gravity, self.render)
 
         # Camera
         self.cam.setPos(0, -15, 2)
         self.cam.lookAt(0, 0, 0)
 
-        # The Ground
-        np = self.render.attachNewNode(BulletRigidBodyNode('Ground'))
-        np.node().addShape(BulletPlaneShape(Vec3(0, 0, 1), 1))
-        np.setPos(0, 0, -2)
-        self.world.attachRigidBody(np.node())
-
         # Characters
-        character_list[0].insert(self.world, self.render, -1, (-2, 0))
-        character_list[1].insert(self.world, self.render, 1, (2, 0))
+        fighters[0].insert(self.world, self.render, -1, (-2, 0))
+        fighters[1].insert(self.world, self.render, 1, (2, 0))
 
         # Debug
         debug_node = BulletDebugNode('Debug')
@@ -168,7 +153,7 @@ class App(ShowBase):
         debug_object.accept('f1', self.toggle_debug)
 
         # Testing Controls
-        shoulder_moving_object = ShoulderMovingObject(character_list)
+        shoulder_moving_object = ShoulderMovingObject(fighters)
         target_moving_object = TargetMovingObject()
         self.targets = target_moving_object.set_targets(*DefaultTargetPos)
         for i in range(3):
@@ -177,44 +162,17 @@ class App(ShowBase):
         self.taskMgr.add(self.update, 'update')
 
         # Set up GUI
-        self.sharedInfo = OnscreenText(text="No information to display yet.",
-                                       pos=(0, 0.5), scale=0.07,
-                                       align=TextNode.ACenter, mayChange=True)
-        self.actionBoxes, self.infoBoxes, self.useButtons, self.healthBars = [], [], [], []
-        self.selectedAction, self.selection = None, None
-        for side in (LEFT, RIGHT):
-            action_box = DirectFrame(frameColor=(0, 0, 0, 1),
-                                     frameSize=(-frame_width, frame_width, -frame_height, frame_height),
-                                     pos=(side * (window_width - frame_width), 0, -(window_height - frame_height)))
-            info_box = OnscreenText(text="No info available", scale=0.07,
-                                    align=TextNode.ACenter, mayChange=True)
-            info_box.reparentTo(action_box)
-            info_box.setTextPos(0, frame_height + 0.25)
-            use_button = DirectButton(frameSize=(-button_width, button_width, -button_height, button_height),
-                                      text="N/A", text_scale=0.1, borderWidth=(0.025, 0.025),
-                                      command=self.use_action, state=DGG.DISABLED)
-            use_button.reparentTo(action_box)
-            use_button.setPos(frame_width - button_width, 0, 0)
-            hp = self.characterList[0 if side < 0 else side].HP
-            bar = DirectWaitBar(text="", range=hp, value=hp,
-                                pos=(side * 0.5, 0, 0.75),
-                                frameSize=(side * -0.4, side * 0.5, 0, -0.05))
-            self.actionBoxes.append(action_box)
-            self.infoBoxes.append(info_box)
-            self.useButtons.append(use_button)
-            self.healthBars.append(bar)
+        self.ui = ui.BattleInterface(self.fighters, self.use_action)
 
         self.query_action()
 
     def update(self, task):
         """Update the world using physics."""
-        dt = globalClock.getDt()
-        self.world.doPhysics(dt)
         self.clock += 1
         if TARGETING[0] and self.clock % 10 == 0:
-            for (character, side), target in zip(product(self.characterList, sides), self.targets):
-                character.position_shoulder(side, target)
-        return task.cont
+            for (fighter, side), target in zip(product(self.fighters, sides), self.targets):
+                fighter.skeleton.position_shoulder(side, target)
+        return physics.update_physics(self.world, task)
 
     def toggle_debug(self):
         """Toggle debug display for physical objects."""
@@ -225,30 +183,21 @@ class App(ShowBase):
 
     def query_action(self):
         """Set up buttons for a player to choose an action."""
-        character, frame = self.characterList[self.index], self.actionBoxes[self.index]
-        for i, action in enumerate(character.moveList):
-            b = DirectButton(frameSize=(-button_width, button_width, -button_height, button_height),
-                             text=action, text_scale=0.1, borderWidth=(0.025, 0.025),
-                             command=self.set_action, extraArgs=[character, action])
-            b.reparentTo(frame)
-            b.setPos(-(frame_width - button_width), 0, frame_height - (2 * i + 1) * button_height)
-            self.buttons.append(b)
+        fighter = self.fighters[self.index]
+        self.ui.query_action(fighter, self.index, self.set_action)
 
-    def set_action(self, character, name):
+    def set_action(self, fighter, name):
         """Set an action to be selected."""
         i = self.index
-        self.selectedAction = character.moveList[name]
-        self.infoBoxes[i].setText(self.selectedAction.show_stats())
-        self.useButtons[i].setText("Use %s" % name)
-        self.useButtons[i]["state"] = DGG.NORMAL
+        self.selectedAction = fighter.moveList[name]
+        self.ui.output_info(i, self.selectedAction.show_stats())
+        self.ui.select_action(i, name)
         self.selection = name
 
     def use_action(self):
         """Make the character use the selected action, then move on to the next turn."""
-        for button in self.useButtons:
-            button["state"] = DGG.DISABLED
-            button["text"] = "N/A"
-        user = self.characterList[self.index]
+        self.ui.remove_query()
+        user = self.fighters[self.index]
         name, move = self.selection, self.selectedAction
 
         # Result of move
@@ -257,32 +206,24 @@ class App(ShowBase):
             if random.randint(1, 100) <= 2:
                 damage *= 1.5
                 print("Critical Hit!".format(user.Name, name, damage))
-            self.infoBoxes[self.index].setText("{}'s {} hit for {} damage!".format(user.Name, name, damage))
+            self.ui.output_info(self.index, f"{user.Name}'s {name} hit for {damage} damage!")
         else:
             damage = 0
-            self.infoBoxes[self.index].setText("{}'s {} missed!".format(user.Name, name))
+            self.ui.output_info(self.index, f"{user.Name}'s {name} missed!")
 
         # Move over to other character and apply damage
         self.index = (self.index + 1) % 2
-        opponent = self.characterList[self.index]
+        opponent = self.fighters[self.index]
         damage = min(max(damage - opponent.Defense, 0), opponent.HP)  # TODO: Find and use a better formula
         opponent.HP -= damage
-        self.healthBars[self.index]["value"] -= damage
-        self.infoBoxes[self.index].setText('{} took {} damage!'.format(opponent.Name, damage))
-
-        # Reset GUI
-        for button in self.buttons:
-            button.destroy()
-        self.buttons.clear()
+        self.ui.apply_damage(self.index, damage, opponent.Name)
 
         # Move on to next step (KO or opponent response)
         if opponent.HP <= 0:
-            self.sharedInfo.setText('%s wins!' % user.Name)
+            self.ui.announce_win(user.Name)
             # I thought this would make the character fall, but it just glitches out
-            self.characterList[self.index].torso.node().setMass(1.0)
-            self.characterList[self.index].torso.node().setActive(True, False)
-            for button in self.useButtons:
-                button.destroy()
+            self.fighters[self.index].skeleton.torso.node().setMass(1.0)
+            self.fighters[self.index].skeleton.torso.node().setActive(True, False)
         else:
             self.query_action()
         # TODO: I would like to make this program focused entirely on graphics.
@@ -292,12 +233,12 @@ class App(ShowBase):
 def test():
     """Run a battle between two test characters for debug purposes."""
     filepath = 'data\\characters\\test.json'
-    char_list = []
+    fighter_list = []
     for _ in range(2):
         with open(filepath) as file:
-            char = characters.Character.from_json(file)
-            char_list.append(char)
-    app = App(char_list)
+            fighter = characters.Fighter.from_json(file)
+            fighter_list.append(fighter)
+    app = App(fighter_list)
     app.run()
 
 

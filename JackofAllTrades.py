@@ -1,12 +1,12 @@
 import characters
-import graphics
+import battle
 
 textWidth = [100]
 
 
-def display_health(character):
+def display_health(fighter):
     """Print a character's health in a human-readable format."""
-    print(align("{}'s HP: {}".format(character.Name, character.HP), side=1))
+    print(align("{}'s HP: {}".format(fighter.Name, fighter.HP), side=1))
 
 
 def align(*lines, side=0):
@@ -40,13 +40,12 @@ def choose_attack(character, side):
     return selection
 
 
-def battle(ally, enemy):
+def start_battle(ally, enemy):
     """Run a battle between Jacks."""
     print(align((ally.Name, " VS ", enemy.Name), side=1))
-    for Character in (ally, enemy):
-        Character.HP = Character.BaseHP
-        display_health(Character)
-    app = graphics.App([enemy, ally] if enemy.Speed > ally.Speed else [ally, enemy])
+    for fighter in (ally, enemy):
+        display_health(fighter)
+    app = battle.App([ally, enemy])
     app.run()
 
 
@@ -68,9 +67,9 @@ def test():
                 name = input('Please choose a valid character: ').lower()
 
             with open('data\\characters\\{}.json'.format(name)) as file:
-                fighters.append(characters.Character.from_json(file))
+                fighters.append(characters.Fighter.from_json(file))
         print('\n')
-        battle(*fighters)
+        start_battle(*fighters)
         cont = input(align('', 'Enter any character to play again', 'Or nothing to quit.', '', side=1))
 
 
@@ -87,5 +86,6 @@ def size_screen():
                 alignment))
 
 
-# size_screen()
-graphics.test()
+if __name__ == '__main__':
+    # size_screen()
+    test()
