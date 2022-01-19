@@ -1,0 +1,3 @@
+from ..core import TypedWritableReferenceCount
+
+class BulletShape(TypedWritableReferenceCount): ...

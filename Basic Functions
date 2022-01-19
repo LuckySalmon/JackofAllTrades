@@ -1,2 +1,0 @@
-print ("Hello world!")
-x = input ("Press ENTER to continue...")
