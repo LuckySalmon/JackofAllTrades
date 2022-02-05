@@ -1,4 +1,5 @@
 import math
+from collections.abc import Sequence
 
 from panda3d.bullet import (
     BulletPlaneShape,
@@ -9,8 +10,11 @@ from panda3d.bullet import (
     BulletWorld
 )
 from panda3d.core import (
+    NodePath,
+    VBase3,
     Vec3,
     Quat,
+    Mat3,
     Mat4,
     TransformState,
 )
@@ -24,7 +28,7 @@ shape_constructors = dict(sphere=BulletSphereShape,
                           capsule_z=lambda *args: BulletCapsuleShape(*args, 2))
 
 
-def make_quaternion(angle, axis):
+def make_quaternion(angle: float, axis: VBase3) -> Quat:
     """Return a quaternion with the given characteristics"""
     radians = angle/360 * math.pi
     cosine = math.cos(radians/2)
@@ -33,12 +37,18 @@ def make_quaternion(angle, axis):
     return quaternion
 
 
-def make_rigid_transform(rotation, translation):
+def make_rigid_transform(rotation: Mat3, translation: VBase3) -> TransformState:
     """Return a TransformState comprising the given rotation followed by the given translation"""
     return TransformState.makeMat(Mat4(rotation, translation))
 
 
-def make_body(name, shape, dimensions, mass, position, parent, world):
+def make_body(name: str,
+              shape: str,
+              dimensions: Sequence[float],
+              mass: float,
+              position: VBase3 | Sequence[float],
+              parent: NodePath,
+              world: BulletWorld) -> NodePath[BulletRigidBodyNode]:
     """Return a node pointer to a new rigid body with the given characteristics"""
     constructor = shape_constructors[shape]
     node = BulletRigidBodyNode(name)
@@ -51,7 +61,7 @@ def make_body(name, shape, dimensions, mass, position, parent, world):
     return pointer
 
 
-def make_world(gravity, render):
+def make_world(gravity: float, render: NodePath) -> BulletWorld:
     world = BulletWorld()
     world.setGravity(Vec3(0, 0, -gravity))
 
@@ -63,7 +73,7 @@ def make_world(gravity, render):
     return world
 
 
-def update_physics(world, task):
+def update_physics(world: BulletWorld, task) -> int:
     dt = globalClock.getDt()
     world.doPhysics(dt)
     return task.cont

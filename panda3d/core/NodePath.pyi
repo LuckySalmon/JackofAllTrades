@@ -1,13 +1,18 @@
+from typing import TypeVar, Generic
+
 from .PandaNode import PandaNode
 from .Thread import Thread
 from .DrawMask import DrawMask
 from .LPoint3f import LPoint3f
 from .LMatrix4f import LMatrix4f
 
-class NodePath:
-    def node(self) -> PandaNode: ...
+T = TypeVar('T', bound=PandaNode)
+U = TypeVar('U', bound=PandaNode)
 
-    def attachNewNode(self, node: PandaNode, sort: int = 0, current_thread: Thread = ...) -> NodePath: ...
+class NodePath(Generic[T]):
+    def node(self) -> T: ...
+
+    def attachNewNode(self, node: U, sort: int = 0, current_thread: Thread = ...) -> NodePath[U]: ...
 
     def setPos(self, x: float, y: float, z: float) -> None: ...
 

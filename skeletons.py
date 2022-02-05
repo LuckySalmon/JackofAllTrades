@@ -1,16 +1,22 @@
 import math
 import json
+from typing import Literal
 
 from panda3d.bullet import (
     BulletConeTwistConstraint,
     BulletGenericConstraint,
     BulletHingeConstraint,
+    BulletRigidBodyNode,
+    BulletWorld,
 )
 from panda3d.core import (
+    VBase3,
     Vec3,
     VBase4,
     Mat3,
+    Mat4,
     TransformState,
+    NodePath,
 )
 from direct.directtools.DirectGeometry import LineNodePath
 
@@ -23,7 +29,10 @@ with open('data\\skeletons\\default.json') as f:
     default_parameters = json.load(f)
 
 
-def draw_lines(lines: LineNodePath, *paths: dict, origin=None, relative=True):
+def draw_lines(lines: LineNodePath,
+               *paths: dict[str, list[VBase3]],
+               origin: VBase3 | None = None,
+               relative: bool = True) -> None:
     if origin is None:
         origin = lines.getCurrentPosition()
     lines.reset()
@@ -39,7 +48,10 @@ def draw_lines(lines: LineNodePath, *paths: dict, origin=None, relative=True):
     lines.create()
 
 
-def shoulder_angles(origin, point, theta, transform=Mat3.identMat()):
+def shoulder_angles(origin: VBase3,
+                    point: VBase3,
+                    theta: float,
+                    transform: Mat3 = Mat3.identMat()) -> tuple[float, float, float, float]:
     """Return the shoulder and elbow angles required to place the hand at the given point."""
     point -= origin
     point = transform.xform(point)
@@ -81,7 +93,12 @@ def shoulder_angles(origin, point, theta, transform=Mat3.identMat()):
 
 
 class Arm(object):
-    def __init__(self, world, render, side, torso, skeleton=default_parameters):
+    def __init__(self,
+                 world: BulletWorld,
+                 render: NodePath,
+                 side: int,
+                 torso: NodePath[BulletRigidBodyNode],
+                 skeleton: dict[str] = default_parameters):
         string = 'left' if side == LEFT else 'right'
         shoulder_data = skeleton['constraints'][string + ' shoulder']
         elbow_data = skeleton['constraints'][string + ' elbow']
@@ -142,14 +159,14 @@ class Arm(object):
             paths[i]['points'] = [axis]
         draw_lines(axes, *paths, origin=self.position)
 
-    def set_shoulder_motion(self, axis, speed):
+    def set_shoulder_motion(self, axis: int, speed: float) -> None:
         """Set the shoulder motor along the given axis to the given speed."""
         motor = self.shoulder.getRotationalLimitMotor(axis)
         motor.setTargetVelocity(speed)
         motor.setMotorEnabled(True)
         self.bicep.node().setActive(True, False)
 
-    def move_toward(self, x, y, z, theta, tol=0.01, dt=1.0):
+    def move_toward(self, x: float, y: float, z: float, theta: float, tol=0.01, dt=1.0) -> None:
         """Set shoulder and elbow motor velocities such that the hand moves toward the specified point."""
         shoulder_pos = Vec3(0, 0, 0)
         hand_pos = Vec3(x, y, z)
@@ -168,7 +185,7 @@ class Arm(object):
         self.bicep.node().setActive(True, False)
         draw_lines(self.lines, dict(points=[hand_pos]), origin=self.position)
 
-    def go_limp(self):
+    def go_limp(self) -> None:
         for axis in range(3):
             self.shoulder.getRotationalLimitMotor(axis).setMotorEnabled(False)
         self.elbow.enableMotor(False)
@@ -176,7 +193,7 @@ class Arm(object):
 
 
 class Skeleton(object):
-    def __init__(self, parameters):
+    def __init__(self, parameters: dict[str] | None):
         if parameters is None:
             parameters = default_parameters
         self.parameters = parameters
@@ -184,7 +201,10 @@ class Skeleton(object):
         self.torso = None
         self.arm_l, self.arm_r = None, None
 
-    def insert(self, world, render, coord_xform):
+    def insert(self,
+               world: BulletWorld,
+               render: NodePath,
+               coord_xform: Mat4) -> None:
         """Place the skeleton in the world."""
         bodies = self.parameters['bodies']
         constraints = self.parameters['constraints']
@@ -219,14 +239,14 @@ class Skeleton(object):
         self.torso = torso
         self.arm_l, self.arm_r = arm_l, arm_r
 
-    def set_shoulder_motion(self, axis, speed):
+    def set_shoulder_motion(self, axis: int, speed: float) -> None:
         self.arm_l.set_shoulder_motion(axis, speed)
         self.arm_r.set_shoulder_motion(axis, speed)
 
-    def position_shoulder(self, side, target):
+    def position_shoulder(self, side: Literal['l', 'r'], target: VBase3) -> None:
         arm = getattr(self, 'arm_' + side)
         arm.move_toward(*target, 0)
 
-    def arms_down(self):
+    def arms_down(self) -> None:
         self.arm_l.go_limp()
         self.arm_r.go_limp()

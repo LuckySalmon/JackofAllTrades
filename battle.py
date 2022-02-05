@@ -7,7 +7,7 @@ from direct.showbase.ShowBase import ShowBase
 from panda3d.bullet import BulletDebugNode
 from panda3d.core import Vec3
 
-import characters
+from characters import Fighter
 import physics
 import ui
 
@@ -35,30 +35,30 @@ class TargetMovingObject(DirectObject):
         self.accept('4-repeat', self.scale_targets, [0.99])
         self.accept('6-repeat', self.scale_targets, [1.01])
 
-    def update(self):
+    def update(self) -> None:
         x, y, z = self.xyz
         coordinates = [[x, y, z], [x, -y, z], [-x, -y, z], [-x, y, z]]
         self.targets.clear()
         targets = [Vec3(x, y, z) for x, y, z in coordinates]
         self.targets += targets
 
-    def set_targets(self, x, y, z):
+    def set_targets(self, x: float, y: float, z: float) -> list[float]:
         self.xyz = [x, y, z]
         self.update()
         return self.targets
 
-    def modify_coordinate(self, axis, delta):
+    def modify_coordinate(self, axis: int, delta: float) -> None:
         self.xyz[axis] += delta
         self.update()
 
-    def scale_targets(self, scale):
+    def scale_targets(self, scale: float) -> None:
         for axis in range(3):
             self.xyz[axis] *= scale
         self.update()
 
 
 class ShoulderMovingObject(DirectObject):
-    def __init__(self, character_list):
+    def __init__(self, character_list: list[Fighter]):
         super().__init__()
         self.character_list = character_list
         bindings = [('q', 'e'), ('a', 'd'), ('z', 'c')]
@@ -72,22 +72,22 @@ class ShoulderMovingObject(DirectObject):
         self.accept('p', self.print_angles)
         self.accept('space', toggle_targeting)
 
-    def move_arms(self, axis, speed):
+    def move_arms(self, axis: int, speed: float) -> None:
         for i, character in enumerate(self.character_list):
             character.skeleton.set_shoulder_motion(axis, speed)
 
-    def bend_arms(self, angle):
+    def bend_arms(self, angle: float) -> None:
         for character in self.character_list:
             for arm in character.skeleton.arm_l, character.skeleton.arm_r:
                 arm.elbow.enableMotor(True)
                 arm.elbow.setMotorTarget(angle, 0.5)
                 arm.forearm.node().setActive(True, False)
 
-    def arms_down(self):
+    def arms_down(self) -> None:
         for character in self.character_list:
             character.skeleton.arms_down()
 
-    def print_angles(self):
+    def print_angles(self) -> None:
         for character in self.character_list:
             for arm in character.skeleton.arm_l, character.skeleton.arm_r:
                 angles = [arm.shoulder.getAngle(i) for i in range(3)]
@@ -103,7 +103,7 @@ class ShoulderMovingObject(DirectObject):
 
 
 class App(ShowBase):
-    def __init__(self, fighters):
+    def __init__(self, fighters: list[Fighter]):
         super().__init__()
 
         self.clock = 0
@@ -122,7 +122,7 @@ class App(ShowBase):
 
         self.start_battle(fighters)
 
-    def start_battle(self, fighters):
+    def start_battle(self, fighters: list[Fighter]) -> None:
         fighters.sort(key=lambda x: x.Speed, reverse=True)
         for fighter in fighters:
             fighter.HP = fighter.BaseHP
@@ -166,7 +166,7 @@ class App(ShowBase):
 
         self.query_action()
 
-    def update(self, task):
+    def update(self, task) -> int:
         """Update the world using physics."""
         self.clock += 1
         if TARGETING[0] and self.clock % 10 == 0:
@@ -174,19 +174,19 @@ class App(ShowBase):
                 fighter.skeleton.position_shoulder(side, target)
         return physics.update_physics(self.world, task)
 
-    def toggle_debug(self):
+    def toggle_debug(self) -> None:
         """Toggle debug display for physical objects."""
         if self.debugNP.isHidden():
             self.debugNP.show()
         else:
             self.debugNP.hide()
 
-    def query_action(self):
+    def query_action(self) -> None:
         """Set up buttons for a player to choose an action."""
         fighter = self.fighters[self.index]
         self.ui.query_action(fighter, self.index, self.set_action)
 
-    def set_action(self, fighter, name):
+    def set_action(self, fighter: Fighter, name: str) -> None:
         """Set an action to be selected."""
         i = self.index
         self.selectedAction = fighter.moveList[name]
@@ -194,7 +194,7 @@ class App(ShowBase):
         self.ui.select_action(i, name)
         self.selection = name
 
-    def use_action(self):
+    def use_action(self) -> None:
         """Make the character use the selected action, then move on to the next turn."""
         self.ui.remove_query()
         user = self.fighters[self.index]
@@ -230,13 +230,13 @@ class App(ShowBase):
         #  I.e., other computations are handled externally and relevant results passed to functions from here.
 
 
-def test():
+def test() -> None:
     """Run a battle between two test characters for debug purposes."""
     filepath = 'data\\characters\\test.json'
     fighter_list = []
     for _ in range(2):
         with open(filepath) as file:
-            fighter = characters.Fighter.from_json(file)
+            fighter = Fighter.from_json(file)
             fighter_list.append(fighter)
     app = App(fighter_list)
     app.run()

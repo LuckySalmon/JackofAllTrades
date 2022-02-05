@@ -6,7 +6,9 @@ from direct.gui.DirectGui import (
     OnscreenText,
 )
 from panda3d.core import TextNode
+from typing import Callable
 
+from characters import Fighter
 
 LEFT, RIGHT = -1, 1
 
@@ -23,7 +25,7 @@ default_button_args = dict(frameSize=(-button_width, button_width, -button_heigh
 
 
 class BattleInterface:
-    def __init__(self, character_list, use_action):
+    def __init__(self, character_list: list[Fighter], use_action: Callable):
         self.buttons = []
         self.sharedInfo = OnscreenText(pos=(0, 0.5), scale=0.07, align=TextNode.ACenter)
         self.characterList = character_list
@@ -56,7 +58,7 @@ class BattleInterface:
             self.useButtons.append(use_button)
             self.healthBars.append(bar)
 
-    def query_action(self, character, index, command):
+    def query_action(self, character: Fighter, index: int, command: Callable) -> None:
         """Set up buttons for a player to choose an action."""
         for i, action in enumerate(character.moveList):
             button = DirectButton(text=action,
@@ -67,11 +69,11 @@ class BattleInterface:
                                   **default_button_args)
             self.buttons.append(button)
 
-    def select_action(self, index, name):
+    def select_action(self, index: int, name: str) -> None:
         self.useButtons[index].setText(f'Use {name}')
         self.useButtons[index]['state'] = DGG.NORMAL
 
-    def remove_query(self):
+    def remove_query(self) -> None:
         for button in self.useButtons:
             button['state'] = DGG.DISABLED
             button['text'] = 'N/A'
@@ -80,14 +82,14 @@ class BattleInterface:
             button.destroy()
         self.buttons.clear()
 
-    def output_info(self, index, info):
+    def output_info(self, index: int, info: str) -> None:
         self.infoBoxes[index].setText(info)
 
-    def apply_damage(self, index, damage, damaged):
+    def apply_damage(self, index: int, damage: float, damaged: str) -> None:
         self.healthBars[index]['value'] -= damage
         self.output_info(index, f'{damaged} took {damage} damage!')
 
-    def announce_win(self, winner):
+    def announce_win(self, winner: str) -> None:
         self.sharedInfo.setText(f'{winner} wins!')
         for button in self.useButtons:
             button.destroy()
