@@ -97,7 +97,7 @@ class Arm(object):
                  world: BulletWorld,
                  render: NodePath,
                  side: int,
-                 torso: NodePath[BulletRigidBodyNode],
+                 torso: 'NodePath[BulletRigidBodyNode]',
                  skeleton: dict[str] = default_parameters):
         string = 'left' if side == LEFT else 'right'
         shoulder_data = skeleton['constraints'][string + ' shoulder']

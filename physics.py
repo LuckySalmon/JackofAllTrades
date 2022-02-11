@@ -48,7 +48,7 @@ def make_body(name: str,
               mass: float,
               position: VBase3 | Sequence[float],
               parent: NodePath,
-              world: BulletWorld) -> NodePath[BulletRigidBodyNode]:
+              world: BulletWorld) -> 'NodePath[BulletRigidBodyNode]':
     """Return a node pointer to a new rigid body with the given characteristics"""
     constructor = shape_constructors[shape]
     node = BulletRigidBodyNode(name)
