@@ -41,14 +41,21 @@ class MainMenu:
         self.battleButton = DirectButton(text='Go To Battle',
                                          command=messenger.send,
                                          extraArgs=['fighter_selection', ['split_screen']],
-                                         pos=(0, 0, 0.2),
+                                         pos=(0, 0, 0.4),
                                          frameSize=(-0.4, 0.4, -0.15, 0.15),
                                          borderWidth=(0.05, 0.05),
                                          text_scale=0.1,
                                          parent=self.backdrop)
+        self.characterButton = DirectButton(text='Characters',
+                                            command=lambda: messenger.send('character_menu'),
+                                            pos=(0, 0, 0),
+                                            frameSize=(-0.4, 0.4, -0.15, 0.15),
+                                            borderWidth=(0.05, 0.05),
+                                            text_scale=0.1,
+                                            parent=self.backdrop)
         self.quitButton = DirectButton(text='Quit',
                                        command=lambda: messenger.send('quit'),
-                                       pos=(0, 0, -0.2),
+                                       pos=(0, 0, -0.4),
                                        frameSize=(-0.4, 0.4, -0.15, 0.15),
                                        borderWidth=(0.05, 0.05),
                                        text_scale=0.1,
@@ -58,22 +65,63 @@ class MainMenu:
         self.backdrop.hide()
 
 
-class FighterSelectionMenu:
+class CharacterMenu:
     def __init__(self, title, characters, mode):
+        self.mode = mode
+        self.selectedCharacter = None
+        self.character_view = None
         self.backdrop = DirectFrame(frameColor=(0, 0, 0, 0),
                                     frameSize=(-1, 1, -1, 1),
                                     pos=(0, 0, 0))
+        self.character_view = DirectFrame(frameColor=(.2, .2, .2, .8),
+                                          frameSize=(-window_width, window_width, -window_height/2, window_height/2),
+                                          pos=(0, 0, -window_height/2),
+                                          parent=self.backdrop)
+        self.character_view_text = OnscreenText(text='Character customization is unimplemented',
+                                                pos=(0, 0.2),
+                                                parent=self.character_view)
+        self.confirmation_button = DirectButton(text='Select a Character',
+                                                command=self.confirm_selection,
+                                                pos=(0, 0, 0),
+                                                frameSize=(-.4, .4, -.15, .15),
+                                                borderWidth=(.05, .05),
+                                                text_scale=.07,
+                                                state=DGG.DISABLED,
+                                                parent=self.character_view)
+        if mode == 'view':
+            self.confirmation_button.hide()
+        else:
+            self.character_view_text.hide()
+        self.character_view.hide()
+
+        self.back_button = DirectButton(text='Back',
+                                        command=lambda: messenger.send('main_menu'),
+                                        pos=(-1.15, 0, 0.9),
+                                        frameSize=(-2, 2, -1, 1),
+                                        borderWidth=(.2, .2),
+                                        scale=0.05,
+                                        parent=self.backdrop)
         self.buttons = []
         for character, (x, y) in zip(characters, even_spacing((4, 4), (0.5, 0.5))):
             button = DirectButton(text=character.Name,
-                                  command=messenger.send,
-                                  extraArgs=['set_fighter', [character, mode]],
+                                  command=self.select_character,
+                                  extraArgs=[character],
                                   pos=(y, 0, -x),
                                   frameSize=(-4, 4, -4, 4),
                                   borderWidth=(0.25, 0.25),
                                   scale=0.05,
                                   parent=self.backdrop)
             self.buttons.append(button)
+
+    def select_character(self, character):
+        self.character_view.show()
+        self.selectedCharacter = character
+        if self.mode != 'view':
+            self.confirmation_button['text'] = f'Use {character.Name}'
+            self.confirmation_button['state'] = DGG.NORMAL
+
+    def confirm_selection(self):
+        messenger.send('select_character', [self.selectedCharacter, self.mode])
 
     def hide(self):
         self.backdrop.hide()

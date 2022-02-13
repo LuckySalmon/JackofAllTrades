@@ -127,14 +127,16 @@ class App(ShowBase, FSM):
         self.ui = None
         self.selectedAction, self.selection = None, None
 
-        self.accept('fighter_selection', self.request, ['FighterSelection', CHARACTERS])
-        self.accept('set_fighter', self.set_fighter)
+        self.accept('main_menu', self.request, ['MainMenu'])
+        self.accept('character_menu', self.request, ['CharacterMenu', 'Select a Character', CHARACTERS, 'view'])
+        self.accept('fighter_selection', self.request, ['CharacterMenu', 'Select Fighter', CHARACTERS])
+        self.accept('select_character', self.select_character)
         self.accept('set_action', self.set_action)
         self.accept('use_action', self.use_action)
         self.accept('quit', self.userExit)
 
-        self.menu = None
-        self.fighter_selection = None
+        self.main_menu = None
+        self.character_menu = None
 
         if fighters is None:
             self.request('MainMenu')
@@ -142,20 +144,21 @@ class App(ShowBase, FSM):
             self.request('Battle', fighters)
 
     def enterMainMenu(self):
-        self.menu = ui.MainMenu()
+        self.fighters.clear()
+        self.main_menu = ui.MainMenu()
 
     def exitMainMenu(self):
-        if self.menu is not None:
-            self.menu.hide()
+        if self.main_menu is not None:
+            self.main_menu.hide()
 
-    def enterFighterSelection(self, character_list, mode):
-        self.fighter_selection = ui.FighterSelectionMenu('Select Fighter', character_list, mode)
+    def enterCharacterMenu(self, title, character_list, mode):
+        self.character_menu = ui.CharacterMenu(title, character_list, mode)
 
-    def exitFighterSelection(self):
-        if self.fighter_selection is not None:
-            self.fighter_selection.hide()
+    def exitCharacterMenu(self):
+        if self.character_menu is not None:
+            self.character_menu.hide()
 
-    def set_fighter(self, character, mode):
+    def select_character(self, character, mode):
         match mode:
             case 'split_screen':
                 self.fighters.append(characters.Fighter(character))
