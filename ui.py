@@ -6,6 +6,7 @@ from direct.gui.DirectGui import (
     OnscreenText,
 )
 from direct.showbase.MessengerGlobal import messenger
+from direct.showbase.DirectObject import DirectObject
 from panda3d.core import TextNode
 from itertools import product
 
@@ -127,8 +128,9 @@ class CharacterMenu:
         self.backdrop.hide()
 
 
-class BattleInterface:
+class BattleInterface(DirectObject):
     def __init__(self, character_list):
+        super().__init__()
         self.buttons = []
         self.sharedInfo = OnscreenText(pos=(0, 0.5), scale=0.07, align=TextNode.ACenter)
         self.characterList = character_list
@@ -160,6 +162,13 @@ class BattleInterface:
             self.infoBoxes.append(info_box)
             self.useButtons.append(use_button)
             self.healthBars.append(bar)
+
+        self.accept('query_action', self.query_action)
+        self.accept('select_action', self.select_action)
+        self.accept('remove_query', self.remove_query)
+        self.accept('output_info', self.output_info)
+        self.accept('apply_damage', self.apply_damage)
+        self.accept('announce_win', self.announce_win)
 
     def query_action(self, character, index):
         """Set up buttons for a player to choose an action."""

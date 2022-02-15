@@ -2,6 +2,7 @@ import math
 import random
 from itertools import product
 
+from direct.showbase.MessengerGlobal import messenger
 from direct.showbase.DirectObject import DirectObject
 from direct.showbase.ShowBase import ShowBase
 from panda3d.bullet import BulletDebugNode
@@ -230,19 +231,19 @@ class App(ShowBase, FSM):
     def query_action(self):
         """Set up buttons for a player to choose an action."""
         fighter = self.fighters[self.index]
-        self.ui.query_action(fighter, self.index)
+        messenger.send('query_action', [fighter, self.index])
 
     def set_action(self, fighter, name):
         """Set an action to be selected."""
         i = self.index
         self.selectedAction = fighter.moveList[name]
-        self.ui.output_info(i, self.selectedAction.show_stats())
-        self.ui.select_action(i, name)
+        messenger.send('output_info', [i, self.selectedAction.show_stats()])
+        messenger.send('select_action', [i, name])
         self.selection = name
 
     def use_action(self):
         """Make the character use the selected action, then move on to the next turn."""
-        self.ui.remove_query()
+        messenger.send('remove_query')
         user = self.fighters[self.index]
         name, move = self.selection, self.selectedAction
 
@@ -252,21 +253,21 @@ class App(ShowBase, FSM):
             if random.randint(1, 100) <= 2:
                 damage *= 1.5
                 print("Critical Hit!".format(user.Name, name, damage))
-            self.ui.output_info(self.index, f"{user.Name}'s {name} hit for {damage} damage!")
+            messenger.send('output_info', [self.index, f"{user.Name}'s {name} hit for {damage} damage!"])
         else:
             damage = 0
-            self.ui.output_info(self.index, f"{user.Name}'s {name} missed!")
+            messenger.send('output_info', [self.index, f"{user.Name}'s {name} missed!"])
 
         # Move over to other character and apply damage
         self.index = (self.index + 1) % 2
         opponent = self.fighters[self.index]
         damage = min(max(damage - opponent.Defense, 0), opponent.HP)  # TODO: Find and use a better formula
         opponent.HP -= damage
-        self.ui.apply_damage(self.index, damage, opponent.Name)
+        messenger.send('apply_damage', [self.index, damage, opponent.Name])
 
         # Move on to next step (KO or opponent response)
         if opponent.HP <= 0:
-            self.ui.announce_win(user.Name)
+            messenger.send('announce_win', [user.Name])
             # I thought this would make the character fall, but it just glitches out
             self.fighters[self.index].skeleton.torso.node().setMass(1.0)
             self.fighters[self.index].skeleton.torso.node().setActive(True, False)
