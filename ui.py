@@ -133,43 +133,25 @@ class BattleInterface(DirectObject):
         super().__init__()
         self.sharedInfo = OnscreenText(pos=(0, 0.5), scale=0.07, align=TextNode.ACenter)
 
-        self.actionBoxes, self.infoBoxes, self.useButtons, self.healthBars = [], [], [], []
+        self.actionSelectors, self.infoBoxes, self.healthBars = [], [], []
         for character, side in zip(character_list, (LEFT, RIGHT)):
-            box_pos = (side * (window_width - frame_width), 0, frame_height - window_height)
-            action_box = DirectFrame(frameColor=(0, 0, 0, 0.5),
-                                     frameSize=(-frame_width, frame_width, -frame_height, frame_height),
-                                     pos=box_pos)
-            action_box.hide()
+            pos = (side * (window_width - frame_width), 0, frame_height - window_height)
+            index = 0 if side == LEFT else 1
 
-            info_box = OnscreenText(pos=(box_pos[0], box_pos[2] + frame_height + 0.25),
+            action_selector = ActionSelector(character.moveList.values(), pos, index)
+            action_selector.hide()
+
+            info_box = OnscreenText(pos=(pos[0], pos[2] + frame_height + 0.25),
                                     scale=0.07,
                                     align=TextNode.ACenter)
-
-            use_button = DirectButton(text='',
-                                      command=lambda: messenger.send('use_action'),
-                                      pos=(frame_width - button_width, 0, 0),
-                                      parent=action_box,
-                                      **default_button_args)
 
             bar = DirectWaitBar(range=character.HP,
                                 value=character.HP,
                                 pos=(side * 0.5, 0, 0.75),
                                 frameSize=(side * -0.4, side * 0.5, 0, -0.05))
 
-            count = len(character.moveList)
-            heights = even_spacing((count,), (2 * button_height,))
-            index = 0 if side < 0 else 1
-            for action, (y,) in zip(character.moveList.values(), heights):
-                DirectButton(text=action.name,
-                             command=self.select_action,
-                             extraArgs=[index, action],
-                             pos=(button_width - frame_width, 0, frame_height - count * button_height - y),
-                             parent=action_box,
-                             **default_button_args)
-
-            self.actionBoxes.append(action_box)
+            self.actionSelectors.append(action_selector)
             self.infoBoxes.append(info_box)
-            self.useButtons.append(use_button)
             self.healthBars.append(bar)
 
         self.accept('query_action', self.query_action)
@@ -180,16 +162,11 @@ class BattleInterface(DirectObject):
 
     def query_action(self, index):
         """Set up buttons for a player to choose an action."""
-        self.actionBoxes[index].show()
-
-    def select_action(self, index, action):
-        messenger.send('set_action', [action])
-        self.output_info(index, action.show_stats())
-        self.useButtons[index].setText(f'Use {action.name}')
+        self.actionSelectors[index].show()
 
     def remove_query(self):
-        for box in self.actionBoxes:
-            box.hide()
+        for selector in self.actionSelectors:
+            selector.hide()
 
     def output_info(self, index, info):
         self.infoBoxes[index].setText(info)
@@ -200,3 +177,39 @@ class BattleInterface(DirectObject):
 
     def announce_win(self, winner):
         self.sharedInfo.setText(f'{winner} wins!')
+
+
+class ActionSelector:
+    def __init__(self, actions, pos, index):
+        self.backdrop = DirectFrame(frameColor=(0, 0, 0, 0.5),
+                                    frameSize=(-frame_width, frame_width, -frame_height, frame_height),
+                                    pos=pos)
+
+        self.use_button = DirectButton(text='',
+                                       command=lambda: messenger.send('use_action'),
+                                       pos=(frame_width - button_width, 0, 0),
+                                       parent=self.backdrop,
+                                       **default_button_args)
+
+        self.action_buttons = []
+        count = len(actions)
+        heights = even_spacing((count,), (2 * button_height,))
+        for action, (y,) in zip(actions, heights):
+            button = DirectButton(text=action.name,
+                                  command=self.select_action,
+                                  extraArgs=[index, action],
+                                  pos=(button_width - frame_width, 0, frame_height - count * button_height - y),
+                                  parent=self.backdrop,
+                                  **default_button_args)
+            self.action_buttons.append(button)
+
+    def select_action(self, index, action):
+        messenger.send('set_action', [action])
+        messenger.send('output_text', [index, action])
+        self.use_button.setText(f'Use {action.name}')
+
+    def hide(self):
+        self.backdrop.hide()
+
+    def show(self):
+        self.backdrop.show()
