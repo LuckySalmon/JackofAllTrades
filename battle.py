@@ -15,12 +15,13 @@ gravity = 0
 
 sides = ['l', 'r']
 DefaultTargetPos = (1, 1, 0)
-TARGETING = [False]
+TARGETING = False
 LEFT, RIGHT = -1, 1
 
 
 def toggle_targeting():
-    TARGETING[0] = not TARGETING[0]
+    global TARGETING
+    TARGETING = not TARGETING
 
 
 class TargetMovingObject(DirectObject):
@@ -169,7 +170,7 @@ class App(ShowBase):
     def update(self, task) -> int:
         """Update the world using physics."""
         self.clock += 1
-        if TARGETING[0] and self.clock % 10 == 0:
+        if TARGETING and self.clock % 10 == 0:
             for (fighter, side), target in zip(product(self.fighters, sides), self.targets):
                 fighter.skeleton.position_shoulder(side, target)
         return physics.update_physics(self.world, task)
