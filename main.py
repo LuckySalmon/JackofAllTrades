@@ -126,7 +126,7 @@ class App(ShowBase, FSM):
         self.targets = []
 
         self.ui = None
-        self.selectedAction, self.selection = None, None
+        self.selectedAction = None
 
         self.accept('main_menu', self.request, ['MainMenu'])
         self.accept('character_menu', self.request, ['CharacterMenu', 'Select a Character', CHARACTERS, 'view'])
@@ -211,7 +211,7 @@ class App(ShowBase, FSM):
         # Set up GUI
         self.ui = ui.BattleInterface(self.fighters)
 
-        self.query_action()
+        messenger.send('query_action', [0])
 
     def update(self, task):
         """Update the world using physics."""
@@ -228,35 +228,26 @@ class App(ShowBase, FSM):
         else:
             self.debugNP.hide()
 
-    def query_action(self):
-        """Set up buttons for a player to choose an action."""
-        fighter = self.fighters[self.index]
-        messenger.send('query_action', [fighter, self.index])
-
-    def set_action(self, fighter, name):
+    def set_action(self, action):
         """Set an action to be selected."""
-        i = self.index
-        self.selectedAction = fighter.moveList[name]
-        messenger.send('output_info', [i, self.selectedAction.show_stats()])
-        messenger.send('select_action', [i, name])
-        self.selection = name
+        self.selectedAction = action
 
     def use_action(self):
         """Make the character use the selected action, then move on to the next turn."""
         messenger.send('remove_query')
         user = self.fighters[self.index]
-        name, move = self.selection, self.selectedAction
+        move = self.selectedAction
 
         # Result of move
         if move.get_accuracy() > random.randint(0, 99):
             damage = move.get_damage()
             if random.randint(1, 100) <= 2:
                 damage *= 1.5
-                print("Critical Hit!".format(user.Name, name, damage))
-            messenger.send('output_info', [self.index, f"{user.Name}'s {name} hit for {damage} damage!"])
+                print("Critical Hit!".format(user.Name, move.name, damage))
+            messenger.send('output_info', [self.index, f"{user.Name}'s {move.name} hit for {damage} damage!"])
         else:
             damage = 0
-            messenger.send('output_info', [self.index, f"{user.Name}'s {name} missed!"])
+            messenger.send('output_info', [self.index, f"{user.Name}'s {move.name} missed!"])
 
         # Move over to other character and apply damage
         self.index = (self.index + 1) % 2
@@ -272,7 +263,7 @@ class App(ShowBase, FSM):
             self.fighters[self.index].skeleton.torso.node().setMass(1.0)
             self.fighters[self.index].skeleton.torso.node().setActive(True, False)
         else:
-            self.query_action()
+            messenger.send('query_action', [self.index])
 
 
 if __name__ == "__main__":
