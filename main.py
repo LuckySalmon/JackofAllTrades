@@ -130,7 +130,7 @@ class App(ShowBase, FSM):
 
         self.accept('main_menu', self.request, ['MainMenu'])
         self.accept('character_menu', self.request, ['CharacterMenu', 'Select a Character', CHARACTERS, 'view'])
-        self.accept('fighter_selection', self.request, ['CharacterMenu', 'Select Fighter', CHARACTERS])
+        self.accept('fighter_selection', self.request, ['CharacterMenu', 'Select a Fighter', CHARACTERS])
         self.accept('select_character', self.select_character)
         self.accept('set_action', self.set_action)
         self.accept('use_action', self.use_action)
@@ -153,6 +153,8 @@ class App(ShowBase, FSM):
             self.main_menu.hide()
 
     def enterCharacterMenu(self, title, character_list, mode):
+        if mode == 'split_screen':
+            title += ', Player 1'
         self.character_menu = ui.CharacterMenu(title, character_list, mode)
 
     def exitCharacterMenu(self):
@@ -163,7 +165,9 @@ class App(ShowBase, FSM):
         match mode:
             case 'split_screen':
                 self.fighters.append(characters.Fighter(character))
-                if len(self.fighters) > 1:
+                if len(self.fighters) == 1:
+                    self.character_menu.title_text['text'] = 'Select a Fighter, Player 2'
+                else:
                     self.request('Battle', self.fighters)
             case 'copy':
                 fighters = [characters.Fighter(character) for _ in range(2)]

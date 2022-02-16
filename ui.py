@@ -74,6 +74,9 @@ class CharacterMenu:
         self.backdrop = DirectFrame(frameColor=(0, 0, 0, 0),
                                     frameSize=(-1, 1, -1, 1),
                                     pos=(0, 0, 0))
+        self.title_text = OnscreenText(text=title,
+                                       pos=(0, 0.9),
+                                       parent=self.backdrop)
         self.character_view = DirectFrame(frameColor=(.2, .2, .2, .8),
                                           frameSize=(-window_width, window_width, -window_height/2, window_height/2),
                                           pos=(0, 0, -window_height/2),
@@ -107,7 +110,7 @@ class CharacterMenu:
             button = DirectButton(text=character.Name,
                                   command=self.select_character,
                                   extraArgs=[character],
-                                  pos=(y, 0, -x),
+                                  pos=(y, 0, -x - 0.2),
                                   frameSize=(-4, 4, -4, 4),
                                   borderWidth=(0.25, 0.25),
                                   scale=0.05,
