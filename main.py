@@ -243,11 +243,13 @@ class App(ShowBase, FSM):
             damage = move.get_damage()
             if random.randint(1, 100) <= 2:
                 damage *= 1.5
-                print("Critical Hit!".format(user.Name, move.name, damage))
-            messenger.send('output_info', [self.index, f"{user.Name}'s {move.name} hit for {damage} damage!"])
+                msg = f"{user.Name}'s {move.name} hit for {damage} damage!\nCritical Hit!"
+            else:
+                msg = f"{user.Name}'s {move.name} hit for {damage} damage!"
         else:
+            msg = f"{user.Name}'s {move.name} missed!"
             damage = 0
-            messenger.send('output_info', [self.index, f"{user.Name}'s {move.name} missed!"])
+        messenger.send('output_info', [self.index, msg])
 
         # Move over to other character and apply damage
         self.index = (self.index + 1) % 2
