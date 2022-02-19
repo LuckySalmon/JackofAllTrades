@@ -208,7 +208,7 @@ class ActionSelector:
 
     def select_action(self, index, action):
         messenger.send('set_action', [action])
-        messenger.send('output_text', [index, action])
+        messenger.send('output_info', [index, action.show_stats()])
         self.use_button.setText(f'Use {action.name}')
 
     def hide(self):
