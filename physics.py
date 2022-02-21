@@ -49,16 +49,16 @@ def make_body(name: str,
               position: VBase3 | Sequence[float],
               parent: NodePath,
               world: BulletWorld) -> 'NodePath[BulletRigidBodyNode]':
-    """Return a node pointer to a new rigid body with the given characteristics"""
+    """Return a NodePath for a new rigid body with the given characteristics"""
     constructor = shape_constructors[shape]
     node = BulletRigidBodyNode(name)
     shape = constructor(*dimensions)
     node.addShape(shape)
     node.setMass(mass)
-    pointer = parent.attachNewNode(node)
-    pointer.setPos(*position)
+    path = parent.attachNewNode(node)
+    path.setPos(*position)
     world.attachRigidBody(node)
-    return pointer
+    return path
 
 
 def make_world(gravity: float, render: NodePath) -> BulletWorld:
