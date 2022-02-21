@@ -57,7 +57,7 @@ def make_body(name: str,
     node.setMass(mass)
     path = parent.attachNewNode(node)
     path.setPos(*position)
-    world.attachRigidBody(node)
+    world.attach(node)
     return path
 
 
@@ -68,7 +68,7 @@ def make_world(gravity: float, render: NodePath) -> BulletWorld:
     ground = render.attachNewNode(BulletRigidBodyNode('Ground'))
     ground.node().addShape(BulletPlaneShape(Vec3(0, 0, 1), 1))
     ground.setPos(0, 0, -2)
-    world.attachRigidBody(ground.node())
+    world.attach(ground.node())
 
     return world
 
