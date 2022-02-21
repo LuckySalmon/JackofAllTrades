@@ -1,6 +1,6 @@
-from .BulletShape import BulletShape
-
 from typing import Literal
+
+from .BulletShape import BulletShape
 
 BulletUpAxis = Literal[0, 1, 2]
 

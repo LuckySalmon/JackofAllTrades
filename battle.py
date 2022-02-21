@@ -4,6 +4,7 @@ from itertools import product
 
 from direct.showbase.DirectObject import DirectObject
 from direct.showbase.ShowBase import ShowBase
+from direct.task.Task import Task
 from panda3d.bullet import BulletDebugNode
 from panda3d.core import Vec3
 
@@ -167,7 +168,7 @@ class App(ShowBase):
 
         self.query_action()
 
-    def update(self, task) -> int:
+    def update(self, task: Task) -> int:
         """Update the world using physics."""
         self.clock += 1
         if TARGETING and self.clock % 10 == 0:

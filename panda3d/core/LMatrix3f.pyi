@@ -1,6 +1,6 @@
-from .LVecBase3f import LVecBase3f
-
 from typing import overload
+
+from .LVecBase3f import LVecBase3f
 
 class LMatrix3f:
     @overload

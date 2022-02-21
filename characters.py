@@ -1,6 +1,6 @@
 import winsound
 import json
-from typing import Sequence
+from collections.abc import Iterable
 
 from panda3d.bullet import BulletWorld
 from panda3d.core import Vec3, Mat3, Mat4, NodePath
@@ -16,7 +16,7 @@ class Character(object):
     def __init__(self,
                  attributes: dict[str, str],
                  xp: int = 0,
-                 char_moves: Sequence[moves.Move] = (),
+                 char_moves: Iterable[moves.Move] = (),
                  skeleton: Skeleton | None = None):
         self.Name = attributes['name'].title()
         self.HP = int(attributes['hp'])

@@ -1,5 +1,5 @@
 import math
-from collections.abc import Sequence
+from collections.abc import Iterable
 
 from panda3d.bullet import (
     BulletPlaneShape,
@@ -19,6 +19,7 @@ from panda3d.core import (
     TransformState,
 )
 from direct.showbase.ShowBaseGlobal import globalClock
+from direct.task.Task import Task
 
 
 shape_constructors = dict(sphere=BulletSphereShape,
@@ -44,9 +45,9 @@ def make_rigid_transform(rotation: Mat3, translation: VBase3) -> TransformState:
 
 def make_body(name: str,
               shape: str,
-              dimensions: Sequence[float],
+              dimensions: Iterable[float],
               mass: float,
-              position: VBase3 | Sequence[float],
+              position: VBase3 | Iterable[float],
               parent: NodePath,
               world: BulletWorld) -> 'NodePath[BulletRigidBodyNode]':
     """Return a NodePath for a new rigid body with the given characteristics"""
@@ -73,7 +74,7 @@ def make_world(gravity: float, render: NodePath) -> BulletWorld:
     return world
 
 
-def update_physics(world: BulletWorld, task) -> int:
+def update_physics(world: BulletWorld, task: Task) -> int:
     dt = globalClock.getDt()
     world.doPhysics(dt)
     return task.cont

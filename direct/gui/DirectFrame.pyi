@@ -1,5 +1,5 @@
-from typing import Any
 from collections.abc import Sequence
+from typing import Any
 
 from panda3d.core.NodePath import NodePath
 from .DirectGuiBase import DirectGuiWidget

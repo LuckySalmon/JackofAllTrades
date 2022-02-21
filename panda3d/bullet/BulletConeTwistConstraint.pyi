@@ -1,4 +1,4 @@
-from ..core.TransformState import TransformState
+from ..core import TransformState
 from .BulletConstraint import BulletConstraint
 from .BulletRigidBodyNode import BulletRigidBodyNode
 

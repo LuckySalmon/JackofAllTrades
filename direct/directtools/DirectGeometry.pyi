@@ -1,12 +1,13 @@
-from panda3d.core import NodePath, VBase4, LVecBase4f, LVecBase3f, LPoint3f
-
 from typing import overload
 
+from panda3d.core import NodePath, LVecBase4f, LVecBase3f, LPoint3f
+
 class LineNodePath(NodePath):
-    def __init__(self, parent=None,
+    def __init__(self,
+                 parent: NodePath | None = None,
                  name: str | None = None,
                  thickness: float = 1.0,
-                 colorVec: LVecBase4f = VBase4(1)) -> None: ...
+                 colorVec: LVecBase4f = LVecBase4f(1)) -> None: ...
 
     @overload
     def moveTo(self, v: LVecBase3f) -> None: ...
