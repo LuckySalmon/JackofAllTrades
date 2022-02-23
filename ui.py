@@ -193,6 +193,7 @@ class ActionSelector:
                                        pos=(frame_width - button_width, 0, 0),
                                        parent=self.backdrop,
                                        **default_button_args)
+        self.use_button.hide()
 
         self.action_buttons = []
         count = len(actions)
@@ -210,6 +211,7 @@ class ActionSelector:
         messenger.send('set_action', [action])
         messenger.send('output_info', [index, action.show_stats()])
         self.use_button.setText(f'Use {action.name}')
+        self.use_button.show()
 
     def hide(self):
         self.backdrop.hide()
