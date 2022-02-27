@@ -184,13 +184,16 @@ class BattleInterface(DirectObject):
 
 class ActionSelector:
     def __init__(self, actions, pos, index):
+        self.selected_action = None
+        self.index = index
+
         self.backdrop = DirectFrame(frameColor=(0, 0, 0, 0.5),
                                     frameSize=(-frame_width, frame_width, -frame_height, frame_height),
                                     pos=pos)
 
         self.use_button = DirectButton(text='',
-                                       command=lambda: messenger.send('use_action'),
-                                       pos=(frame_width - button_width, 0, 0),
+                                       command=self.use_action,
+                                       pos=(button_width, 0, 0),
                                        parent=self.backdrop,
                                        **default_button_args)
         self.use_button.hide()
@@ -201,17 +204,20 @@ class ActionSelector:
         for action, (y,) in zip(actions, heights):
             button = DirectButton(text=action.name,
                                   command=self.select_action,
-                                  extraArgs=[index, action],
-                                  pos=(button_width - frame_width, 0, frame_height - count * button_height - y),
+                                  extraArgs=[action],
+                                  pos=(-button_width, 0, frame_height - count*button_height - y),
                                   parent=self.backdrop,
                                   **default_button_args)
             self.action_buttons.append(button)
 
-    def select_action(self, index, action):
-        messenger.send('set_action', [action])
-        messenger.send('output_info', [index, action.show_stats()])
+    def select_action(self, action):
+        self.selected_action = action
+        messenger.send('output_info', [self.index, action.show_stats()])
         self.use_button.setText(f'Use {action.name}')
         self.use_button.show()
+
+    def use_action(self):
+        messenger.send('use_action', [self.selected_action])
 
     def hide(self):
         self.backdrop.hide()

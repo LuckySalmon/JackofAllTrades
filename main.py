@@ -126,13 +126,11 @@ class App(ShowBase, FSM):
         self.targets = []
 
         self.ui = None
-        self.selectedAction = None
 
         self.accept('main_menu', self.request, ['MainMenu'])
         self.accept('character_menu', self.request, ['CharacterMenu', 'Select a Character', CHARACTERS, 'view'])
         self.accept('fighter_selection', self.request, ['CharacterMenu', 'Select a Fighter', CHARACTERS])
         self.accept('select_character', self.select_character)
-        self.accept('set_action', self.set_action)
         self.accept('use_action', self.use_action)
         self.accept('quit', self.userExit)
 
@@ -232,15 +230,10 @@ class App(ShowBase, FSM):
         else:
             self.debugNP.hide()
 
-    def set_action(self, action):
-        """Set an action to be selected."""
-        self.selectedAction = action
-
-    def use_action(self):
+    def use_action(self, move):
         """Make the character use the selected action, then move on to the next turn."""
         messenger.send('remove_query')
         user = self.fighters[self.index]
-        move = self.selectedAction
 
         # Result of move
         if move.get_accuracy() > random.randint(0, 99):
