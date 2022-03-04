@@ -9,6 +9,7 @@ from direct.showbase.MessengerGlobal import messenger
 from direct.showbase.DirectObject import DirectObject
 from panda3d.core import TextNode
 from itertools import product
+from collections.abc import Generator, Sequence
 
 LEFT, RIGHT = -1, 1
 
@@ -24,14 +25,16 @@ default_button_args = dict(frameSize=(-button_width, button_width, -button_heigh
                            text_scale=0.1)
 
 
-def even_spacing(dimensions, spacing):
-    transforms = []
-    for dim, space in zip(dimensions, spacing):
-        shift = (dim - 1) / 2
-        transforms.append(lambda i, d=shift, k=space: (i - d) * k)
-    for index in product(*(range(d) for d in dimensions)):
-        point = tuple(t(i) for i, t in zip(index, transforms))
-        yield point
+def uniform_spacing(counts: Sequence[int], gaps: Sequence[float]) -> Generator[tuple[float, ...]]:
+    assert len(counts) == len(gaps)
+    lists = []
+    for count, gap in zip(counts, gaps):
+        center = (count - 1) / 2
+        L = [(i - center) * gap for i in range(count)]
+        lists.append(L)
+    index_ranges = [range(n) for n in counts]
+    for index in product(*index_ranges):
+        yield tuple(L[i] for i, L in zip(index, lists))
 
 
 class MainMenu:
@@ -106,7 +109,7 @@ class CharacterMenu:
                                         scale=0.05,
                                         parent=self.backdrop)
         self.buttons = []
-        for character, (x, y) in zip(characters, even_spacing((4, 4), (0.5, 0.5))):
+        for character, (x, y) in zip(characters, uniform_spacing((4, 4), (0.5, 0.5))):
             button = DirectButton(text=character.Name,
                                   command=self.select_character,
                                   extraArgs=[character],
@@ -199,13 +202,12 @@ class ActionSelector:
         self.use_button.hide()
 
         self.action_buttons = []
-        count = len(actions)
-        heights = even_spacing((count,), (2 * button_height,))
-        for action, (y,) in zip(actions, heights):
+        for i, action in enumerate(actions):
+            y = (2*i + 1) * button_height
             button = DirectButton(text=action.name,
                                   command=self.select_action,
                                   extraArgs=[action],
-                                  pos=(-button_width, 0, frame_height - count*button_height - y),
+                                  pos=(-button_width, 0, frame_height - y),
                                   parent=self.backdrop,
                                   **default_button_args)
             self.action_buttons.append(button)
