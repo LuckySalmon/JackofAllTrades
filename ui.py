@@ -20,10 +20,6 @@ button_width = 0.25
 window_height = 1
 window_width = 4 / 3
 
-default_button_args = dict(frameSize=(-button_width, button_width, -button_height, button_height),
-                           borderWidth=(0.025, 0.025),
-                           text_scale=0.1)
-
 
 def uniform_spacing(counts: Sequence[int], gaps: Sequence[float]) -> Generator[tuple[float, ...]]:
     assert len(counts) == len(gaps)
@@ -42,28 +38,19 @@ class MainMenu:
         self.backdrop = DirectFrame(frameColor=(0, 0, 0, 0),
                                     frameSize=(-1, 1, -1, 1),
                                     pos=(0, 0, 0))
-        self.battleButton = DirectButton(text='Go To Battle',
-                                         command=messenger.send,
-                                         extraArgs=['fighter_selection', ['split_screen']],
-                                         pos=(0, 0, 0.4),
-                                         frameSize=(-0.4, 0.4, -0.15, 0.15),
-                                         borderWidth=(0.05, 0.05),
-                                         text_scale=0.1,
-                                         parent=self.backdrop)
-        self.characterButton = DirectButton(text='Characters',
-                                            command=lambda: messenger.send('character_menu'),
-                                            pos=(0, 0, 0),
-                                            frameSize=(-0.4, 0.4, -0.15, 0.15),
-                                            borderWidth=(0.05, 0.05),
-                                            text_scale=0.1,
-                                            parent=self.backdrop)
-        self.quitButton = DirectButton(text='Quit',
-                                       command=lambda: messenger.send('quit'),
-                                       pos=(0, 0, -0.4),
-                                       frameSize=(-0.4, 0.4, -0.15, 0.15),
-                                       borderWidth=(0.05, 0.05),
-                                       text_scale=0.1,
-                                       parent=self.backdrop)
+        self.battleButton = self.make_button('Go To Battle', ['fighter_selection', ['split_screen']], 0.4)
+        self.characterButton = self.make_button('Characters', ['character_menu'], 0)
+        self.quitButton = self.make_button('Quit', ['quit'], -0.4)
+
+    def make_button(self, text, event_args, y):
+        return DirectButton(text=text,
+                            command=messenger.send,
+                            extraArgs=event_args,
+                            pos=(0, 0, y),
+                            frameSize=(-0.4, 0.4, -0.15, 0.15),
+                            borderWidth=(0.05, 0.05),
+                            text_scale=0.1,
+                            parent=self.backdrop)
 
     def hide(self):
         self.backdrop.hide()
@@ -194,23 +181,24 @@ class ActionSelector:
                                     frameSize=(-frame_width, frame_width, -frame_height, frame_height),
                                     pos=pos)
 
-        self.use_button = DirectButton(text='',
-                                       command=self.use_action,
-                                       pos=(button_width, 0, 0),
-                                       parent=self.backdrop,
-                                       **default_button_args)
+        self.use_button = self.make_button('', self.use_action, (button_width, 0, 0))
         self.use_button.hide()
 
         self.action_buttons = []
         for i, action in enumerate(actions):
             y = (2*i + 1) * button_height
-            button = DirectButton(text=action.name,
-                                  command=self.select_action,
-                                  extraArgs=[action],
-                                  pos=(-button_width, 0, frame_height - y),
-                                  parent=self.backdrop,
-                                  **default_button_args)
+            button = self.make_button(action.name, self.select_action, (-button_width, 0, frame_height - y), [action])
             self.action_buttons.append(button)
+
+    def make_button(self, text, command, pos, command_args=()):
+        return DirectButton(text=text,
+                            command=command,
+                            extraArgs=command_args,
+                            pos=pos,
+                            frameSize=(-button_width, button_width, -button_height, button_height),
+                            borderWidth=(0.025, 0.025),
+                            text_scale=0.07,
+                            parent=self.backdrop)
 
     def select_action(self, action):
         self.selected_action = action
