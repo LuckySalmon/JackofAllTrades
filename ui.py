@@ -12,13 +12,8 @@ from itertools import product
 from collections.abc import Generator, Sequence
 
 LEFT, RIGHT = -1, 1
-
-frame_height = 0.5
-frame_width = 0.5
-button_height = 0.1
-button_width = 0.25
-window_height = 1
-window_width = 4 / 3
+ASPECT_RATIO = 4 / 3
+SELECTOR_WIDTH = 0.5
 
 
 def uniform_spacing(counts: Sequence[int], gaps: Sequence[float]) -> Generator[tuple[float, ...]]:
@@ -68,8 +63,8 @@ class CharacterMenu:
                                        pos=(0, 0.9),
                                        parent=self.backdrop)
         self.character_view = DirectFrame(frameColor=(.2, .2, .2, .8),
-                                          frameSize=(-window_width, window_width, -window_height/2, window_height/2),
-                                          pos=(0, 0, -window_height/2),
+                                          frameSize=(-ASPECT_RATIO, ASPECT_RATIO, -0.5, 0.5),
+                                          pos=(0, 0, -0.5),
                                           parent=self.backdrop)
         self.character_view_text = OnscreenText(text='Character customization is unimplemented',
                                                 pos=(0, 0.2),
@@ -128,13 +123,13 @@ class BattleInterface(DirectObject):
 
         self.actionSelectors, self.infoBoxes, self.healthBars = [], [], []
         for character, side in zip(character_list, (LEFT, RIGHT)):
-            pos = (side * (window_width - frame_width), 0, frame_height - window_height)
+            x = side * (ASPECT_RATIO - SELECTOR_WIDTH)
             index = 0 if side == LEFT else 1
 
-            action_selector = ActionSelector(character.moveList.values(), pos, index)
+            action_selector = ActionSelector(character.moveList.values(), (x, 0, -0.5), index)
             action_selector.hide()
 
-            info_box = OnscreenText(pos=(pos[0], pos[2] + frame_height + 0.25),
+            info_box = OnscreenText(pos=(x, 0.25),
                                     scale=0.07,
                                     align=TextNode.ACenter)
 
@@ -178,16 +173,16 @@ class ActionSelector:
         self.index = index
 
         self.backdrop = DirectFrame(frameColor=(0, 0, 0, 0.5),
-                                    frameSize=(-frame_width, frame_width, -frame_height, frame_height),
+                                    frameSize=(-SELECTOR_WIDTH, SELECTOR_WIDTH, -0.5, 0.5),
                                     pos=pos)
 
-        self.use_button = self.make_button('', self.use_action, (button_width, 0, 0))
+        self.use_button = self.make_button('', self.use_action, (SELECTOR_WIDTH/2, 0, 0))
         self.use_button.hide()
 
         self.action_buttons = []
         for i, action in enumerate(actions):
-            y = (2*i + 1) * button_height
-            button = self.make_button(action.name, self.select_action, (-button_width, 0, frame_height - y), [action])
+            y = (2*i + 1) * 0.1
+            button = self.make_button(action.name, self.select_action, (-SELECTOR_WIDTH/2, 0, 0.5 - y), [action])
             self.action_buttons.append(button)
 
     def make_button(self, text, command, pos, command_args=()):
@@ -195,7 +190,7 @@ class ActionSelector:
                             command=command,
                             extraArgs=command_args,
                             pos=pos,
-                            frameSize=(-button_width, button_width, -button_height, button_height),
+                            frameSize=(-SELECTOR_WIDTH/2, SELECTOR_WIDTH/2, -0.1, 0.1),
                             borderWidth=(0.025, 0.025),
                             text_scale=0.07,
                             parent=self.backdrop)
