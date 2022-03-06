@@ -23,7 +23,8 @@ Development is just now picking up speed, and the next goal is to have a somewha
 * Graphics and rendering
 * Completion of the character ragdolls/skeletons
 * Connecting the physics simulation to gameplay
-* Basic GUIs for battles and character management
+* GUI improvements
+* A system and interface for character management
 * An AI for a single player to battle against
 * More options for actions a fighter can take in battle
 * Refinement and expansion of available characters and abilities
@@ -36,4 +37,4 @@ Keep in mind that, currently, *there is no game*. Regardless, the basic steps fo
 2. Clone this repository (if you're unfamiliar with or new to Git, [GitHub Desktop](https://docs.github.com/en/get-started/using-github/github-desktop) makes this fairly easy)
 3. Make a [virtual environment](https://docs.python.org/3/tutorial/venv.html)
 4. Use `pip install -r requirements.txt`
-5. Run `JackofAllTrades.py` (soon to be `main.py`)
+5. Run `main.py`
