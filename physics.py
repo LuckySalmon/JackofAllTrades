@@ -1,4 +1,5 @@
 import math
+from collections.abc import Iterable
 
 from panda3d.bullet import (
     BulletPlaneShape,
@@ -9,12 +10,16 @@ from panda3d.bullet import (
     BulletWorld
 )
 from panda3d.core import (
+    NodePath,
+    VBase3,
     Vec3,
     Quat,
+    Mat3,
     Mat4,
     TransformState,
 )
 from direct.showbase.ShowBaseGlobal import globalClock
+from direct.task.Task import Task
 
 
 shape_constructors = dict(sphere=BulletSphereShape,
@@ -24,7 +29,7 @@ shape_constructors = dict(sphere=BulletSphereShape,
                           capsule_z=lambda *args: BulletCapsuleShape(*args, 2))
 
 
-def make_quaternion(angle, axis):
+def make_quaternion(angle: float, axis: VBase3) -> Quat:
     """Return a quaternion with the given characteristics"""
     radians = angle/360 * math.pi
     cosine = math.cos(radians/2)
@@ -33,37 +38,43 @@ def make_quaternion(angle, axis):
     return quaternion
 
 
-def make_rigid_transform(rotation, translation):
+def make_rigid_transform(rotation: Mat3, translation: VBase3) -> TransformState:
     """Return a TransformState comprising the given rotation followed by the given translation"""
     return TransformState.makeMat(Mat4(rotation, translation))
 
 
-def make_body(name, shape, dimensions, mass, position, parent, world):
-    """Return a node pointer to a new rigid body with the given characteristics"""
+def make_body(name: str,
+              shape: str,
+              dimensions: Iterable[float],
+              mass: float,
+              position: VBase3 | Iterable[float],
+              parent: NodePath,
+              world: BulletWorld) -> 'NodePath[BulletRigidBodyNode]':
+    """Return a NodePath for a new rigid body with the given characteristics"""
     constructor = shape_constructors[shape]
     node = BulletRigidBodyNode(name)
     shape = constructor(*dimensions)
     node.addShape(shape)
     node.setMass(mass)
-    pointer = parent.attachNewNode(node)
-    pointer.setPos(*position)
-    world.attachRigidBody(node)
-    return pointer
+    path = parent.attachNewNode(node)
+    path.setPos(*position)
+    world.attach(node)
+    return path
 
 
-def make_world(gravity, render):
+def make_world(gravity: float, render: NodePath) -> BulletWorld:
     world = BulletWorld()
     world.setGravity(Vec3(0, 0, -gravity))
 
     ground = render.attachNewNode(BulletRigidBodyNode('Ground'))
     ground.node().addShape(BulletPlaneShape(Vec3(0, 0, 1), 1))
     ground.setPos(0, 0, -2)
-    world.attachRigidBody(ground.node())
+    world.attach(ground.node())
 
     return world
 
 
-def update_physics(world, task):
+def update_physics(world: BulletWorld, task: Task) -> int:
     dt = globalClock.getDt()
     world.doPhysics(dt)
     return task.cont

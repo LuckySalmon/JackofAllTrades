@@ -1,5 +1,5 @@
-from ..core.LVector3f import LVector3f
-from ..core.TransformState import TransformState
+from ..core import LVector3f
+from ..core import TransformState
 from .BulletConstraint import BulletConstraint
 from .BulletRigidBodyNode import BulletRigidBodyNode
 from .BulletRotationalLimitMotor import BulletRotationalLimitMotor

@@ -1,4 +1,4 @@
-from ..core.LVector3f import LVector3f
+from ..core import LVector3f
 from .BulletShape import BulletShape
 
 class BulletPlaneShape(BulletShape):

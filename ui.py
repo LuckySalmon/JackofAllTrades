@@ -11,6 +11,8 @@ from panda3d.core import TextNode
 from itertools import product
 from collections.abc import Generator, Sequence
 
+from characters import Fighter
+
 LEFT, RIGHT = -1, 1
 ASPECT_RATIO = 4 / 3
 SELECTOR_WIDTH = 0.5
@@ -117,7 +119,7 @@ class CharacterMenu:
 
 
 class BattleInterface(DirectObject):
-    def __init__(self, character_list):
+    def __init__(self, character_list: list[Fighter]):
         super().__init__()
         self.sharedInfo = OnscreenText(pos=(0, 0.5), scale=0.07, align=TextNode.ACenter)
 
@@ -148,22 +150,22 @@ class BattleInterface(DirectObject):
         self.accept('apply_damage', self.apply_damage)
         self.accept('announce_win', self.announce_win)
 
-    def query_action(self, index):
+    def query_action(self, index: int) -> None:
         """Set up buttons for a player to choose an action."""
         self.actionSelectors[index].show()
 
-    def remove_query(self):
+    def remove_query(self) -> None:
         for selector in self.actionSelectors:
             selector.hide()
 
-    def output_info(self, index, info):
+    def output_info(self, index: int, info: str) -> None:
         self.infoBoxes[index].setText(info)
 
-    def apply_damage(self, index, damage, damaged):
+    def apply_damage(self, index: int, damage: float, damaged: str) -> None:
         self.healthBars[index]['value'] -= damage
         self.output_info(index, f'{damaged} took {damage} damage!')
 
-    def announce_win(self, winner):
+    def announce_win(self, winner: str) -> None:
         self.sharedInfo.setText(f'{winner} wins!')
 
 

@@ -1,25 +1,26 @@
 import random
 import os
 import json
+from typing import Any
 
 
 # The class "Move" should be entirely self sufficient, and not require any numbers or variables outside of the class.
 
 class Move:
-    def __init__(self, attributes):
+    def __init__(self, attributes: dict[str, Any]):
         self.name = attributes['name'].title()
         self.dmg = attributes['damage']
         self.acc = int(attributes['accuracy'])
         self.status = attributes['effects']
 
-    def get_damage(self):
+    def get_damage(self) -> int:
         """Return a value within the damage bounds."""
         return random.randint(*self.dmg)
         # TODO:
         #  what if we used triangular distribution (http://en.wikipedia.org/wiki/Triangular_distribution)?
         #  Perhaps even modify it based on accuracy?
 
-    def get_accuracy(self):
+    def get_accuracy(self) -> float:
         """Return the accuracy of the move."""
         return self.acc
 
@@ -27,7 +28,7 @@ class Move:
         """Return the status effects of the move."""
         return self.status
 
-    def show_stats(self):
+    def show_stats(self) -> str:
         """Return a string containing information about the move's damage and accuracy in a human-readable format."""
         return '{0}\nDamage: {1} - {2}\nAccuracy: {3}%'.format(self.name, self.dmg[0], self.dmg[1], str(self.acc))
 

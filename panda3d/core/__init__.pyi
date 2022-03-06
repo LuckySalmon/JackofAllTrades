@@ -10,8 +10,9 @@ from .NodePath import NodePath as NodePath
 from .TextNode import TextNode as TextNode
 from .TransformState import TransformState as TransformState
 
-LMatrix3 = LMatrix3f
+Mat3 = LMatrix3 = LMatrix3f
+VBase3 = LVecBase3f
 Vec3 = LVector3f
+Mat4 = LMatrix4 = LMatrix4f
 VBase4 = LVecBase4f
-LMatrix4 = LMatrix4f
-LQuaternion = LQuaternionf
+Quat = LQuaternion = LQuaternionf

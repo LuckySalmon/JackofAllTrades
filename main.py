@@ -5,11 +5,13 @@ from itertools import product
 from direct.showbase.MessengerGlobal import messenger
 from direct.showbase.DirectObject import DirectObject
 from direct.showbase.ShowBase import ShowBase
+from direct.task.Task import Task
 from panda3d.bullet import BulletDebugNode
 from panda3d.core import Vec3
 from direct.fsm.FSM import FSM
 
 import characters
+from characters import Fighter
 import physics
 import ui
 
@@ -17,7 +19,7 @@ gravity = 0
 
 sides = ['l', 'r']
 DefaultTargetPos = (1, 1, 0)
-TARGETING = [False]
+TARGETING = False
 LEFT, RIGHT = -1, 1
 
 CHARACTERS = []
@@ -27,7 +29,8 @@ for char in characters.charList:
 
 
 def toggle_targeting():
-    TARGETING[0] = not TARGETING[0]
+    global TARGETING
+    TARGETING = not TARGETING
 
 
 class TargetMovingObject(DirectObject):
@@ -42,30 +45,30 @@ class TargetMovingObject(DirectObject):
         self.accept('4-repeat', self.scale_targets, [0.99])
         self.accept('6-repeat', self.scale_targets, [1.01])
 
-    def update(self):
+    def update(self) -> None:
         x, y, z = self.xyz
         coordinates = [[x, y, z], [x, -y, z], [-x, -y, z], [-x, y, z]]
         self.targets.clear()
         targets = [Vec3(x, y, z) for x, y, z in coordinates]
         self.targets += targets
 
-    def set_targets(self, x, y, z):
+    def set_targets(self, x: float, y: float, z: float) -> list[float]:
         self.xyz = [x, y, z]
         self.update()
         return self.targets
 
-    def modify_coordinate(self, axis, delta):
+    def modify_coordinate(self, axis: int, delta: float) -> None:
         self.xyz[axis] += delta
         self.update()
 
-    def scale_targets(self, scale):
+    def scale_targets(self, scale: float) -> None:
         for axis in range(3):
             self.xyz[axis] *= scale
         self.update()
 
 
 class ShoulderMovingObject(DirectObject):
-    def __init__(self, character_list):
+    def __init__(self, character_list: list[Fighter]):
         super().__init__()
         self.character_list = character_list
         bindings = [('q', 'e'), ('a', 'd'), ('z', 'c')]
@@ -79,22 +82,22 @@ class ShoulderMovingObject(DirectObject):
         self.accept('p', self.print_angles)
         self.accept('space', toggle_targeting)
 
-    def move_arms(self, axis, speed):
+    def move_arms(self, axis: int, speed: float) -> None:
         for i, character in enumerate(self.character_list):
             character.skeleton.set_shoulder_motion(axis, speed)
 
-    def bend_arms(self, angle):
+    def bend_arms(self, angle: float) -> None:
         for character in self.character_list:
             for arm in character.skeleton.arm_l, character.skeleton.arm_r:
                 arm.elbow.enableMotor(True)
                 arm.elbow.setMotorTarget(angle, 0.5)
                 arm.forearm.node().setActive(True, False)
 
-    def arms_down(self):
+    def arms_down(self) -> None:
         for character in self.character_list:
             character.skeleton.arms_down()
 
-    def print_angles(self):
+    def print_angles(self) -> None:
         for character in self.character_list:
             for arm in character.skeleton.arm_l, character.skeleton.arm_r:
                 angles = [arm.shoulder.getAngle(i) for i in range(3)]
@@ -171,7 +174,7 @@ class App(ShowBase, FSM):
                 fighters = [characters.Fighter(character) for _ in range(2)]
                 self.request('Battle', fighters)
 
-    def enterBattle(self, fighters):
+    def enterBattle(self, fighters: list[Fighter]) -> None:
         fighters.sort(key=lambda x: x.Speed, reverse=True)
         for fighter in fighters:
             fighter.HP = fighter.BaseHP
@@ -215,15 +218,15 @@ class App(ShowBase, FSM):
 
         messenger.send('query_action', [0])
 
-    def update(self, task):
+    def update(self, task: Task) -> int:
         """Update the world using physics."""
         self.clock += 1
-        if TARGETING[0] and self.clock % 10 == 0:
+        if TARGETING and self.clock % 10 == 0:
             for (fighter, side), target in zip(product(self.fighters, sides), self.targets):
                 fighter.skeleton.position_shoulder(side, target)
         return physics.update_physics(self.world, task)
 
-    def toggle_debug(self):
+    def toggle_debug(self) -> None:
         """Toggle debug display for physical objects."""
         if self.debugNP.isHidden():
             self.debugNP.show()
