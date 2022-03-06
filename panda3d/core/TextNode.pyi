@@ -1,4 +1,6 @@
+from typing import Literal
+
 class TextNode:
-    ALeft: int = 0
-    ARight: int = 1
-    ACenter: int = 2
+    ALeft: Literal[0]
+    ARight: Literal[1]
+    ACenter: Literal[2]

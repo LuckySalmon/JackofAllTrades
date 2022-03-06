@@ -1,6 +1,7 @@
 import math
 import random
 from itertools import product
+from collections.abc import Iterable
 
 from direct.showbase.MessengerGlobal import messenger
 from direct.showbase.DirectObject import DirectObject
@@ -10,8 +11,8 @@ from panda3d.bullet import BulletDebugNode
 from panda3d.core import Vec3
 from direct.fsm.FSM import FSM
 
-import characters
-from characters import Fighter
+from characters import Character, Fighter, charList
+from moves import Move
 import physics
 import ui
 
@@ -23,9 +24,9 @@ TARGETING = False
 LEFT, RIGHT = -1, 1
 
 CHARACTERS = []
-for char in characters.charList:
+for char in charList:
     with open(f'data\\characters\\{char}.json') as f:
-        CHARACTERS.append(characters.Character.from_json(f))
+        CHARACTERS.append(Character.from_json(f))
 
 
 def toggle_targeting():
@@ -113,7 +114,7 @@ class ShoulderMovingObject(DirectObject):
 
 
 class App(ShowBase, FSM):
-    def __init__(self, fighters=None):
+    def __init__(self, fighters: list[Fighter] | None = None):
         ShowBase.__init__(self)
         FSM.__init__(self, 'GameFSM')
 
@@ -145,33 +146,33 @@ class App(ShowBase, FSM):
         else:
             self.request('Battle', fighters)
 
-    def enterMainMenu(self):
+    def enterMainMenu(self) -> None:
         self.fighters.clear()
         self.main_menu = ui.MainMenu()
 
-    def exitMainMenu(self):
+    def exitMainMenu(self) -> None:
         if self.main_menu is not None:
             self.main_menu.hide()
 
-    def enterCharacterMenu(self, title, character_list, mode):
+    def enterCharacterMenu(self, title: str, character_list: Iterable[Character], mode: str) -> None:
         if mode == 'split_screen':
             title += ', Player 1'
         self.character_menu = ui.CharacterMenu(title, character_list, mode)
 
-    def exitCharacterMenu(self):
+    def exitCharacterMenu(self) -> None:
         if self.character_menu is not None:
             self.character_menu.hide()
 
-    def select_character(self, character, mode):
+    def select_character(self, character: Character, mode: str) -> None:
         match mode:
             case 'split_screen':
-                self.fighters.append(characters.Fighter(character))
+                self.fighters.append(Fighter(character))
                 if len(self.fighters) == 1:
                     self.character_menu.title_text['text'] = 'Select a Fighter, Player 2'
                 else:
                     self.request('Battle', self.fighters)
             case 'copy':
-                fighters = [characters.Fighter(character) for _ in range(2)]
+                fighters = [Fighter(character) for _ in range(2)]
                 self.request('Battle', fighters)
 
     def enterBattle(self, fighters: list[Fighter]) -> None:
@@ -233,7 +234,7 @@ class App(ShowBase, FSM):
         else:
             self.debugNP.hide()
 
-    def use_action(self, move):
+    def use_action(self, move: Move) -> None:
         """Make the character use the selected action, then move on to the next turn."""
         messenger.send('remove_query')
         user = self.fighters[self.index]

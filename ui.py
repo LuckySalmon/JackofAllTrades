@@ -9,9 +9,10 @@ from direct.showbase.MessengerGlobal import messenger
 from direct.showbase.DirectObject import DirectObject
 from panda3d.core import TextNode
 from itertools import product
-from collections.abc import Generator, Sequence
+from collections.abc import Callable, Generator, Iterable, Sequence
 
-from characters import Fighter
+from characters import Character, Fighter
+from moves import Move
 
 LEFT, RIGHT = -1, 1
 ASPECT_RATIO = 4 / 3
@@ -39,7 +40,7 @@ class MainMenu:
         self.characterButton = self.make_button('Characters', ['character_menu'], 0)
         self.quitButton = self.make_button('Quit', ['quit'], -0.4)
 
-    def make_button(self, text, event_args, y):
+    def make_button(self, text: str, event_args: Iterable, y: float) -> DirectButton:
         return DirectButton(text=text,
                             command=messenger.send,
                             extraArgs=event_args,
@@ -49,12 +50,12 @@ class MainMenu:
                             text_scale=0.1,
                             parent=self.backdrop)
 
-    def hide(self):
+    def hide(self) -> None:
         self.backdrop.hide()
 
 
 class CharacterMenu:
-    def __init__(self, title, characters, mode):
+    def __init__(self, title: str, characters: Iterable[Character], mode: str):
         self.mode = mode
         self.selectedCharacter = None
         self.character_view = None
@@ -104,17 +105,17 @@ class CharacterMenu:
                                   parent=self.backdrop)
             self.buttons.append(button)
 
-    def select_character(self, character):
+    def select_character(self, character: Character) -> None:
         self.character_view.show()
         self.selectedCharacter = character
         if self.mode != 'view':
             self.confirmation_button['text'] = f'Use {character.Name}'
             self.confirmation_button['state'] = DGG.NORMAL
 
-    def confirm_selection(self):
+    def confirm_selection(self) -> None:
         messenger.send('select_character', [self.selectedCharacter, self.mode])
 
-    def hide(self):
+    def hide(self) -> None:
         self.backdrop.hide()
 
 
@@ -170,7 +171,7 @@ class BattleInterface(DirectObject):
 
 
 class ActionSelector:
-    def __init__(self, actions, pos, index):
+    def __init__(self, actions: Iterable[Move], pos: tuple[float, float, float], index: int):
         self.selected_action = None
         self.index = index
 
@@ -187,7 +188,11 @@ class ActionSelector:
             button = self.make_button(action.name, self.select_action, (-SELECTOR_WIDTH/2, 0, 0.5 - y), [action])
             self.action_buttons.append(button)
 
-    def make_button(self, text, command, pos, command_args=()):
+    def make_button(self,
+                    text: str,
+                    command: Callable,
+                    pos: tuple[float, float, float],
+                    command_args: Iterable = ()) -> DirectButton:
         return DirectButton(text=text,
                             command=command,
                             extraArgs=command_args,
@@ -197,17 +202,17 @@ class ActionSelector:
                             text_scale=0.07,
                             parent=self.backdrop)
 
-    def select_action(self, action):
+    def select_action(self, action: Move) -> None:
         self.selected_action = action
         messenger.send('output_info', [self.index, action.show_stats()])
         self.use_button.setText(f'Use {action.name}')
         self.use_button.show()
 
-    def use_action(self):
+    def use_action(self) -> None:
         messenger.send('use_action', [self.selected_action])
 
-    def hide(self):
+    def hide(self) -> None:
         self.backdrop.hide()
 
-    def show(self):
+    def show(self) -> None:
         self.backdrop.show()
