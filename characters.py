@@ -4,6 +4,7 @@ from collections.abc import Iterable
 
 from panda3d.bullet import BulletWorld
 from panda3d.core import Vec3, Mat3, Mat4, NodePath
+from direct.showbase.MessengerGlobal import messenger
 
 import moves
 from skeletons import Skeleton
@@ -85,6 +86,17 @@ class Fighter(object):
         character = Character.from_json(file)
         return cls(character)
 
+    def use_move(self, move: Move, target: 'Fighter') -> None:
+        move.apply(self, target)
+
+    def apply_damage(self, damage: int) -> None:
+        damage = min(max(damage - self.Defense, 0), self.HP)    # TODO: Find and use a better formula
+        self.HP -= damage
+        messenger.send('output_info', [self.index, f'{self.Name} took {damage} damage!'])
+        messenger.send('set_health_bar', [self.index, self.HP])
+        if self.HP <= 0:
+            self.kill()
+
     def insert(self, world: BulletWorld, render: NodePath, pos: tuple[float, float]) -> None:
         """Place the character in the world."""
         side = 1 if self.index else -1
@@ -94,6 +106,9 @@ class Fighter(object):
         coord_xform = Mat4(rotation, offset)
 
         self.skeleton.insert(world, render, coord_xform)
+
+    def kill(self) -> None:
+        self.skeleton.kill()
 
     # TODO: create various status affects
     # (later)

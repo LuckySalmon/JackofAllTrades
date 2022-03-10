@@ -1,5 +1,4 @@
 import math
-import random
 from itertools import product
 from collections.abc import Iterable
 
@@ -240,32 +239,14 @@ class App(ShowBase, FSM):
         messenger.send('remove_query')
         user = self.fighters[self.index]
 
-        # Result of move
-        if move.get_accuracy() > random.randint(0, 99):
-            damage = move.get_damage()
-            if random.randint(1, 100) <= 2:
-                damage *= 1.5
-                msg = f"{user.Name}'s {move.name} hit for {damage} damage!\nCritical Hit!"
-            else:
-                msg = f"{user.Name}'s {move.name} hit for {damage} damage!"
-        else:
-            msg = f"{user.Name}'s {move.name} missed!"
-            damage = 0
-        messenger.send('output_info', [self.index, msg])
-
-        # Move over to other character and apply damage
         self.index = (self.index + 1) % 2
         opponent = self.fighters[self.index]
-        damage = min(max(damage - opponent.Defense, 0), opponent.HP)  # TODO: Find and use a better formula
-        opponent.HP -= damage
-        messenger.send('apply_damage', [self.index, damage, opponent.Name])
+
+        user.use_move(move, opponent)
 
         # Move on to next step (KO or opponent response)
         if opponent.HP <= 0:
             messenger.send('announce_win', [user.Name])
-            # I thought this would make the character fall, but it just glitches out
-            self.fighters[self.index].skeleton.torso.node().setMass(1.0)
-            self.fighters[self.index].skeleton.torso.node().setActive(True, False)
         else:
             messenger.send('query_action', [self.index])
 

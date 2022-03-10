@@ -2,6 +2,7 @@ import random
 import os
 import json
 from typing import Any
+from direct.showbase.MessengerGlobal import messenger
 
 
 # The class "Move" should be entirely self sufficient, and not require any numbers or variables outside of the class.
@@ -13,12 +14,20 @@ class Move:
         self.acc = int(attributes['accuracy'])
         self.status = attributes['effects']
 
-    def get_damage(self) -> int:
-        """Return a value within the damage bounds."""
-        return random.randint(*self.dmg)
-        # TODO:
-        #  what if we used triangular distribution (http://en.wikipedia.org/wiki/Triangular_distribution)?
-        #  Perhaps even modify it based on accuracy?
+    def apply(self, user, target):
+        if self.acc > random.randint(0, 99):    # TODO: Should this be calculated based on more factors?
+            damage = random.randint(*self.dmg)  # TODO: Use a different distribution?
+            if random.randint(1, 100) <= 2:
+                damage *= 1.5
+                msg = f"{user.Name}'s {self.name} hit for {damage} damage!\nCritical Hit!"
+            else:
+                msg = f"{user.Name}'s {self.name} hit for {damage} damage!"
+        else:
+            damage = 0
+            msg = f"{user.Name}'s {self.name} missed!"
+
+        messenger.send('output_info', [user.index, msg])
+        target.apply_damage(damage)
 
     def get_accuracy(self) -> float:
         """Return the accuracy of the move."""

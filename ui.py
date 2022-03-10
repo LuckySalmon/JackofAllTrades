@@ -148,7 +148,7 @@ class BattleInterface(DirectObject):
         self.accept('query_action', self.query_action)
         self.accept('remove_query', self.remove_query)
         self.accept('output_info', self.output_info)
-        self.accept('apply_damage', self.apply_damage)
+        self.accept('set_health_bar', self.set_health_bar)
         self.accept('announce_win', self.announce_win)
 
     def query_action(self, index: int) -> None:
@@ -162,9 +162,8 @@ class BattleInterface(DirectObject):
     def output_info(self, index: int, info: str) -> None:
         self.infoBoxes[index].setText(info)
 
-    def apply_damage(self, index: int, damage: float, damaged: str) -> None:
-        self.healthBars[index]['value'] -= damage
-        self.output_info(index, f'{damaged} took {damage} damage!')
+    def set_health_bar(self, index: int, health: int) -> None:
+        self.healthBars[index]['value'] = health
 
     def announce_win(self, winner: str) -> None:
         self.sharedInfo.setText(f'{winner} wins!')

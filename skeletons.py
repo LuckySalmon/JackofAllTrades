@@ -250,3 +250,7 @@ class Skeleton(object):
     def arms_down(self) -> None:
         self.arm_l.go_limp()
         self.arm_r.go_limp()
+
+    def kill(self) -> None:
+        self.torso.node().setMass(1.0)
+        self.torso.node().setActive(True, False)
