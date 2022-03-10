@@ -67,7 +67,7 @@ class Character(object):
 
 
 class Fighter(object):
-    def __init__(self, character: Character):
+    def __init__(self, character: Character, index: int = 0):
         self.Name = character.Name
         hp = character.HP
         self.BaseHP = hp
@@ -78,17 +78,19 @@ class Fighter(object):
         with open(f'data\\skeletons\\{character.skeleton}.json') as skeleton_file:
             skeleton_params = json.load(skeleton_file)
         self.skeleton = Skeleton(skeleton_params)
+        self.index = index
 
     @classmethod
     def from_json(cls, file) -> 'Fighter':
         character = Character.from_json(file)
         return cls(character)
 
-    def insert(self, world: BulletWorld, render: NodePath, i: int, pos: tuple[float, float]) -> None:
+    def insert(self, world: BulletWorld, render: NodePath, pos: tuple[float, float]) -> None:
         """Place the character in the world."""
+        side = 1 if self.index else -1
         x, y = pos
         offset = Vec3(x, y, 0)
-        rotation = Mat3(-i, 0, 0, 0, -i, 0, 0, 0, 1)
+        rotation = Mat3(-side, 0, 0, 0, -side, 0, 0, 0, 1)
         coord_xform = Mat4(rotation, offset)
 
         self.skeleton.insert(world, render, coord_xform)

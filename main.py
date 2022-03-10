@@ -166,13 +166,14 @@ class App(ShowBase, FSM):
     def select_character(self, character: Character, mode: str) -> None:
         match mode:
             case 'split_screen':
-                self.fighters.append(Fighter(character))
-                if len(self.fighters) == 1:
+                i = len(self.fighters)
+                self.fighters.append(Fighter(character, i))
+                if i == 0:
                     self.character_menu.title_text['text'] = 'Select a Fighter, Player 2'
                 else:
                     self.request('Battle', self.fighters)
             case 'copy':
-                fighters = [Fighter(character) for _ in range(2)]
+                fighters = [Fighter(character, i) for i in range(2)]
                 self.request('Battle', fighters)
 
     def enterBattle(self, fighters: list[Fighter]) -> None:
@@ -190,8 +191,8 @@ class App(ShowBase, FSM):
         self.cam.lookAt(0, 0, 0)
 
         # Characters
-        fighters[0].insert(self.world, self.render, -1, (-2, 0))
-        fighters[1].insert(self.world, self.render, 1, (2, 0))
+        fighters[0].insert(self.world, self.render, (-2, 0))
+        fighters[1].insert(self.world, self.render, (2, 0))
 
         # Debug
         debug_node = BulletDebugNode('Debug')
