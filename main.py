@@ -1,14 +1,18 @@
 import math
 import random
 from itertools import product
+from collections.abc import Iterable
 
+from direct.showbase.MessengerGlobal import messenger
 from direct.showbase.DirectObject import DirectObject
 from direct.showbase.ShowBase import ShowBase
 from direct.task.Task import Task
 from panda3d.bullet import BulletDebugNode
 from panda3d.core import Vec3
+from direct.fsm.FSM import FSM
 
-from characters import Fighter
+from characters import Character, Fighter, charList
+from moves import Move
 import physics
 import ui
 
@@ -18,6 +22,11 @@ sides = ['l', 'r']
 DefaultTargetPos = (1, 1, 0)
 TARGETING = False
 LEFT, RIGHT = -1, 1
+
+CHARACTERS = []
+for char in charList:
+    with open(f'data\\characters\\{char}.json') as f:
+        CHARACTERS.append(Character.from_json(f))
 
 
 def toggle_targeting():
@@ -104,9 +113,10 @@ class ShoulderMovingObject(DirectObject):
                 print()
 
 
-class App(ShowBase):
-    def __init__(self, fighters: list[Fighter]):
-        super().__init__()
+class App(ShowBase, FSM):
+    def __init__(self, fighters: list[Fighter] | None = None):
+        ShowBase.__init__(self)
+        FSM.__init__(self, 'GameFSM')
 
         self.clock = 0
 
@@ -120,11 +130,52 @@ class App(ShowBase):
         self.targets = []
 
         self.ui = None
-        self.selectedAction, self.selection = None, None
 
-        self.start_battle(fighters)
+        self.accept('main_menu', self.request, ['MainMenu'])
+        self.accept('character_menu', self.request, ['CharacterMenu', 'Select a Character', CHARACTERS, 'view'])
+        self.accept('fighter_selection', self.request, ['CharacterMenu', 'Select a Fighter', CHARACTERS])
+        self.accept('select_character', self.select_character)
+        self.accept('use_action', self.use_action)
+        self.accept('quit', self.userExit)
 
-    def start_battle(self, fighters: list[Fighter]) -> None:
+        self.main_menu = None
+        self.character_menu = None
+
+        if fighters is None:
+            self.request('MainMenu')
+        else:
+            self.request('Battle', fighters)
+
+    def enterMainMenu(self) -> None:
+        self.fighters.clear()
+        self.main_menu = ui.MainMenu()
+
+    def exitMainMenu(self) -> None:
+        if self.main_menu is not None:
+            self.main_menu.hide()
+
+    def enterCharacterMenu(self, title: str, character_list: Iterable[Character], mode: str) -> None:
+        if mode == 'split_screen':
+            title += ', Player 1'
+        self.character_menu = ui.CharacterMenu(title, character_list, mode)
+
+    def exitCharacterMenu(self) -> None:
+        if self.character_menu is not None:
+            self.character_menu.hide()
+
+    def select_character(self, character: Character, mode: str) -> None:
+        match mode:
+            case 'split_screen':
+                self.fighters.append(Fighter(character))
+                if len(self.fighters) == 1:
+                    self.character_menu.title_text['text'] = 'Select a Fighter, Player 2'
+                else:
+                    self.request('Battle', self.fighters)
+            case 'copy':
+                fighters = [Fighter(character) for _ in range(2)]
+                self.request('Battle', fighters)
+
+    def enterBattle(self, fighters: list[Fighter]) -> None:
         fighters.sort(key=lambda x: x.Speed, reverse=True)
         for fighter in fighters:
             fighter.HP = fighter.BaseHP
@@ -164,9 +215,9 @@ class App(ShowBase):
         self.taskMgr.add(self.update, 'update')
 
         # Set up GUI
-        self.ui = ui.BattleInterface(self.fighters, self.use_action)
+        self.ui = ui.BattleInterface(self.fighters)
 
-        self.query_action()
+        messenger.send('query_action', [0])
 
     def update(self, task: Task) -> int:
         """Update the world using physics."""
@@ -183,66 +234,41 @@ class App(ShowBase):
         else:
             self.debugNP.hide()
 
-    def query_action(self) -> None:
-        """Set up buttons for a player to choose an action."""
-        fighter = self.fighters[self.index]
-        self.ui.query_action(fighter, self.index, self.set_action)
-
-    def set_action(self, fighter: Fighter, name: str) -> None:
-        """Set an action to be selected."""
-        i = self.index
-        self.selectedAction = fighter.moveList[name]
-        self.ui.output_info(i, self.selectedAction.show_stats())
-        self.ui.select_action(i, name)
-        self.selection = name
-
-    def use_action(self) -> None:
+    def use_action(self, move: Move) -> None:
         """Make the character use the selected action, then move on to the next turn."""
-        self.ui.remove_query()
+        messenger.send('remove_query')
         user = self.fighters[self.index]
-        name, move = self.selection, self.selectedAction
 
         # Result of move
         if move.get_accuracy() > random.randint(0, 99):
             damage = move.get_damage()
             if random.randint(1, 100) <= 2:
                 damage *= 1.5
-                print("Critical Hit!".format(user.Name, name, damage))
-            self.ui.output_info(self.index, f"{user.Name}'s {name} hit for {damage} damage!")
+                msg = f"{user.Name}'s {move.name} hit for {damage} damage!\nCritical Hit!"
+            else:
+                msg = f"{user.Name}'s {move.name} hit for {damage} damage!"
         else:
+            msg = f"{user.Name}'s {move.name} missed!"
             damage = 0
-            self.ui.output_info(self.index, f"{user.Name}'s {name} missed!")
+        messenger.send('output_info', [self.index, msg])
 
         # Move over to other character and apply damage
         self.index = (self.index + 1) % 2
         opponent = self.fighters[self.index]
         damage = min(max(damage - opponent.Defense, 0), opponent.HP)  # TODO: Find and use a better formula
         opponent.HP -= damage
-        self.ui.apply_damage(self.index, damage, opponent.Name)
+        messenger.send('apply_damage', [self.index, damage, opponent.Name])
 
         # Move on to next step (KO or opponent response)
         if opponent.HP <= 0:
-            self.ui.announce_win(user.Name)
+            messenger.send('announce_win', [user.Name])
             # I thought this would make the character fall, but it just glitches out
             self.fighters[self.index].skeleton.torso.node().setMass(1.0)
             self.fighters[self.index].skeleton.torso.node().setActive(True, False)
         else:
-            self.query_action()
-        # TODO: I would like to make this program focused entirely on graphics.
-        #  I.e., other computations are handled externally and relevant results passed to functions from here.
-
-
-def test() -> None:
-    """Run a battle between two test characters for debug purposes."""
-    filepath = 'data\\characters\\test.json'
-    fighter_list = []
-    for _ in range(2):
-        with open(filepath) as file:
-            fighter = Fighter.from_json(file)
-            fighter_list.append(fighter)
-    app = App(fighter_list)
-    app.run()
+            messenger.send('query_action', [self.index])
 
 
 if __name__ == "__main__":
-    test()
+    app = App()
+    app.run()
