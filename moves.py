@@ -1,18 +1,22 @@
 import random
-import os
 import json
-from typing import Any
 from direct.showbase.MessengerGlobal import messenger
 
 
 # The class "Move" should be entirely self sufficient, and not require any numbers or variables outside of the class.
 
 class Move:
-    def __init__(self, attributes: dict[str, Any]):
-        self.name = attributes['name'].title()
-        self.dmg = attributes['damage']
-        self.acc = int(attributes['accuracy'])
-        self.status = attributes['effects']
+    def __init__(self, name: str, damage: tuple[int, int], accuracy: int, effects):
+        self.name = name
+        self.dmg = damage
+        self.acc = accuracy
+        self.status = effects
+
+    @classmethod
+    def from_json(cls, file) -> 'Move':
+        j = json.load(file)
+        name = j.pop('name').title()
+        return cls(name, **j)
 
     def apply(self, user, target):
         if self.acc > random.randint(0, 99):    # TODO: Should this be calculated based on more factors?
@@ -40,10 +44,3 @@ class Move:
     def show_stats(self) -> str:
         """Return a string containing information about the move's damage and accuracy in a human-readable format."""
         return '{0}\nDamage: {1} - {2}\nAccuracy: {3}%'.format(self.name, self.dmg[0], self.dmg[1], str(self.acc))
-
-
-moves = {}
-for file in os.scandir('data\\moves'):
-    with open(file) as f:
-        j = json.load(f)
-        moves[j['name']] = Move(j)

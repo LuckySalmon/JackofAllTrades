@@ -6,7 +6,7 @@ from panda3d.bullet import BulletWorld
 from panda3d.core import Vec3, Mat3, Mat4, NodePath
 from direct.showbase.MessengerGlobal import messenger
 
-import moves
+from moves import Move
 from skeletons import Skeleton
 
 enableSound = False
@@ -17,7 +17,7 @@ class Character(object):
     def __init__(self,
                  attributes: dict[str, str],
                  xp: int = 0,
-                 char_moves: Iterable[moves.Move] = (),
+                 char_moves: Iterable[Move] = (),
                  skeleton: Skeleton | None = None):
         self.Name = attributes['name'].title()
         self.HP = int(attributes['hp'])
@@ -35,16 +35,20 @@ class Character(object):
     def from_json(cls, file) -> 'Character':
         attributes = json.load(file)
         move_names = attributes.pop('basic_moves')
-        move_set = [moves.moves[move_name] for move_name in move_names]
+        move_set = []
+        for move_name in move_names:
+            with open(f'data\\moves\\{move_name}.json') as f:
+                move = Move.from_json(f)
+                move_set.append(move)
         skeleton = attributes.pop('skeleton')
         return cls(attributes, char_moves=move_set, skeleton=skeleton)
 
-    def list_moves(self) -> dict[str, moves.Move]:  # isn't this redundant?
+    def list_moves(self) -> dict[str, Move]:  # isn't this redundant?
         """Check what moves this character has and return a list of available moves."""
         print(self.moveList)
         return self.moveList
 
-    def add_move(self, move: moves.Move) -> None:
+    def add_move(self, move: Move) -> None:
         """Attempt to add a move to this list of those available."""
         if len(self.moveList) < int(0.41 * self.Level + 4):
             # changed the above from <= as I'm assuming the formula is meant to be a cap, not one less than the cap
