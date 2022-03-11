@@ -203,7 +203,7 @@ class ActionSelector:
 
     def select_action(self, action: Move) -> None:
         self.selected_action = action
-        messenger.send('output_info', [self.index, action.show_stats()])
+        messenger.send('output_info', [self.index, action.info()])
         self.use_button.setText(f'Use {action.name}')
         self.use_button.show()
 

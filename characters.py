@@ -113,6 +113,3 @@ class Fighter(object):
 
     def kill(self) -> None:
         self.skeleton.kill()
-
-    # TODO: create various status affects
-    # (later)
