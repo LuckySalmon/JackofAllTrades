@@ -17,10 +17,10 @@ import ui
 
 gravity = 0
 
-sides = ['l', 'r']
 DefaultTargetPos = (1, 1, 0)
 TARGETING = False
 LEFT, RIGHT = -1, 1
+SIDES = (LEFT, RIGHT)
 
 CHARACTERS = []
 for char in charList:
@@ -223,7 +223,7 @@ class App(ShowBase, FSM):
         """Update the world using physics."""
         self.clock += 1
         if TARGETING and self.clock % 10 == 0:
-            for (fighter, side), target in zip(product(self.fighters, sides), self.targets):
+            for (fighter, side), target in zip(product(self.fighters, SIDES), self.targets):
                 fighter.skeleton.position_shoulder(side, target)
         return physics.update_physics(self.world, task)
 

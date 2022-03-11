@@ -243,8 +243,8 @@ class Skeleton(object):
         self.arm_l.set_shoulder_motion(axis, speed)
         self.arm_r.set_shoulder_motion(axis, speed)
 
-    def position_shoulder(self, side: Literal['l', 'r'], target: VBase3) -> None:
-        arm = getattr(self, 'arm_' + side)
+    def position_shoulder(self, side: Literal[-1, 1], target: VBase3) -> None:
+        arm = self.arm_l if side == LEFT else self.arm_r
         arm.move_toward(*target, 0)
 
     def arms_down(self) -> None:
