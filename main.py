@@ -184,8 +184,8 @@ class App(ShowBase, FSM):
         self.cam.lookAt(0, 0, 0)
 
         # Characters
-        fighters[0].insert(self.world, self.render, (-2, 0))
-        fighters[1].insert(self.world, self.render, (2, 0))
+        fighters[0].insert(self.world, self.render, (-1, 0))
+        fighters[1].insert(self.world, self.render, (1, 0))
 
         # Debug
         debug_node = BulletDebugNode('Debug')

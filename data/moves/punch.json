@@ -2,5 +2,6 @@
   "name": "punch",
   "damage": [5, 15],
   "accuracy": 90,
+  "target": "head",
   "effects": []
 }

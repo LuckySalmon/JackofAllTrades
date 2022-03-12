@@ -1,6 +1,7 @@
 import winsound
 import json
 from collections.abc import Iterable
+from random import choice
 
 from panda3d.bullet import BulletWorld
 from panda3d.core import Vec3, Mat3, Mat4, NodePath
@@ -92,6 +93,10 @@ class Fighter(object):
 
     def use_move(self, move: Move, target: 'Fighter') -> None:
         move.apply(self, target)
+        target_part = target.skeleton.parts.get(move.target)
+        if target_part:
+            target_position = target_part.getNetTransform().getPos()
+            self.skeleton.set_arm_target(choice((-1, 1)), target_position, False)
 
     def apply_damage(self, damage: int) -> None:
         damage = min(max(damage - self.Defense, 0), self.HP)    # TODO: Find and use a better formula

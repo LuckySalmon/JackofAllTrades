@@ -4,10 +4,11 @@ from direct.showbase.MessengerGlobal import messenger
 
 
 class Move:     # TODO: decide on whether these should be called moves or actions
-    def __init__(self, name: str, damage: tuple[int, int], accuracy: int, effects):
+    def __init__(self, name: str, damage: tuple[int, int], accuracy: int, effects, target: str = ''):
         self.name = name
         self.damage = damage
         self.accuracy = accuracy
+        self.target = target
         self.effects = effects
         # TODO: effect system
 
