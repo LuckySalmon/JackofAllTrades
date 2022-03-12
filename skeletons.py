@@ -1,6 +1,5 @@
 import math
 import json
-from typing import Literal
 
 from panda3d.bullet import (
     BulletConeTwistConstraint,
@@ -19,6 +18,8 @@ from panda3d.core import (
     NodePath,
 )
 from direct.directtools.DirectGeometry import LineNodePath
+from direct.task.Task import Task
+from direct.task.TaskManagerGlobal import taskMgr
 
 import physics
 
@@ -199,6 +200,8 @@ class Skeleton(object):
         self.parameters = parameters
         self.parts = {}
         self.arm_l, self.arm_r = None, None
+        self.arm_targets: dict[int, Vec3 | None] = {LEFT: None, RIGHT: None}
+        self.targeting = False
 
     def insert(self,
                world: BulletWorld,
@@ -242,13 +245,41 @@ class Skeleton(object):
         self.parts['forearm_right'] = arm_r.forearm
         self.arm_l, self.arm_r = arm_l, arm_r
 
+        taskMgr.add(self.move_arms, f'move_arms_{id(self)}')
+
+    def get_shoulder_position(self, side: int) -> VBase3:
+        arm = self.arm_l if side == LEFT else self.arm_r
+        point = arm.shoulder.getFrameA().getPos()
+        xform = self.parts['torso'].getNetTransform()
+        return xform.getMat().xformPoint(point)
+
     def set_shoulder_motion(self, axis: int, speed: float) -> None:
         self.arm_l.set_shoulder_motion(axis, speed)
         self.arm_r.set_shoulder_motion(axis, speed)
 
-    def position_shoulder(self, side: Literal[-1, 1], target: VBase3) -> None:
+    def position_shoulder(self, side: int, target: VBase3) -> None:
         arm = self.arm_l if side == LEFT else self.arm_r
         arm.move_toward(*target, 0)
+
+    def get_arm_target(self, side: int) -> Vec3:
+        return Vec3(self.arm_targets[side])
+
+    def set_arm_target(self, side: int, target: VBase3, relative: bool = True) -> None:
+        local_target = Vec3(target)
+        if not relative:
+            local_target -= self.get_shoulder_position(side)
+        self.arm_targets[side] = local_target
+
+    def move_arms(self, task: Task) -> int:
+        if self.targeting:
+            for side in LEFT, RIGHT:
+                target = self.arm_targets[side]
+                if target is not None:
+                    self.position_shoulder(side, target)
+        return task.cont
+
+    def toggle_targeting(self) -> None:
+        self.targeting = not self.targeting
 
     def arms_down(self) -> None:
         self.arm_l.go_limp()

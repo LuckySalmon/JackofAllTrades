@@ -1,5 +1,6 @@
 from typing import TypeVar, Generic
 
+from .TransformState import TransformState
 from .PandaNode import PandaNode
 from .Thread import Thread
 from .DrawMask import DrawMask
@@ -29,3 +30,5 @@ class NodePath(Generic[T]):
     def getPos(self) -> LPoint3f: ...
 
     def getMat(self, other: NodePath) -> LMatrix4f: ...
+
+    def getNetTransform(self) -> TransformState: ...

@@ -18,7 +18,6 @@ import ui
 gravity = 0
 
 DefaultTargetPos = (1, 1, 0)
-TARGETING = False
 LEFT, RIGHT = -1, 1
 SIDES = (LEFT, RIGHT)
 
@@ -28,14 +27,10 @@ for char in charList:
         CHARACTERS.append(Character.from_json(f))
 
 
-def toggle_targeting():
-    global TARGETING
-    TARGETING = not TARGETING
-
-
 class TargetMovingObject(DirectObject):
-    def __init__(self):
+    def __init__(self, fighters):
         super().__init__()
+        self.fighters = fighters
         self.xyz = (0, 0, 0)
         self.targets = []
         bindings = (('7-repeat', '1-repeat'), ('8-repeat', '2-repeat'), ('9-repeat', '3-repeat'))
@@ -44,18 +39,18 @@ class TargetMovingObject(DirectObject):
                 self.accept(key, self.modify_coordinate, [axis, 0.01 * (-1)**i])
         self.accept('4-repeat', self.scale_targets, [0.99])
         self.accept('6-repeat', self.scale_targets, [1.01])
+        self.accept('space', self.toggle_targeting)
 
     def update(self) -> None:
         x, y, z = self.xyz
         coordinates = [[x, y, z], [x, -y, z], [-x, -y, z], [-x, y, z]]
-        self.targets.clear()
-        targets = [Vec3(x, y, z) for x, y, z in coordinates]
-        self.targets += targets
+        self.targets = [Vec3(x, y, z) for x, y, z in coordinates]
+        for (fighter, side), target in zip(product(self.fighters, SIDES), self.targets):
+            fighter.skeleton.set_arm_target(side, Vec3(*target))
 
-    def set_targets(self, x: float, y: float, z: float) -> list[float]:
+    def set_targets(self, x: float, y: float, z: float) -> None:
         self.xyz = [x, y, z]
         self.update()
-        return self.targets
 
     def modify_coordinate(self, axis: int, delta: float) -> None:
         self.xyz[axis] += delta
@@ -65,6 +60,10 @@ class TargetMovingObject(DirectObject):
         for axis in range(3):
             self.xyz[axis] *= scale
         self.update()
+
+    def toggle_targeting(self):
+        for fighter in self.fighters:
+            fighter.skeleton.toggle_targeting()
 
 
 class ShoulderMovingObject(DirectObject):
@@ -80,7 +79,6 @@ class ShoulderMovingObject(DirectObject):
         self.accept('r', self.bend_arms, [math.pi / 2])
         self.accept('v', self.bend_arms, [0.0])
         self.accept('p', self.print_angles)
-        self.accept('space', toggle_targeting)
 
     def move_arms(self, axis: int, speed: float) -> None:
         for i, character in enumerate(self.character_list):
@@ -117,16 +115,12 @@ class App(ShowBase, FSM):
         ShowBase.__init__(self)
         FSM.__init__(self, 'GameFSM')
 
-        self.clock = 0
-
         self.fighters = []
         self.buttons = []
         self.index = 0
 
         self.world = None
         self.debugNP = None
-
-        self.targets = []
 
         self.ui = None
 
@@ -207,8 +201,8 @@ class App(ShowBase, FSM):
 
         # Testing Controls
         shoulder_moving_object = ShoulderMovingObject(fighters)
-        target_moving_object = TargetMovingObject()
-        self.targets = target_moving_object.set_targets(*DefaultTargetPos)
+        target_moving_object = TargetMovingObject(fighters)
+        target_moving_object.set_targets(*DefaultTargetPos)
         for i in range(3):
             shoulder_moving_object.move_arms(i, 0)
 
@@ -221,10 +215,6 @@ class App(ShowBase, FSM):
 
     def update(self, task: Task) -> int:
         """Update the world using physics."""
-        self.clock += 1
-        if TARGETING and self.clock % 10 == 0:
-            for (fighter, side), target in zip(product(self.fighters, SIDES), self.targets):
-                fighter.skeleton.position_shoulder(side, target)
         return physics.update_physics(self.world, task)
 
     def toggle_debug(self) -> None:
