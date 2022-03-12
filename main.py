@@ -177,15 +177,15 @@ class App(ShowBase, FSM):
 
         # Set up the World
         # The World
-        self.world = physics.make_world(gravity, self.render)
+        self.world = physics.make_world(gravity)
 
         # Camera
         self.cam.setPos(0, -15, 2)
         self.cam.lookAt(0, 0, 0)
 
         # Characters
-        fighters[0].insert(self.world, self.render, (-1, 0))
-        fighters[1].insert(self.world, self.render, (1, 0))
+        fighters[0].insert(self.world, (-1, 0))
+        fighters[1].insert(self.world, (1, 0))
 
         # Debug
         debug_node = BulletDebugNode('Debug')

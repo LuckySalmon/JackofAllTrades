@@ -20,6 +20,7 @@ from panda3d.core import (
 from direct.directtools.DirectGeometry import LineNodePath
 from direct.task.Task import Task
 from direct.task.TaskManagerGlobal import taskMgr
+from direct.showbase import ShowBaseGlobal
 
 import physics
 
@@ -96,7 +97,6 @@ def shoulder_angles(origin: VBase3,
 class Arm(object):
     def __init__(self,
                  world: BulletWorld,
-                 render: NodePath,
                  side: int,
                  torso: 'NodePath[BulletRigidBodyNode]',
                  skeleton: dict[str] = default_parameters):
@@ -105,6 +105,7 @@ class Arm(object):
         elbow_data = skeleton['constraints'][string + ' elbow']
         bicep_data = skeleton['bodies'][string + ' bicep']
         forearm_data = skeleton['bodies'][string + ' forearm']
+        render = ShowBaseGlobal.base.render
 
         in_limit, out_limit, forward_limit, backward_limit, twist_limit = shoulder_data['limits']
         shoulder_pos = Vec3(*shoulder_data['position'])
@@ -205,11 +206,11 @@ class Skeleton(object):
 
     def insert(self,
                world: BulletWorld,
-               render: NodePath,
                coord_xform: Mat4) -> None:
         """Place the skeleton in the world."""
         bodies = self.parameters['bodies']
         constraints = self.parameters['constraints']
+        render = ShowBaseGlobal.base.render
 
         # Create a torso
         torso_data = bodies['torso']
@@ -234,8 +235,8 @@ class Skeleton(object):
         world.attachConstraint(neck)
 
         # Create arms
-        arm_l = Arm(world, render, LEFT, torso, self.parameters)
-        arm_r = Arm(world, render, RIGHT, torso, self.parameters)
+        arm_l = Arm(world, LEFT, torso, self.parameters)
+        arm_r = Arm(world, RIGHT, torso, self.parameters)
 
         self.parts['torso'] = torso
         self.parts['head'] = head

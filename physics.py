@@ -18,7 +18,7 @@ from panda3d.core import (
     Mat4,
     TransformState,
 )
-from direct.showbase.ShowBaseGlobal import globalClock
+from direct.showbase import ShowBaseGlobal
 from direct.task.Task import Task
 
 
@@ -62,11 +62,11 @@ def make_body(name: str,
     return path
 
 
-def make_world(gravity: float, render: NodePath) -> BulletWorld:
+def make_world(gravity: float) -> BulletWorld:
     world = BulletWorld()
     world.setGravity(Vec3(0, 0, -gravity))
 
-    ground = render.attachNewNode(BulletRigidBodyNode('Ground'))
+    ground = ShowBaseGlobal.base.render.attachNewNode(BulletRigidBodyNode('Ground'))
     ground.node().addShape(BulletPlaneShape(Vec3(0, 0, 1), 1))
     ground.setPos(0, 0, -2)
     world.attach(ground.node())
@@ -75,6 +75,6 @@ def make_world(gravity: float, render: NodePath) -> BulletWorld:
 
 
 def update_physics(world: BulletWorld, task: Task) -> int:
-    dt = globalClock.getDt()
+    dt = ShowBaseGlobal.globalClock.getDt()
     world.doPhysics(dt)
     return task.cont

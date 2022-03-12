@@ -4,7 +4,7 @@ from collections.abc import Iterable
 from random import choice
 
 from panda3d.bullet import BulletWorld
-from panda3d.core import Vec3, Mat3, Mat4, NodePath
+from panda3d.core import Vec3, Mat3, Mat4
 from direct.showbase.MessengerGlobal import messenger
 
 from moves import Move
@@ -106,7 +106,7 @@ class Fighter(object):
         if self.HP <= 0:
             self.kill()
 
-    def insert(self, world: BulletWorld, render: NodePath, pos: tuple[float, float]) -> None:
+    def insert(self, world: BulletWorld, pos: tuple[float, float]) -> None:
         """Place the character in the world."""
         side = 1 if self.index else -1
         x, y = pos
@@ -114,7 +114,7 @@ class Fighter(object):
         rotation = Mat3(-side, 0, 0, 0, -side, 0, 0, 0, 1)
         coord_xform = Mat4(rotation, offset)
 
-        self.skeleton.insert(world, render, coord_xform)
+        self.skeleton.insert(world, coord_xform)
 
     def kill(self) -> None:
         self.skeleton.kill()
