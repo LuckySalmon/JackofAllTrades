@@ -197,8 +197,7 @@ class Skeleton(object):
         if parameters is None:
             parameters = default_parameters
         self.parameters = parameters
-        self.head = None
-        self.torso = None
+        self.parts = {}
         self.arm_l, self.arm_r = None, None
 
     def insert(self,
@@ -235,8 +234,12 @@ class Skeleton(object):
         arm_l = Arm(world, render, LEFT, torso, self.parameters)
         arm_r = Arm(world, render, RIGHT, torso, self.parameters)
 
-        self.head = head
-        self.torso = torso
+        self.parts['torso'] = torso
+        self.parts['head'] = head
+        self.parts['bicep_left'] = arm_l.bicep
+        self.parts['bicep_right'] = arm_r.bicep
+        self.parts['forearm_left'] = arm_l.forearm
+        self.parts['forearm_right'] = arm_r.forearm
         self.arm_l, self.arm_r = arm_l, arm_r
 
     def set_shoulder_motion(self, axis: int, speed: float) -> None:
@@ -252,5 +255,6 @@ class Skeleton(object):
         self.arm_r.go_limp()
 
     def kill(self) -> None:
-        self.torso.node().setMass(1.0)
-        self.torso.node().setActive(True, False)
+        torso = self.parts['torso'].node()
+        torso.setMass(1.0)
+        torso.setActive(True, False)
