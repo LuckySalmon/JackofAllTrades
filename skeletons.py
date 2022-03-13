@@ -1,10 +1,7 @@
 import math
 import json
 
-from panda3d.bullet import (
-    BulletRigidBodyNode,
-    BulletWorld,
-)
+from panda3d.bullet import BulletWorld
 from panda3d.core import (
     VBase3,
     Vec3,
@@ -12,7 +9,6 @@ from panda3d.core import (
     Mat3,
     Mat4,
     TransformState,
-    NodePath,
 )
 from direct.directtools.DirectGeometry import LineNodePath
 from direct.task.Task import Task
@@ -91,62 +87,23 @@ def shoulder_angles(origin: VBase3,
     return -gamma, beta, alpha, phi
 
 
-class Arm(object):
-    def __init__(self,
-                 world: BulletWorld,
-                 side: int,
-                 torso: 'NodePath[BulletRigidBodyNode]',
-                 skeleton: dict[str] = default_parameters):
-        string = 'left' if side == LEFT else 'right'
-        shoulder_data = skeleton['constraints'][string + ' shoulder']
-        elbow_data = skeleton['constraints'][string + ' elbow']
-        bicep_data = skeleton['bodies'][string + ' bicep']
-        forearm_data = skeleton['bodies'][string + ' forearm']
-        render = ShowBaseGlobal.base.render
-
-        in_limit, out_limit, forward_limit, backward_limit, twist_limit = shoulder_data['limits']
-        shoulder_pos = Vec3(*shoulder_data['position'])
-        elbow_pos = Vec3(*elbow_data['position'])
-
-        bicep = physics.make_body('Bicep', **bicep_data, parent=torso, world=world)
-        forearm = physics.make_body('Forearm', **forearm_data, parent=torso, world=world)
-
-        rotation = Mat3(side, 0, 0, 0, 0, -side, 0, 1, 0)
-        shoulder = physics.make_ball_joint(shoulder_pos, torso, bicep, rotation)
-        shoulder.setDebugDrawSize(0.3)
-        world.attachConstraint(shoulder, True)
-
-        elbow = physics.make_hinge_joint(elbow_pos - bicep.getPos(), bicep, forearm, Vec3(0, 0, side))
-        elbow.setDebugDrawSize(0.3)
-        world.attachConstraint(elbow, True)
-
-        for axis in range(3):
-            shoulder.getRotationalLimitMotor(axis).setMaxMotorForce(200)
-        elbow.setMaxMotorImpulse(200)
-
-        shoulder.setAngularLimit(0, -in_limit, out_limit)               # limits for moving toward torso from T-pose
-        shoulder.setAngularLimit(1, -twist_limit, twist_limit)          # limit for twisting along the bicep axis
-        shoulder.setAngularLimit(2, -backward_limit, forward_limit)     # limits for moving forward from down by side
-
-        elbow.setLimit(*elbow_data['limits'])
-
-        torso_xform = torso.getMat(render)
-        self.position = torso_xform.xform(VBase4(shoulder_pos, 1)).getXyz()
-        self.bicep = bicep
-        self.forearm = forearm
+class ArmController:
+    def __init__(self, origin, shoulder, elbow, bicep, forearm, transform):
+        self.origin = origin
         self.shoulder = shoulder
         self.elbow = elbow
-        self.transform = (torso_xform * Mat3(1, 0, 0, 0, side, 0, 0, 0, 1)).getUpper3()
-        self.side = side
+        self.bicep = bicep
+        self.forearm = forearm
+        self.transform = transform
+        render = ShowBaseGlobal.base.render
 
         self.lines = LineNodePath(name='debug', parent=render, colorVec=VBase4(0.2, 0.2, 0.5, 1))
-
         axes = LineNodePath(name='axes', parent=render)
         paths = [dict(color=VBase4(1, 0, 0, 1)), dict(color=VBase4(0, 1, 0, 1)), dict(color=VBase4(0, 0, 1, 1))]
         for i in range(3):
             axis = shoulder.getAxis(i) * 0.25
             paths[i]['points'] = [axis]
-        draw_lines(axes, *paths, origin=self.position)
+        draw_lines(axes, *paths, origin=self.origin)
 
     def set_shoulder_motion(self, axis: int, speed: float) -> None:
         """Set the shoulder motor along the given axis to the given speed."""
@@ -154,6 +111,11 @@ class Arm(object):
         motor.setTargetVelocity(speed)
         motor.setMotorEnabled(True)
         self.bicep.node().setActive(True, False)
+
+    def set_elbow_motion(self, angle: float, dt: float) -> None:
+        self.elbow.enableMotor(True)
+        self.elbow.setMotorTarget(angle, dt)
+        self.forearm.node().setActive(True, False)
 
     def move_toward(self, x: float, y: float, z: float, theta: float, tol=0.01, dt=1.0) -> None:
         """Set shoulder and elbow motor velocities such that the hand moves toward the specified point."""
@@ -172,7 +134,7 @@ class Arm(object):
         self.elbow.enableMotor(True)
         self.elbow.setMotorTarget(target_angles[3], dt)
         self.bicep.node().setActive(True, False)
-        draw_lines(self.lines, dict(points=[hand_pos]), origin=self.position)
+        draw_lines(self.lines, dict(points=[hand_pos]), origin=self.origin)
 
     def go_limp(self) -> None:
         for axis in range(3):
@@ -188,6 +150,7 @@ class Skeleton(object):
         self.parameters = parameters
         self.parts = {}
         self.arm_l, self.arm_r = None, None
+        self.arm_controllers: dict[int, ArmController | None] = {LEFT: None, RIGHT: None}
         self.arm_targets: dict[int, Vec3 | None] = {LEFT: None, RIGHT: None}
         self.targeting = False
 
@@ -218,32 +181,64 @@ class Skeleton(object):
         world.attachConstraint(neck)
 
         # Create arms
-        arm_l = Arm(world, LEFT, torso, self.parameters)
-        arm_r = Arm(world, RIGHT, torso, self.parameters)
+        for side, string in zip((LEFT, RIGHT), ('left', 'right')):
+            shoulder_data = self.parameters['constraints'][string + ' shoulder']
+            elbow_data = self.parameters['constraints'][string + ' elbow']
+            bicep_data = self.parameters['bodies'][string + ' bicep']
+            forearm_data = self.parameters['bodies'][string + ' forearm']
+
+            in_limit, out_limit, forward_limit, backward_limit, twist_limit = shoulder_data['limits']
+            shoulder_pos = Vec3(*shoulder_data['position'])
+            elbow_pos = Vec3(*elbow_data['position'])
+
+            bicep = physics.make_body('Bicep', **bicep_data, parent=torso, world=world)
+            forearm = physics.make_body('Forearm', **forearm_data, parent=torso, world=world)
+
+            rotation = Mat3(side, 0, 0, 0, 0, -side, 0, 1, 0)
+            shoulder = physics.make_ball_joint(shoulder_pos, torso, bicep, rotation)
+            shoulder.setDebugDrawSize(0.3)
+            world.attachConstraint(shoulder, True)
+
+            elbow = physics.make_hinge_joint(elbow_pos - bicep.getPos(), bicep, forearm, Vec3(0, 0, side))
+            elbow.setDebugDrawSize(0.3)
+            world.attachConstraint(elbow, True)
+
+            for axis in range(3):
+                shoulder.getRotationalLimitMotor(axis).setMaxMotorForce(200)
+            elbow.setMaxMotorImpulse(200)
+
+            shoulder.setAngularLimit(0, -in_limit, out_limit)            # limits for moving toward torso from T-pose
+            shoulder.setAngularLimit(1, -twist_limit, twist_limit)       # limit for twisting along the bicep axis
+            shoulder.setAngularLimit(2, -backward_limit, forward_limit)  # limits for moving forward from down by side
+
+            elbow.setLimit(*elbow_data['limits'])
+
+            torso_xform = torso.getMat()
+            position = torso_xform.xform(VBase4(shoulder_pos, 1)).getXyz()
+            transform = coord_xform.getUpper3() * Mat3(1, 0, 0, 0, side, 0, 0, 0, 1)
+
+            self.parts[f'bicep_{string}'] = bicep
+            self.parts[f'forearm_{string}'] = forearm
+            self.arm_controllers[side] = ArmController(position, shoulder, elbow, bicep, forearm, transform)
 
         self.parts['torso'] = torso
         self.parts['head'] = head
-        self.parts['bicep_left'] = arm_l.bicep
-        self.parts['bicep_right'] = arm_r.bicep
-        self.parts['forearm_left'] = arm_l.forearm
-        self.parts['forearm_right'] = arm_r.forearm
-        self.arm_l, self.arm_r = arm_l, arm_r
 
         taskMgr.add(self.move_arms, f'move_arms_{id(self)}')
 
     def get_shoulder_position(self, side: int) -> VBase3:
-        arm = self.arm_l if side == LEFT else self.arm_r
-        point = arm.shoulder.getFrameA().getPos()
+        arm_controller = self.arm_controllers[side]
+        point = arm_controller.shoulder.getFrameA().getPos()
         xform = self.parts['torso'].getNetTransform()
         return xform.getMat().xformPoint(point)
 
     def set_shoulder_motion(self, axis: int, speed: float) -> None:
-        self.arm_l.set_shoulder_motion(axis, speed)
-        self.arm_r.set_shoulder_motion(axis, speed)
+        self.arm_controllers[LEFT].set_shoulder_motion(axis, speed)
+        self.arm_controllers[RIGHT].set_shoulder_motion(axis, speed)
 
     def position_shoulder(self, side: int, target: VBase3) -> None:
-        arm = self.arm_l if side == LEFT else self.arm_r
-        arm.move_toward(*target, 0)
+        arm_controller = self.arm_controllers[side]
+        arm_controller.move_toward(*target, 0)
 
     def get_arm_target(self, side: int) -> Vec3:
         return Vec3(self.arm_targets[side])
@@ -266,8 +261,8 @@ class Skeleton(object):
         self.targeting = not self.targeting
 
     def arms_down(self) -> None:
-        self.arm_l.go_limp()
-        self.arm_r.go_limp()
+        self.arm_controllers[LEFT].go_limp()
+        self.arm_controllers[RIGHT].go_limp()
 
     def kill(self) -> None:
         torso = self.parts['torso'].node()

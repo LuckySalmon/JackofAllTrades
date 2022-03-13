@@ -86,10 +86,8 @@ class ShoulderMovingObject(DirectObject):
 
     def bend_arms(self, angle: float) -> None:
         for character in self.character_list:
-            for arm in character.skeleton.arm_l, character.skeleton.arm_r:
-                arm.elbow.enableMotor(True)
-                arm.elbow.setMotorTarget(angle, 0.5)
-                arm.forearm.node().setActive(True, False)
+            for arm_controller in character.skeleton.arm_controllers.values():
+                arm_controller.set_elbow_motion(angle, 0.5)
 
     def arms_down(self) -> None:
         for character in self.character_list:
