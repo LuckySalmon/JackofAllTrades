@@ -2,9 +2,6 @@ import math
 import json
 
 from panda3d.bullet import (
-    BulletConeTwistConstraint,
-    BulletGenericConstraint,
-    BulletHingeConstraint,
     BulletRigidBodyNode,
     BulletWorld,
 )
@@ -109,27 +106,17 @@ class Arm(object):
 
         in_limit, out_limit, forward_limit, backward_limit, twist_limit = shoulder_data['limits']
         shoulder_pos = Vec3(*shoulder_data['position'])
-        bicep_pos = Vec3(*bicep_data['position'])
         elbow_pos = Vec3(*elbow_data['position'])
-        forearm_pos = Vec3(*forearm_data['position'])
 
         bicep = physics.make_body('Bicep', **bicep_data, parent=torso, world=world)
         forearm = physics.make_body('Forearm', **forearm_data, parent=torso, world=world)
 
         rotation = Mat3(side, 0, 0, 0, 0, -side, 0, 1, 0)
-        bicep_to_shoulder = shoulder_pos - bicep_pos
-        torso_to_shoulder = shoulder_pos
-        bicep_shoulder_frame = physics.make_rigid_transform(rotation, bicep_to_shoulder)
-        torso_shoulder_frame = physics.make_rigid_transform(rotation, torso_to_shoulder)
-        shoulder = BulletGenericConstraint(torso.node(), bicep.node(), torso_shoulder_frame, bicep_shoulder_frame, True)
+        shoulder = physics.make_ball_joint(shoulder_pos, torso, bicep, rotation)
         shoulder.setDebugDrawSize(0.3)
         world.attachConstraint(shoulder, True)
 
-        elbow_axis = Vec3(0, 0, side)
-        forearm_to_elbow = elbow_pos - forearm_pos
-        bicep_to_elbow = elbow_pos - bicep_pos
-        elbow = BulletHingeConstraint(bicep.node(), forearm.node(), bicep_to_elbow, forearm_to_elbow,
-                                      elbow_axis, elbow_axis, True)
+        elbow = physics.make_hinge_joint(elbow_pos - bicep.getPos(), bicep, forearm, Vec3(0, 0, side))
         elbow.setDebugDrawSize(0.3)
         world.attachConstraint(elbow, True)
 
@@ -220,15 +207,12 @@ class Skeleton(object):
 
         # Create a head
         head_data = bodies['head']
-        head_pos = Vec3(*head_data['position'])
         head = physics.make_body('Head', **head_data, parent=torso, world=world)
 
         # Attach the head to the torso
         neck_params = constraints['neck']
         neck_pos = Vec3(*neck_params['position'])
-        head_frame = TransformState.makePosHpr(neck_pos - head_pos, Vec3(0, 0, -90))
-        torso_frame = TransformState.makePosHpr(neck_pos, Vec3(0, 0, -90))
-        neck = BulletConeTwistConstraint(torso.node(), head.node(), torso_frame, head_frame)
+        neck = physics.make_cone_joint(neck_pos, torso, head, Vec3(0, 0, -90))
         neck.setDebugDrawSize(0.5)
         neck.setLimit(*neck_params['limits'])
         world.attachConstraint(neck)

@@ -4,6 +4,8 @@ from .TransformState import TransformState
 from .PandaNode import PandaNode
 from .Thread import Thread
 from .DrawMask import DrawMask
+from .LVecBase3f import LVecBase3f
+from .LVector3f import LVector3f
 from .LPoint3f import LPoint3f
 from .LMatrix4f import LMatrix4f
 
@@ -32,3 +34,7 @@ class NodePath(Generic[T]):
     def getMat(self, other: NodePath) -> LMatrix4f: ...
 
     def getNetTransform(self) -> TransformState: ...
+
+    def getRelativePoint(self, other: NodePath, point: LVecBase3f) -> LPoint3f: ...
+
+    def getRelativeVector(self, other: NodePath, vec: LVecBase3f) -> LVector3f: ...

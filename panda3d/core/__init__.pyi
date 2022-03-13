@@ -13,6 +13,7 @@ from .TransformState import TransformState as TransformState
 Mat3 = LMatrix3 = LMatrix3f
 VBase3 = LVecBase3f
 Vec3 = LVector3f
+Point3 = LPoint3f
 Mat4 = LMatrix4 = LMatrix4f
 VBase4 = LVecBase4f
 Quat = LQuaternion = LQuaternionf

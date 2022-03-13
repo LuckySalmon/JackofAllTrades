@@ -7,12 +7,16 @@ from panda3d.bullet import (
     BulletSphereShape,
     BulletBoxShape,
     BulletCapsuleShape,
-    BulletWorld
+    BulletWorld,
+    BulletGenericConstraint,
+    BulletHingeConstraint,
+    BulletConeTwistConstraint,
 )
 from panda3d.core import (
     NodePath,
     VBase3,
     Vec3,
+    Point3,
     Quat,
     Mat3,
     Mat4,
@@ -60,6 +64,43 @@ def make_body(name: str,
     path.setPos(*position)
     world.attach(node)
     return path
+
+
+def make_ball_joint(position: VBase3,
+                    node_path_a: NodePath,
+                    node_path_b: NodePath,
+                    rotation: Mat3) -> BulletGenericConstraint:
+    a_to_joint = position
+    b_to_joint = node_path_b.getRelativePoint(node_path_a, position)
+    frame_a = make_rigid_transform(rotation, a_to_joint)
+    frame_b = make_rigid_transform(rotation, b_to_joint)
+    joint = BulletGenericConstraint(node_path_a.node(), node_path_b.node(),
+                                    frame_a, frame_b, True)
+    return joint
+
+
+def make_hinge_joint(position: VBase3,
+                     node_path_a: NodePath,
+                     node_path_b: NodePath,
+                     axis: Vec3) -> BulletHingeConstraint:
+    a_to_joint = Point3(position)
+    b_to_joint = node_path_b.getRelativePoint(node_path_a, position)
+    joint = BulletHingeConstraint(node_path_a.node(), node_path_b.node(),
+                                  a_to_joint, b_to_joint, axis, axis, True)
+    return joint
+
+
+def make_cone_joint(position: VBase3,
+                    node_path_a: NodePath,
+                    node_path_b: NodePath,
+                    hpr: VBase3) -> BulletConeTwistConstraint:
+    a_to_joint = position
+    b_to_joint = node_path_b.getRelativePoint(node_path_a, position)
+    frame_a = TransformState.makePosHpr(a_to_joint, hpr)
+    frame_b = TransformState.makePosHpr(b_to_joint, node_path_b.getRelativeVector(node_path_a, hpr))
+    joint = BulletConeTwistConstraint(node_path_a.node(), node_path_b.node(),
+                                      frame_a, frame_b)
+    return joint
 
 
 def make_world(gravity: float) -> BulletWorld:
