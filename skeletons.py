@@ -214,7 +214,6 @@ class Skeleton(object):
 
         # Create a torso
         torso_data = bodies['torso']
-        torso_pos = Vec3(*torso_data['position'])
         torso = physics.make_body('Torso', **torso_data, parent=render, world=world)
         xform = TransformState.makeMat(coord_xform)
         torso.setTransform(torso, xform)
@@ -228,8 +227,8 @@ class Skeleton(object):
         neck_params = constraints['neck']
         neck_pos = Vec3(*neck_params['position'])
         head_frame = TransformState.makePosHpr(neck_pos - head_pos, Vec3(0, 0, -90))
-        torso_frame = TransformState.makePosHpr(neck_pos - torso_pos, Vec3(0, 0, -90))
-        neck = BulletConeTwistConstraint(head.node(), torso.node(), head_frame, torso_frame)
+        torso_frame = TransformState.makePosHpr(neck_pos, Vec3(0, 0, -90))
+        neck = BulletConeTwistConstraint(torso.node(), head.node(), torso_frame, head_frame)
         neck.setDebugDrawSize(0.5)
         neck.setLimit(*neck_params['limits'])
         world.attachConstraint(neck)

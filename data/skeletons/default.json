@@ -40,7 +40,7 @@
   "constraints": {
     "neck": {
       "limits": [45, 45, 90],
-      "position": [0, 0, 1]
+      "position": [0, 0, 0.75]
     },
     "left shoulder": {
       "limits": [175, 90, 175, 90, 90],
