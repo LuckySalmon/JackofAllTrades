@@ -18,8 +18,8 @@ class Move:     # TODO: decide on whether these should be called moves or action
         name = j.pop('name').title()
         return cls(name, **j)
 
-    def apply(self, user, target):
-        if self.accuracy > random.randint(0, 99):   # TODO: Should this be calculated based on more factors?
+    def apply(self, user, target, confirmed=False):
+        if confirmed or self.accuracy > random.randint(0, 99):
             damage = random.randint(*self.damage)   # TODO: Use a different distribution?
             if random.randint(1, 100) <= 2:
                 damage *= 1.5

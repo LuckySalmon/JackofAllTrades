@@ -127,6 +127,7 @@ class App(ShowBase, FSM):
         self.accept('fighter_selection', self.request, ['CharacterMenu', 'Select a Fighter', CHARACTERS])
         self.accept('select_character', self.select_character)
         self.accept('use_action', self.use_action)
+        self.accept('next_turn', self.next_turn)
         self.accept('quit', self.userExit)
 
         self.main_menu = None
@@ -182,8 +183,8 @@ class App(ShowBase, FSM):
         self.cam.lookAt(0, 0, 0)
 
         # Characters
-        fighters[0].insert(self.world, (-1, 0))
-        fighters[1].insert(self.world, (1, 0))
+        fighters[0].insert(self.world, (-0.75, 0))
+        fighters[1].insert(self.world, (0.75, 0))
 
         # Debug
         debug_node = BulletDebugNode('Debug')
@@ -230,11 +231,12 @@ class App(ShowBase, FSM):
         self.index = (self.index + 1) % 2
         opponent = self.fighters[self.index]
 
-        user.use_move(move, opponent)
+        user.use_move(move, opponent, self.world)
 
-        # Move on to next step (KO or opponent response)
-        if opponent.HP <= 0:
-            messenger.send('announce_win', [user.Name])
+    def next_turn(self):
+        fighter = self.fighters[self.index]
+        if fighter.HP <= 0:
+            messenger.send('announce_win', [self.fighters[not self.index].Name])
         else:
             messenger.send('query_action', [self.index])
 

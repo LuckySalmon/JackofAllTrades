@@ -92,25 +92,40 @@ class Fighter(object):
         character = Character.from_json(file)
         return cls(character)
 
-    def use_move(self, move: Move, target: 'Fighter') -> None:
-        move.apply(self, target)
+    def use_move(self, move: Move, target: 'Fighter', world: BulletWorld) -> None:
         target_part = target.skeleton.parts.get(move.target)
         if target_part is None:
             move.apply(self, target)
+            messenger.send('next_turn')
             return
 
         side = choice((-1, 1))
+        fist = self.skeleton.parts['forearm_left' if side == -1 else 'forearm_right']
         current_position = self.skeleton.get_arm_target(side)
         target_position = target_part.getNetTransform().getPos()
 
+        def reset(_):
+            self.skeleton.set_arm_target(side, current_position)
+            messenger.send('next_turn')
+
         def use_move(task):
             if task.time >= 1:
-                self.skeleton.set_arm_target(side, current_position)
+                messenger.send('output_info', [self.index, f"{self.Name}'s {move.name} missed!"])
                 return task.done
+
+            contacts = world.contactTest(fist.node()).getContacts()
+            for contact in contacts:
+                manifold_point = contact.getManifoldPoint()
+                if abs(manifold_point.distance) > 0.01:
+                    continue
+                if contact.getNode1() == target_part.node():
+                    move.apply(self, target, True)
+                    return task.done
+
             return task.cont
 
         self.skeleton.set_arm_target(side, target_position, False)
-        taskMgr.add(use_move, 'use_move')
+        taskMgr.add(use_move, 'use_move', uponDeath=reset)
 
     def apply_damage(self, damage: int) -> None:
         damage = min(max(damage - self.Defense, 0), self.HP)    # TODO: Find and use a better formula
