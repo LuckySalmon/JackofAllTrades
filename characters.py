@@ -6,6 +6,7 @@ from random import choice
 from panda3d.bullet import BulletWorld
 from panda3d.core import Vec3, Mat3, Mat4
 from direct.showbase.MessengerGlobal import messenger
+from direct.task.TaskManagerGlobal import taskMgr
 
 from moves import Move
 from skeletons import Skeleton
@@ -94,9 +95,22 @@ class Fighter(object):
     def use_move(self, move: Move, target: 'Fighter') -> None:
         move.apply(self, target)
         target_part = target.skeleton.parts.get(move.target)
-        if target_part:
-            target_position = target_part.getNetTransform().getPos()
-            self.skeleton.set_arm_target(choice((-1, 1)), target_position, False)
+        if target_part is None:
+            move.apply(self, target)
+            return
+
+        side = choice((-1, 1))
+        current_position = self.skeleton.get_arm_target(side)
+        target_position = target_part.getNetTransform().getPos()
+
+        def use_move(task):
+            if task.time >= 1:
+                self.skeleton.set_arm_target(side, current_position)
+                return task.done
+            return task.cont
+
+        self.skeleton.set_arm_target(side, target_position, False)
+        taskMgr.add(use_move, 'use_move')
 
     def apply_damage(self, damage: int) -> None:
         damage = min(max(damage - self.Defense, 0), self.HP)    # TODO: Find and use a better formula

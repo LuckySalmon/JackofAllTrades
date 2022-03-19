@@ -152,7 +152,7 @@ class Skeleton(object):
         self.arm_l, self.arm_r = None, None
         self.arm_controllers: dict[int, ArmController | None] = {LEFT: None, RIGHT: None}
         self.arm_targets: dict[int, Vec3 | None] = {LEFT: None, RIGHT: None}
-        self.targeting = False
+        self.targeting = True
 
     def insert(self,
                world: BulletWorld,
@@ -238,7 +238,7 @@ class Skeleton(object):
 
     def position_shoulder(self, side: int, target: VBase3) -> None:
         arm_controller = self.arm_controllers[side]
-        arm_controller.move_toward(*target, 0)
+        arm_controller.move_toward(*target, 0, 0.15)
 
     def get_arm_target(self, side: int) -> Vec3:
         return Vec3(self.arm_targets[side])

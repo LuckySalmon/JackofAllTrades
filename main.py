@@ -17,7 +17,7 @@ import ui
 
 gravity = 0
 
-DefaultTargetPos = (1, 1, 0)
+DefaultTargetPos = (0.5, -0.25, 0)
 LEFT, RIGHT = -1, 1
 SIDES = (LEFT, RIGHT)
 
