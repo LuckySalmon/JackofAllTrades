@@ -10,7 +10,7 @@ from panda3d.bullet import BulletDebugNode
 from panda3d.core import Vec3
 from direct.fsm.FSM import FSM
 
-from characters import Character, Fighter, charList
+from characters import Character, Fighter
 from moves import Move
 import physics
 import ui
@@ -22,8 +22,8 @@ LEFT, RIGHT = -1, 1
 SIDES = (LEFT, RIGHT)
 
 CHARACTERS = []
-for char in charList:
-    with open(f'data\\characters\\{char}.json') as f:
+for name in ('regular', 'boxer', 'psycho', 'test'):
+    with open(f'data\\characters\\{name}.json') as f:
         CHARACTERS.append(Character.from_json(f))
 
 
@@ -159,19 +159,19 @@ class App(ShowBase, FSM):
         match mode:
             case 'split_screen':
                 i = len(self.fighters)
-                self.fighters.append(Fighter(character, i))
+                self.fighters.append(Fighter.from_character(character, i))
                 if i == 0:
                     self.character_menu.title_text['text'] = 'Select a Fighter, Player 2'
                 else:
                     self.request('Battle', self.fighters)
             case 'copy':
-                fighters = [Fighter(character, i) for i in range(2)]
+                fighters = [Fighter.from_character(character, i) for i in range(2)]
                 self.request('Battle', fighters)
 
     def enterBattle(self, fighters: list[Fighter]) -> None:
-        fighters.sort(key=lambda x: x.Speed, reverse=True)
+        fighters.sort(key=lambda x: x.speed, reverse=True)
         for fighter in fighters:
-            fighter.HP = fighter.BaseHP
+            fighter.hp = fighter.base_hp
         self.fighters = fighters
 
         # Set up the World
@@ -235,8 +235,8 @@ class App(ShowBase, FSM):
 
     def next_turn(self):
         fighter = self.fighters[self.index]
-        if fighter.HP <= 0:
-            messenger.send('announce_win', [self.fighters[not self.index].Name])
+        if fighter.hp <= 0:
+            messenger.send('announce_win', [self.fighters[not self.index].name])
         else:
             messenger.send('query_action', [self.index])
 

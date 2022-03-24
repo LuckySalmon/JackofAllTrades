@@ -95,7 +95,7 @@ class CharacterMenu:
                                         parent=self.backdrop)
         self.buttons = []
         for character, (x, y) in zip(characters, uniform_spacing((4, 4), (0.5, 0.5))):
-            button = DirectButton(text=character.Name,
+            button = DirectButton(text=character.name,
                                   command=self.select_character,
                                   extraArgs=[character],
                                   pos=(y, 0, -x - 0.2),
@@ -109,7 +109,7 @@ class CharacterMenu:
         self.character_view.show()
         self.selectedCharacter = character
         if self.mode != 'view':
-            self.confirmation_button['text'] = f'Use {character.Name}'
+            self.confirmation_button['text'] = f'Use {character.name}'
             self.confirmation_button['state'] = DGG.NORMAL
 
     def confirm_selection(self) -> None:
@@ -129,15 +129,15 @@ class BattleInterface(DirectObject):
             x = side * (ASPECT_RATIO - SELECTOR_WIDTH)
             index = 0 if side == LEFT else 1
 
-            action_selector = ActionSelector(character.moveList.values(), (x, 0, -0.5), index)
+            action_selector = ActionSelector(character.moves.values(), (x, 0, -0.5), index)
             action_selector.hide()
 
             info_box = OnscreenText(pos=(x, 0.25),
                                     scale=0.07,
                                     align=TextNode.ACenter)
 
-            bar = DirectWaitBar(range=character.HP,
-                                value=character.HP,
+            bar = DirectWaitBar(range=character.hp,
+                                value=character.hp,
                                 pos=(side * 0.5, 0, 0.75),
                                 frameSize=(side * -0.4, side * 0.5, 0, -0.05))
 

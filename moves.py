@@ -23,12 +23,12 @@ class Move:     # TODO: decide on whether these should be called moves or action
             damage = random.randint(*self.damage)   # TODO: Use a different distribution?
             if random.randint(1, 100) <= 2:
                 damage *= 1.5
-                msg = f"{user.Name}'s {self.name} hit for {damage} damage!\nCritical Hit!"
+                msg = f"{user.name}'s {self.name} hit for {damage} damage!\nCritical Hit!"
             else:
-                msg = f"{user.Name}'s {self.name} hit for {damage} damage!"
+                msg = f"{user.name}'s {self.name} hit for {damage} damage!"
         else:
             damage = 0
-            msg = f"{user.Name}'s {self.name} missed!"
+            msg = f"{user.name}'s {self.name} missed!"
 
         messenger.send('output_info', [user.index, msg])
         target.apply_damage(damage)
