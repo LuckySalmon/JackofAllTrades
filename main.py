@@ -109,12 +109,12 @@ class ShoulderMovingObject(DirectObject):
 
 
 class App(ShowBase, FSM):
-    def __init__(self, fighters: list[Fighter] | None = None):
+    def __init__(self):
         ShowBase.__init__(self)
         FSM.__init__(self, 'GameFSM')
 
+        self.selected_characters = []
         self.fighters = []
-        self.buttons = []
         self.index = 0
 
         self.world = None
@@ -133,10 +133,7 @@ class App(ShowBase, FSM):
         self.main_menu = None
         self.character_menu = None
 
-        if fighters is None:
-            self.request('MainMenu')
-        else:
-            self.request('Battle', fighters)
+        self.request('MainMenu')
 
     def enterMainMenu(self) -> None:
         self.fighters.clear()
@@ -158,33 +155,28 @@ class App(ShowBase, FSM):
     def select_character(self, character: Character, mode: str) -> None:
         match mode:
             case 'split_screen':
-                i = len(self.fighters)
-                self.fighters.append(Fighter.from_character(character, i))
+                i = len(self.selected_characters)
+                self.selected_characters.append(character)
                 if i == 0:
                     self.character_menu.title_text['text'] = 'Select a Fighter, Player 2'
                 else:
-                    self.request('Battle', self.fighters)
+                    self.request('Battle', self.selected_characters)
             case 'copy':
-                fighters = [Fighter.from_character(character, i) for i in range(2)]
-                self.request('Battle', fighters)
+                self.request('Battle', [character, character])
 
-    def enterBattle(self, fighters: list[Fighter]) -> None:
-        fighters.sort(key=lambda x: x.speed, reverse=True)
-        for fighter in fighters:
-            fighter.hp = fighter.base_hp
-        self.fighters = fighters
-
+    def enterBattle(self, characters: list[Character]) -> None:
         # Set up the World
-        # The World
         self.world = physics.make_world(gravity)
-
-        # Camera
         self.cam.setPos(0, -15, 2)
         self.cam.lookAt(0, 0, 0)
 
-        # Characters
-        fighters[0].insert(self.world, (-0.75, 0))
-        fighters[1].insert(self.world, (0.75, 0))
+        # Fighters
+        self.fighters.clear()
+        for i, character in enumerate(characters):
+            fighter = Fighter.from_character(character, self.world, i)
+            fighter.hp = fighter.base_hp
+            self.fighters.append(fighter)
+        self.fighters.sort(key=lambda x: x.speed, reverse=True)
 
         # Debug
         debug_node = BulletDebugNode('Debug')
@@ -199,8 +191,8 @@ class App(ShowBase, FSM):
         debug_object.accept('f1', self.toggle_debug)
 
         # Testing Controls
-        shoulder_moving_object = ShoulderMovingObject(fighters)
-        target_moving_object = TargetMovingObject(fighters)
+        shoulder_moving_object = ShoulderMovingObject(self.fighters)
+        target_moving_object = TargetMovingObject(self.fighters)
         target_moving_object.set_targets(*DefaultTargetPos)
         for i in range(3):
             shoulder_moving_object.move_arms(i, 0)

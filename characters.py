@@ -1,6 +1,7 @@
 import json
 import winsound
 from random import choice
+from typing import Any
 
 from panda3d.bullet import BulletWorld
 from panda3d.core import Vec3, Mat3, Mat4
@@ -70,7 +71,8 @@ class Fighter:
                  speed: int,
                  defense: int,
                  moves: dict[str, Move],
-                 skeleton: Skeleton,
+                 skeleton_params: dict[str, Any],
+                 world: BulletWorld,
                  index: int = 0):
         self.name = name
         self.base_hp = base_hp
@@ -78,26 +80,31 @@ class Fighter:
         self.speed = speed
         self.defense = defense
         self.moves = moves
-        self.skeleton = skeleton
         self.index = index
 
+        side = 1 if index else -1
+        offset = Vec3(-0.75, 0, 0) if index == 0 else Vec3(0.75, 0, 0)
+        rotation = Mat3(-side, 0, 0, 0, -side, 0, 0, 0, 1)
+        coord_xform = Mat4(rotation, offset)
+        self.skeleton = Skeleton(skeleton_params, world, coord_xform)
+
     @classmethod
-    def from_character(cls, character: Character, index: int = 0) -> 'Fighter':
+    def from_character(cls, character: Character, world: BulletWorld, index: int = 0) -> 'Fighter':
         with open(f'data\\skeletons\\{character.skeleton}.json') as f:
             skeleton_params = json.load(f)
-        skeleton = Skeleton(skeleton_params)
         return cls(character.name,
                    character.hp,
                    character.speed,
                    character.defense,
                    character.moves,
-                   skeleton,
+                   skeleton_params,
+                   world,
                    index)
 
     @classmethod
-    def from_json(cls, file, index: int = 0) -> 'Fighter':
+    def from_json(cls, file, world: BulletWorld, index: int = 0) -> 'Fighter':
         character = Character.from_json(file)
-        return cls.from_character(character, index)
+        return cls.from_character(character, world, index)
 
     def use_move(self, move: Move, target: 'Fighter', world: BulletWorld) -> None:
         target_part = target.skeleton.parts.get(move.target)
@@ -141,16 +148,6 @@ class Fighter:
         messenger.send('set_health_bar', [self.index, self.hp])
         if self.hp <= 0:
             self.kill()
-
-    def insert(self, world: BulletWorld, pos: tuple[float, float]) -> None:
-        """Place the character in the world."""
-        side = 1 if self.index else -1
-        x, y = pos
-        offset = Vec3(x, y, 0)
-        rotation = Mat3(-side, 0, 0, 0, -side, 0, 0, 0, 1)
-        coord_xform = Mat4(rotation, offset)
-
-        self.skeleton.insert(world, coord_xform)
 
     def kill(self) -> None:
         self.skeleton.kill()

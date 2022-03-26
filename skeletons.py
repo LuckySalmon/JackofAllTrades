@@ -1,5 +1,6 @@
 import math
 import json
+from typing import Any
 
 from panda3d.bullet import BulletWorld
 from panda3d.core import (
@@ -143,23 +144,19 @@ class ArmController:
         self.bicep.node().setActive(True, False)
 
 
-class Skeleton(object):
-    def __init__(self, parameters: dict[str] | None):
-        if parameters is None:
-            parameters = default_parameters
-        self.parameters = parameters
+class Skeleton:
+    def __init__(self,
+                 parameters: dict[str, Any],
+                 world: BulletWorld,
+                 coord_xform: Mat4):
         self.parts = {}
         self.arm_l, self.arm_r = None, None
-        self.arm_controllers: dict[int, ArmController | None] = {LEFT: None, RIGHT: None}
+        self.arm_controllers: dict[int, ArmController] = {}
         self.arm_targets: dict[int, Vec3 | None] = {LEFT: None, RIGHT: None}
         self.targeting = True
 
-    def insert(self,
-               world: BulletWorld,
-               coord_xform: Mat4) -> None:
-        """Place the skeleton in the world."""
-        bodies = self.parameters['bodies']
-        constraints = self.parameters['constraints']
+        bodies = parameters['bodies']
+        constraints = parameters['constraints']
         render = ShowBaseGlobal.base.render
 
         # Create a torso
@@ -182,10 +179,10 @@ class Skeleton(object):
 
         # Create arms
         for side, string in zip((LEFT, RIGHT), ('left', 'right')):
-            shoulder_data = self.parameters['constraints'][string + ' shoulder']
-            elbow_data = self.parameters['constraints'][string + ' elbow']
-            bicep_data = self.parameters['bodies'][string + ' bicep']
-            forearm_data = self.parameters['bodies'][string + ' forearm']
+            shoulder_data = parameters['constraints'][string + ' shoulder']
+            elbow_data = parameters['constraints'][string + ' elbow']
+            bicep_data = parameters['bodies'][string + ' bicep']
+            forearm_data = parameters['bodies'][string + ' forearm']
 
             in_limit, out_limit, forward_limit, backward_limit, twist_limit = shoulder_data['limits']
             shoulder_pos = Vec3(*shoulder_data['position'])
