@@ -19,12 +19,14 @@ class Character:
                  name: str,
                  hp: int,
                  speed: int,
+                 strength: int,
                  defense: int,
                  moves: dict[str, Move] | None = None,
                  skeleton: str = 'default'):
         self.name = name.title()
         self.hp = hp
         self.speed = speed
+        self.strength = strength
         self.defense = defense
         self.xp = 0
         self.level = 0
@@ -69,6 +71,7 @@ class Fighter:
                  name: str,
                  base_hp: int,
                  speed: int,
+                 strength: int,
                  defense: int,
                  moves: dict[str, Move],
                  skeleton_params: dict[str, Any],
@@ -78,6 +81,7 @@ class Fighter:
         self.base_hp = base_hp
         self.hp = base_hp
         self.speed = speed
+        self.strength = strength
         self.defense = defense
         self.moves = moves
         self.index = index
@@ -86,7 +90,7 @@ class Fighter:
         offset = Vec3(-0.75, 0, 0) if index == 0 else Vec3(0.75, 0, 0)
         rotation = Mat3(-side, 0, 0, 0, -side, 0, 0, 0, 1)
         coord_xform = Mat4(rotation, offset)
-        self.skeleton = Skeleton(skeleton_params, world, coord_xform, speed)
+        self.skeleton = Skeleton(skeleton_params, world, coord_xform, speed, strength)
 
     @classmethod
     def from_character(cls, character: Character, world: BulletWorld, index: int = 0) -> 'Fighter':
@@ -95,6 +99,7 @@ class Fighter:
         return cls(character.name,
                    character.hp,
                    character.speed,
+                   character.strength,
                    character.defense,
                    character.moves,
                    skeleton_params,

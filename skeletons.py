@@ -150,7 +150,8 @@ class Skeleton:
                  parameters: dict[str, Any],
                  world: BulletWorld,
                  coord_xform: Mat4,
-                 speed: float):
+                 speed: float,
+                 strength: float):
         self.parts = {}
         self.arm_l, self.arm_r = None, None
         self.arm_controllers: dict[int, ArmController] = {}
@@ -203,8 +204,8 @@ class Skeleton:
             world.attachConstraint(elbow, True)
 
             for axis in range(3):
-                shoulder.getRotationalLimitMotor(axis).setMaxMotorForce(200)
-            elbow.setMaxMotorImpulse(200)
+                shoulder.getRotationalLimitMotor(axis).setMaxMotorForce(strength)
+            elbow.setMaxMotorImpulse(strength)
 
             shoulder.setAngularLimit(0, -in_limit, out_limit)            # limits for moving toward torso from T-pose
             shoulder.setAngularLimit(1, -twist_limit, twist_limit)       # limit for twisting along the bicep axis
