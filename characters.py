@@ -132,14 +132,13 @@ class Fighter:
                 messenger.send('output_info', [self.index, f"{self.name}'s {move.name} missed!"])
                 return task.done
 
-            contacts = world.contactTest(fist.node()).getContacts()
-            for contact in contacts:
+            contact_result = world.contactTestPair(fist.node(), target_part.node())
+            for contact in contact_result.getContacts():
                 manifold_point = contact.getManifoldPoint()
                 if abs(manifold_point.distance) > 0.01:
                     continue
-                if contact.getNode1() == target_part.node():
-                    move.apply(self, target, True)
-                    return task.done
+                move.apply(self, target, True)
+                return task.done
 
             return task.cont
 
