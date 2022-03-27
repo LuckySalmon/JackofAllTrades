@@ -179,10 +179,10 @@ class Skeleton:
 
         # Create arms
         for side, string in zip((LEFT, RIGHT), ('left', 'right')):
-            shoulder_data = parameters['constraints'][string + ' shoulder']
-            elbow_data = parameters['constraints'][string + ' elbow']
-            bicep_data = parameters['bodies'][string + ' bicep']
-            forearm_data = parameters['bodies'][string + ' forearm']
+            shoulder_data = constraints[string + ' shoulder']
+            elbow_data = constraints[string + ' elbow']
+            bicep_data = bodies[string + ' bicep']
+            forearm_data = bodies[string + ' forearm']
 
             in_limit, out_limit, forward_limit, backward_limit, twist_limit = shoulder_data['limits']
             shoulder_pos = Vec3(*shoulder_data['position'])
