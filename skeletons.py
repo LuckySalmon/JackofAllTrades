@@ -211,9 +211,7 @@ class Skeleton:
 
     def get_shoulder_position(self, side: int) -> VBase3:
         arm_controller = self.arm_controllers[side]
-        point = arm_controller.shoulder.getFrameA().getPos()
-        xform = self.parts['torso'].getNetTransform()
-        return xform.getMat().xformPoint(point)
+        return arm_controller.origin
 
     def position_shoulder(self, side: int, target: VBase3) -> None:
         arm_controller = self.arm_controllers[side]
