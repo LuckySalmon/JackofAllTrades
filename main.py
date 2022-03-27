@@ -1,4 +1,3 @@
-import math
 from itertools import product
 from collections.abc import Iterable
 
@@ -64,48 +63,6 @@ class TargetMovingObject(DirectObject):
     def toggle_targeting(self):
         for fighter in self.fighters:
             fighter.skeleton.toggle_targeting()
-
-
-class ShoulderMovingObject(DirectObject):
-    def __init__(self, character_list: list[Fighter]):
-        super().__init__()
-        self.character_list = character_list
-        bindings = [('q', 'e'), ('a', 'd'), ('z', 'c')]
-        for axis, keys in enumerate(bindings):
-            for i, key in enumerate(keys):
-                self.accept(key, self.move_arms, [axis, (-1) ** i])
-                self.accept(key + '-up', self.move_arms, [axis, 0])
-        self.accept('s', self.arms_down)
-        self.accept('r', self.bend_arms, [math.pi / 2])
-        self.accept('v', self.bend_arms, [0.0])
-        self.accept('p', self.print_angles)
-
-    def move_arms(self, axis: int, speed: float) -> None:
-        for i, character in enumerate(self.character_list):
-            character.skeleton.set_shoulder_motion(axis, speed)
-
-    def bend_arms(self, angle: float) -> None:
-        for character in self.character_list:
-            for arm_controller in character.skeleton.arm_controllers.values():
-                arm_controller.set_elbow_motion(angle, 0.5)
-
-    def arms_down(self) -> None:
-        for character in self.character_list:
-            character.skeleton.arms_down()
-
-    def print_angles(self) -> None:
-        for character in self.character_list:
-            for arm in character.skeleton.arm_l, character.skeleton.arm_r:
-                angles = [arm.shoulder.getAngle(i) for i in range(3)]
-                print('angles: {:.4f}, {:.4f}, {:.4f}'.format(*angles))
-                angles[2] *= -1
-                c3, c2, c1 = [math.cos(angle) for angle in angles]
-                s3, s2, s1 = [math.sin(angle) for angle in angles]
-                calculated_point = Vec3(c1 * c3 * s2 + s1 * s3, -c2 * c3, -c1 * s3 + c3 * s1 * s2) * 0.375
-                print('calculated bicep pos: ({: .4f}, {: .4f}, {: .4f})'.format(*calculated_point))
-                actual_point = arm.bicep.getPos() - arm.position
-                print('    actual bicep pos: ({: .4f}, {: .4f}, {: .4f})'.format(*actual_point))
-                print()
 
 
 class App(ShowBase, FSM):
@@ -190,12 +147,9 @@ class App(ShowBase, FSM):
         debug_object = DirectObject()
         debug_object.accept('f1', self.toggle_debug)
 
-        # Testing Controls
-        shoulder_moving_object = ShoulderMovingObject(self.fighters)
+        # Arm Control
         target_moving_object = TargetMovingObject(self.fighters)
         target_moving_object.set_targets(*DefaultTargetPos)
-        for i in range(3):
-            shoulder_moving_object.move_arms(i, 0)
 
         self.taskMgr.add(self.update, 'update')
 
