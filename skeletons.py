@@ -107,42 +107,30 @@ class ArmController:
             paths[i]['points'] = [axis]
         draw_lines(axes, *paths, origin=self.origin)
 
-    def set_shoulder_motion(self, axis: int, speed: float) -> None:
-        """Set the shoulder motor along the given axis to the given speed."""
+    def enable_motors(self, enabled: bool) -> None:
+        for axis in range(3):
+            motor = self.shoulder.getRotationalLimitMotor(axis)
+            motor.setMotorEnabled(enabled)
+        self.elbow.enableMotor(enabled)
+
+    def set_target_shoulder_angle(self, axis: int, angle: float) -> None:
         motor = self.shoulder.getRotationalLimitMotor(axis)
-        motor.setTargetVelocity(speed)
-        motor.setMotorEnabled(True)
-        self.bicep.node().setActive(True, False)
+        diff = angle - motor.current_position
+        motor.setTargetVelocity(diff * self.speed)
 
-    def set_elbow_motion(self, angle: float, dt: float) -> None:
-        self.elbow.enableMotor(True)
-        self.elbow.setMotorTarget(angle, dt)
-        self.forearm.node().setActive(True, False)
+    def set_target_elbow_angle(self, angle: float) -> None:
+        self.elbow.setMotorTarget(angle, 1 / self.speed)
 
-    def move_toward(self, x: float, y: float, z: float, theta: float, tol=0.01) -> None:
+    def move_toward(self, x: float, y: float, z: float, theta: float) -> None:
         """Set shoulder and elbow motor velocities such that the hand moves toward the specified point."""
         shoulder_pos = Vec3(0, 0, 0)
         hand_pos = Vec3(x, y, z)
         target_angles = shoulder_angles(shoulder_pos, hand_pos, theta, self.transform)
         for axis in range(3):
-            motor = self.shoulder.getRotationalLimitMotor(axis)
-            angle = self.shoulder.getAngle(axis)
-            diff = target_angles[axis] - angle
-            if abs(diff) > tol:
-                motor.setTargetVelocity(diff * self.speed)
-            else:
-                motor.setTargetVelocity(0)
-            motor.setMotorEnabled(True)
-        self.elbow.enableMotor(True)
-        self.elbow.setMotorTarget(target_angles[3], 1/self.speed)
+            self.set_target_shoulder_angle(axis, target_angles[axis])
+        self.set_target_elbow_angle(target_angles[3])
         self.bicep.node().setActive(True, False)
         draw_lines(self.lines, dict(points=[hand_pos]), origin=self.origin)
-
-    def go_limp(self) -> None:
-        for axis in range(3):
-            self.shoulder.getRotationalLimitMotor(axis).setMotorEnabled(False)
-        self.elbow.enableMotor(False)
-        self.bicep.node().setActive(True, False)
 
 
 class Skeleton:
@@ -219,7 +207,9 @@ class Skeleton:
 
             self.parts[f'bicep_{string}'] = bicep
             self.parts[f'forearm_{string}'] = forearm
-            self.arm_controllers[side] = ArmController(position, shoulder, elbow, bicep, forearm, transform, speed)
+            arm_controller = ArmController(position, shoulder, elbow, bicep, forearm, transform, speed)
+            arm_controller.enable_motors(True)
+            self.arm_controllers[side] = arm_controller
 
         self.parts['torso'] = torso
         self.parts['head'] = head
@@ -231,10 +221,6 @@ class Skeleton:
         point = arm_controller.shoulder.getFrameA().getPos()
         xform = self.parts['torso'].getNetTransform()
         return xform.getMat().xformPoint(point)
-
-    def set_shoulder_motion(self, axis: int, speed: float) -> None:
-        self.arm_controllers[LEFT].set_shoulder_motion(axis, speed)
-        self.arm_controllers[RIGHT].set_shoulder_motion(axis, speed)
 
     def position_shoulder(self, side: int, target: VBase3) -> None:
         arm_controller = self.arm_controllers[side]
@@ -260,11 +246,9 @@ class Skeleton:
     def toggle_targeting(self) -> None:
         self.targeting = not self.targeting
 
-    def arms_down(self) -> None:
-        self.arm_controllers[LEFT].go_limp()
-        self.arm_controllers[RIGHT].go_limp()
-
     def kill(self) -> None:
+        for arm_controller in self.arm_controllers.values():
+            arm_controller.enable_motors(False)
         torso = self.parts['torso'].node()
         torso.setMass(1.0)
         torso.setActive(True, False)
