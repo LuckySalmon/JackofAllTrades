@@ -89,13 +89,14 @@ def shoulder_angles(origin: VBase3,
 
 
 class ArmController:
-    def __init__(self, origin, shoulder, elbow, bicep, forearm, transform):
+    def __init__(self, origin, shoulder, elbow, bicep, forearm, transform, speed):
         self.origin = origin
         self.shoulder = shoulder
         self.elbow = elbow
         self.bicep = bicep
         self.forearm = forearm
         self.transform = transform
+        self.speed = speed  # proportional to maximum angular velocity of joint motors
         render = ShowBaseGlobal.base.render
 
         self.lines = LineNodePath(name='debug', parent=render, colorVec=VBase4(0.2, 0.2, 0.5, 1))
@@ -118,7 +119,7 @@ class ArmController:
         self.elbow.setMotorTarget(angle, dt)
         self.forearm.node().setActive(True, False)
 
-    def move_toward(self, x: float, y: float, z: float, theta: float, tol=0.01, dt=1.0) -> None:
+    def move_toward(self, x: float, y: float, z: float, theta: float, tol=0.01) -> None:
         """Set shoulder and elbow motor velocities such that the hand moves toward the specified point."""
         shoulder_pos = Vec3(0, 0, 0)
         hand_pos = Vec3(x, y, z)
@@ -128,12 +129,12 @@ class ArmController:
             angle = self.shoulder.getAngle(axis)
             diff = target_angles[axis] - angle
             if abs(diff) > tol:
-                motor.setTargetVelocity(diff / dt)
+                motor.setTargetVelocity(diff * self.speed)
             else:
                 motor.setTargetVelocity(0)
             motor.setMotorEnabled(True)
         self.elbow.enableMotor(True)
-        self.elbow.setMotorTarget(target_angles[3], dt)
+        self.elbow.setMotorTarget(target_angles[3], 1/self.speed)
         self.bicep.node().setActive(True, False)
         draw_lines(self.lines, dict(points=[hand_pos]), origin=self.origin)
 
@@ -148,7 +149,8 @@ class Skeleton:
     def __init__(self,
                  parameters: dict[str, Any],
                  world: BulletWorld,
-                 coord_xform: Mat4):
+                 coord_xform: Mat4,
+                 speed: float):
         self.parts = {}
         self.arm_l, self.arm_r = None, None
         self.arm_controllers: dict[int, ArmController] = {}
@@ -216,7 +218,7 @@ class Skeleton:
 
             self.parts[f'bicep_{string}'] = bicep
             self.parts[f'forearm_{string}'] = forearm
-            self.arm_controllers[side] = ArmController(position, shoulder, elbow, bicep, forearm, transform)
+            self.arm_controllers[side] = ArmController(position, shoulder, elbow, bicep, forearm, transform, speed)
 
         self.parts['torso'] = torso
         self.parts['head'] = head
@@ -235,7 +237,7 @@ class Skeleton:
 
     def position_shoulder(self, side: int, target: VBase3) -> None:
         arm_controller = self.arm_controllers[side]
-        arm_controller.move_toward(*target, 0, 0.15)
+        arm_controller.move_toward(*target, 0)
 
     def get_arm_target(self, side: int) -> Vec3:
         return Vec3(self.arm_targets[side])

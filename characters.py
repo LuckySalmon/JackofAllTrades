@@ -86,7 +86,7 @@ class Fighter:
         offset = Vec3(-0.75, 0, 0) if index == 0 else Vec3(0.75, 0, 0)
         rotation = Mat3(-side, 0, 0, 0, -side, 0, 0, 0, 1)
         coord_xform = Mat4(rotation, offset)
-        self.skeleton = Skeleton(skeleton_params, world, coord_xform)
+        self.skeleton = Skeleton(skeleton_params, world, coord_xform, speed)
 
     @classmethod
     def from_character(cls, character: Character, world: BulletWorld, index: int = 0) -> 'Fighter':
