@@ -9,7 +9,6 @@ from panda3d.core import (
     VBase4,
     Mat3,
     Mat4,
-    TransformState,
 )
 from direct.directtools.DirectGeometry import LineNodePath
 from direct.task.Task import Task
@@ -135,13 +134,12 @@ class ArmController:
 
 class Skeleton:
     def __init__(self,
-                 parameters: dict[str, Any],
+                 parameters: dict[str, dict[str, dict[str, Any]]],
                  world: BulletWorld,
                  coord_xform: Mat4,
                  speed: float,
                  strength: float):
         self.parts = {}
-        self.arm_l, self.arm_r = None, None
         self.arm_controllers: dict[int, ArmController] = {}
         self.arm_targets: dict[int, Vec3 | None] = {LEFT: None, RIGHT: None}
         self.targeting = True
@@ -153,8 +151,7 @@ class Skeleton:
         # Create a torso
         torso_data = bodies['torso']
         torso = physics.make_body('Torso', **torso_data, parent=render, world=world)
-        xform = TransformState.makeMat(coord_xform)
-        torso.setTransform(torso, xform)
+        torso.setMat(torso, coord_xform)
 
         # Create a head
         head_data = bodies['head']
@@ -164,7 +161,6 @@ class Skeleton:
         neck_params = constraints['neck']
         neck_pos = Vec3(*neck_params['position'])
         neck = physics.make_cone_joint(neck_pos, torso, head, Vec3(0, 0, -90))
-        neck.setDebugDrawSize(0.5)
         neck.setLimit(*neck_params['limits'])
         world.attachConstraint(neck)
 
@@ -184,11 +180,9 @@ class Skeleton:
 
             rotation = Mat3(side, 0, 0, 0, 0, -side, 0, 1, 0)
             shoulder = physics.make_ball_joint(shoulder_pos, torso, bicep, rotation)
-            shoulder.setDebugDrawSize(0.3)
             world.attachConstraint(shoulder, True)
 
             elbow = physics.make_hinge_joint(elbow_pos - bicep.getPos(), bicep, forearm, Vec3(0, 0, side))
-            elbow.setDebugDrawSize(0.3)
             world.attachConstraint(elbow, True)
 
             for axis in range(3):
@@ -201,8 +195,7 @@ class Skeleton:
 
             elbow.setLimit(*elbow_data['limits'])
 
-            torso_xform = torso.getMat()
-            position = torso_xform.xform(VBase4(shoulder_pos, 1)).getXyz()
+            position = render.getRelativePoint(torso, shoulder_pos)
             transform = coord_xform.getUpper3() * Mat3(1, 0, 0, 0, side, 0, 0, 0, 1)
 
             self.parts[f'bicep_{string}'] = bicep
