@@ -1,7 +1,8 @@
 from panda3d.core import NodePath
 from ..task.Task import TaskManager
+from .DirectObject import DirectObject
 
-class ShowBase:
+class ShowBase(DirectObject):
     def __init__(self, fStartDirect: bool = True, windowType: str | None = None) -> None: ...
 
     @property

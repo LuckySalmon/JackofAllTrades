@@ -65,32 +65,14 @@ class TargetMovingObject(DirectObject):
             fighter.skeleton.toggle_targeting()
 
 
-class App(ShowBase, FSM):
-    def __init__(self):
-        ShowBase.__init__(self)
+class GameFSM(FSM):
+    def __init__(self, app: 'App'):
         FSM.__init__(self, 'GameFSM')
-
-        self.selected_characters = []
-        self.fighters = []
-        self.index = 0
-
-        self.world = None
-        self.debugNP = None
-
-        self.ui = None
-
-        self.accept('main_menu', self.request, ['MainMenu'])
-        self.accept('character_menu', self.request, ['CharacterMenu', 'Select a Character', CHARACTERS, 'view'])
-        self.accept('fighter_selection', self.request, ['CharacterMenu', 'Select a Fighter', CHARACTERS])
-        self.accept('select_character', self.select_character)
-        self.accept('use_action', self.use_action)
-        self.accept('next_turn', self.next_turn)
-        self.accept('quit', self.userExit)
-
+        self.app = app
+        self.fighters = self.app.fighters
         self.main_menu = None
         self.character_menu = None
-
-        self.request('MainMenu')
+        self.battle_interface = None
 
     def enterMainMenu(self) -> None:
         self.fighters.clear()
@@ -109,19 +91,50 @@ class App(ShowBase, FSM):
         if self.character_menu is not None:
             self.character_menu.hide()
 
+    def enterBattle(self, characters: list[Character]) -> None:
+        self.app.enter_battle(characters)
+        self.battle_interface = ui.BattleInterface(self.fighters)
+        messenger.send('query_action', [0])
+
+
+class App(ShowBase):
+    def __init__(self):
+        ShowBase.__init__(self)
+        self.fighters = []
+        self.fsm = GameFSM(self)
+
+        self.selected_characters = []
+        self.index = 0
+
+        self.world = None
+        self.debugNP = None
+
+        self.accept('main_menu', self.request, ['MainMenu'])
+        self.accept('character_menu', self.request, ['CharacterMenu', 'Select a Character', CHARACTERS, 'view'])
+        self.accept('fighter_selection', self.request, ['CharacterMenu', 'Select a Fighter', CHARACTERS])
+        self.accept('select_character', self.select_character)
+        self.accept('use_action', self.use_action)
+        self.accept('next_turn', self.next_turn)
+        self.accept('quit', self.userExit)
+
+        self.request('MainMenu')
+
+    def request(self, request: str, *args) -> None:
+        self.fsm.request(request, *args)
+
     def select_character(self, character: Character, mode: str) -> None:
         match mode:
             case 'split_screen':
                 i = len(self.selected_characters)
                 self.selected_characters.append(character)
                 if i == 0:
-                    self.character_menu.title_text['text'] = 'Select a Fighter, Player 2'
+                    self.fsm.character_menu.title_text['text'] = 'Select a Fighter, Player 2'
                 else:
                     self.request('Battle', self.selected_characters)
             case 'copy':
                 self.request('Battle', [character, character])
 
-    def enterBattle(self, characters: list[Character]) -> None:
+    def enter_battle(self, characters: list[Character]) -> None:
         # Set up the World
         self.world = physics.make_world(gravity)
         self.cam.setPos(0, -15, 2)
@@ -152,11 +165,6 @@ class App(ShowBase, FSM):
         target_moving_object.set_targets(*DefaultTargetPos)
 
         self.taskMgr.add(self.update, 'update')
-
-        # Set up GUI
-        self.ui = ui.BattleInterface(self.fighters)
-
-        messenger.send('query_action', [0])
 
     def update(self, task: Task) -> int:
         """Update the world using physics."""
