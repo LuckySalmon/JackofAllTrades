@@ -187,6 +187,11 @@ class App(ShowBase, FSM):
             messenger.send('query_action', [self.index])
 
 
-if __name__ == "__main__":
+def main() -> None:
+    """Run an instance of the app."""
     app = App()
     app.run()
+
+
+if __name__ == "__main__":
+    main()
