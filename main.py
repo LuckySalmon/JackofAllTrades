@@ -76,7 +76,10 @@ class GameFSM(FSM):
 
     def enterMainMenu(self) -> None:
         self.fighters.clear()
-        self.main_menu = ui.MainMenu()
+        if self.main_menu is not None:
+            self.main_menu.show()
+        else:
+            self.main_menu = ui.MainMenu()
 
     def exitMainMenu(self) -> None:
         if self.main_menu is not None:
@@ -85,7 +88,10 @@ class GameFSM(FSM):
     def enterCharacterMenu(self, title: str, character_list: Iterable[Character], mode: str) -> None:
         if mode == 'split_screen':
             title += ', Player 1'
-        self.character_menu = ui.CharacterMenu(title, character_list, mode)
+        if self.character_menu is not None:
+            self.character_menu.show()
+        else:
+            self.character_menu = ui.CharacterMenu(title, character_list, mode)
 
     def exitCharacterMenu(self) -> None:
         if self.character_menu is not None:

@@ -53,6 +53,9 @@ class MainMenu:
     def hide(self) -> None:
         self.backdrop.hide()
 
+    def show(self) -> None:
+        self.backdrop.show()
+
 
 class CharacterMenu:
     def __init__(self, title: str, characters: Iterable[Character], mode: str):
@@ -117,6 +120,9 @@ class CharacterMenu:
 
     def hide(self) -> None:
         self.backdrop.hide()
+
+    def show(self) -> None:
+        self.backdrop.show()
 
 
 class BattleInterface(DirectObject):
