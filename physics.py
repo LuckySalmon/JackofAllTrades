@@ -57,8 +57,7 @@ def make_body(name: str,
     """Return a NodePath for a new rigid body with the given characteristics"""
     constructor = shape_constructors[shape]
     node = BulletRigidBodyNode(name)
-    shape = constructor(*dimensions)
-    node.addShape(shape)
+    node.addShape(constructor(*dimensions))
     node.setMass(mass)
     path = parent.attachNewNode(node)
     path.setPos(*position)
