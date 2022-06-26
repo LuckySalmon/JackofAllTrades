@@ -156,13 +156,10 @@ class App(ShowBase):
 
         # Debug
         debug_node = BulletDebugNode('Debug')
-        debug_node.showWireframe(True)
         debug_node.showConstraints(False)
-        debug_node.showBoundingBoxes(False)
-        debug_node.showNormals(False)
         self.debugNP = self.render.attachNewNode(debug_node)
         self.debugNP.show()
-        self.world.setDebugNode(self.debugNP.node())
+        self.world.setDebugNode(debug_node)
         debug_object = DirectObject()
         debug_object.accept('f1', self.toggle_debug)
 
