@@ -2,13 +2,14 @@ import math
 import json
 from typing import Any
 
-from panda3d.bullet import BulletWorld
+from panda3d.bullet import BulletWorld, BulletGenericConstraint, BulletHingeConstraint, BulletRigidBodyNode
 from panda3d.core import (
     VBase3,
     Vec3,
     VBase4,
     Mat3,
     Mat4,
+    NodePath,
 )
 from direct.directtools.DirectGeometry import LineNodePath
 from direct.task.Task import Task
@@ -88,7 +89,22 @@ def shoulder_angles(origin: VBase3,
 
 
 class ArmController:
-    def __init__(self, origin, shoulder, elbow, bicep, forearm, transform, speed):
+    origin: VBase3
+    shoulder: BulletGenericConstraint
+    elbow: BulletHingeConstraint
+    bicep: 'NodePath[BulletRigidBodyNode]'
+    forearm: 'NodePath[BulletRigidBodyNode]'
+    transform: Mat3
+    speed: float
+
+    def __init__(self,
+                 origin: VBase3,
+                 shoulder: BulletGenericConstraint,
+                 elbow: BulletHingeConstraint,
+                 bicep: 'NodePath[BulletRigidBodyNode]',
+                 forearm: 'NodePath[BulletRigidBodyNode]',
+                 transform: Mat3,
+                 speed: float):
         self.origin = origin
         self.shoulder = shoulder
         self.elbow = elbow
@@ -133,6 +149,11 @@ class ArmController:
 
 
 class Skeleton:
+    parts: dict[str, NodePath]
+    arm_controllers: dict[int, ArmController]
+    arm_targets: dict[int, Vec3 | None]
+    targeting: bool
+
     def __init__(self,
                  parameters: dict[str, dict[str, dict[str, Any]]],
                  world: BulletWorld,

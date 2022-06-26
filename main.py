@@ -5,8 +5,8 @@ from direct.showbase.MessengerGlobal import messenger
 from direct.showbase.DirectObject import DirectObject
 from direct.showbase.ShowBase import ShowBase
 from direct.task.Task import Task
-from panda3d.bullet import BulletDebugNode
-from panda3d.core import Vec3
+from panda3d.bullet import BulletDebugNode, BulletWorld
+from panda3d.core import NodePath, Vec3
 from direct.fsm.FSM import FSM
 
 from characters import Character, Fighter
@@ -27,10 +27,14 @@ for name in ('regular', 'boxer', 'psycho', 'test'):
 
 
 class TargetMovingObject(DirectObject):
-    def __init__(self, fighters):
+    fighters: Iterable[Fighter]
+    xyz: list[float]
+    targets: list[Vec3]
+
+    def __init__(self, fighters: Iterable[Fighter]):
         super().__init__()
         self.fighters = fighters
-        self.xyz = (0, 0, 0)
+        self.xyz = [0, 0, 0]
         self.targets = []
         bindings = (('7-repeat', '1-repeat'), ('8-repeat', '2-repeat'), ('9-repeat', '3-repeat'))
         for axis, keys in enumerate(bindings):
@@ -66,6 +70,12 @@ class TargetMovingObject(DirectObject):
 
 
 class GameFSM(FSM):
+    app: 'App'
+    fighters: list[Fighter]
+    main_menu: ui.MainMenu | None
+    character_menu: ui.CharacterMenu | None
+    battle_interface: ui.BattleInterface | None
+
     def __init__(self, app: 'App'):
         FSM.__init__(self, 'GameFSM')
         self.app = app
@@ -104,6 +114,13 @@ class GameFSM(FSM):
 
 
 class App(ShowBase):
+    fighters: list[Fighter]
+    fsm: GameFSM
+    selected_characters: list[Character]
+    index: int
+    world: BulletWorld | None
+    debugNP: 'NodePath[BulletDebugNode]'
+
     def __init__(self):
         ShowBase.__init__(self)
         self.fighters = []

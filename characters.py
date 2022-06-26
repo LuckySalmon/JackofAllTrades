@@ -15,6 +15,16 @@ SOUND_ENABLED = False
 
 
 class Character:
+    name: str
+    hp: int
+    speed: int
+    strength: int
+    defense: int
+    xp: int
+    level: int
+    moves: dict[str, Move]
+    skeleton: str
+
     def __init__(self,
                  name: str,
                  hp: int,
@@ -30,7 +40,7 @@ class Character:
         self.defense = defense
         self.xp = 0
         self.level = 0
-        self.moves = moves or {}
+        self.moves = {} if moves is None else moves
         self.skeleton = skeleton
 
     @classmethod
@@ -67,6 +77,15 @@ class Character:
 
 
 class Fighter:
+    name: str
+    base_hp: int
+    speed: int
+    strength: int
+    defense: int
+    moves: dict[str, Move]
+    index: int
+    skeleton: Skeleton
+
     def __init__(self,
                  name: str,
                  base_hp: int,

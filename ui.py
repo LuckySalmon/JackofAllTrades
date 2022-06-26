@@ -32,6 +32,11 @@ def uniform_spacing(counts: Sequence[int], gaps: Sequence[float]) -> Generator[t
 
 
 class MainMenu:
+    backdrop: DirectFrame
+    battleButton: DirectButton
+    characterButton: DirectButton
+    quitButton: DirectButton
+
     def __init__(self):
         self.backdrop = DirectFrame(frameColor=(0, 0, 0, 0),
                                     frameSize=(-1, 1, -1, 1),
@@ -58,6 +63,17 @@ class MainMenu:
 
 
 class CharacterMenu:
+    mode: str
+    selectedCharacter: Character | None
+    character_view: DirectFrame | None
+    backdrop: DirectFrame
+    title_text: OnscreenText
+    character_view: DirectFrame
+    character_view_text: OnscreenText
+    confirmation_button: DirectButton
+    back_button: DirectButton
+    buttons: list[DirectButton]
+
     def __init__(self, title: str, characters: Iterable[Character], mode: str):
         self.mode = mode
         self.selectedCharacter = None
@@ -126,6 +142,11 @@ class CharacterMenu:
 
 
 class BattleInterface(DirectObject):
+    sharedInfo: OnscreenText
+    actionSelectors: 'list[ActionSelector]'
+    infoBoxes: list[OnscreenText]
+    healthBars: list[DirectWaitBar]
+
     def __init__(self, character_list: list[Fighter]):
         super().__init__()
         self.sharedInfo = OnscreenText(pos=(0, 0.5), scale=0.07, align=TextNode.ACenter)
@@ -176,6 +197,12 @@ class BattleInterface(DirectObject):
 
 
 class ActionSelector:
+    selected_action: Move | None
+    index: int
+    backdrop: DirectFrame
+    use_button: DirectButton
+    action_buttons: list[DirectButton]
+
     def __init__(self, actions: Iterable[Move], pos: tuple[float, float, float], index: int):
         self.selected_action = None
         self.index = index

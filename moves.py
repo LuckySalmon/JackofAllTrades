@@ -1,9 +1,17 @@
 import random
 import json
+from typing import Any
+
 from direct.showbase.MessengerGlobal import messenger
 
 
 class Move:     # TODO: decide on whether these should be called moves or actions
+    name: str
+    damage: tuple[int, int]
+    accuracy: int
+    effects: Any
+    target: str
+
     def __init__(self, name: str, damage: tuple[int, int], accuracy: int, effects, target: str = ''):
         self.name = name
         self.damage = damage
