@@ -1,6 +1,0 @@
-from .BulletBodyNode import BulletBodyNode
-
-class BulletRigidBodyNode(BulletBodyNode):
-    def __init__(self, name: str = 'rigid') -> None: ...
-
-    def setMass(self, mass: float) -> None: ...
