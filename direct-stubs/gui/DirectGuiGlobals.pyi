@@ -1,6 +1,8 @@
-LMB: int = 0
-MMB: int = 1
-RMB: int = 2
+from typing import Literal
 
-NORMAL: str = 'normal'
-DISABLED: str = 'disabled'
+LMB: Literal[0]
+MMB: Literal[1]
+RMB: Literal[2]
+
+NORMAL: Literal['normal']
+DISABLED: Literal['disabled']
