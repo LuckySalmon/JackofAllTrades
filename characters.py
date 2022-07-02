@@ -1,4 +1,6 @@
 import json
+from dataclasses import dataclass, field
+
 import winsound
 from random import choice
 from typing import Any
@@ -14,34 +16,17 @@ from skeletons import Skeleton
 SOUND_ENABLED = False
 
 
+@dataclass
 class Character:
     name: str
     hp: int
     speed: int
     strength: int
     defense: int
-    xp: int
-    level: int
-    moves: dict[str, Move]
-    skeleton: str
-
-    def __init__(self,
-                 name: str,
-                 hp: int,
-                 speed: int,
-                 strength: int,
-                 defense: int,
-                 moves: dict[str, Move] | None = None,
-                 skeleton: str = 'default'):
-        self.name = name.title()
-        self.hp = hp
-        self.speed = speed
-        self.strength = strength
-        self.defense = defense
-        self.xp = 0
-        self.level = 0
-        self.moves = {} if moves is None else moves
-        self.skeleton = skeleton
+    moves: dict[str, Move] = field(default_factory=dict)
+    skeleton: str = 'default'
+    xp: int = field(default=0, init=False)
+    level: int = field(default=0, init=False)
 
     @classmethod
     def from_json(cls, file) -> 'Character':
@@ -76,53 +61,37 @@ class Character:
             self.xp -= threshold
 
 
+@dataclass
 class Fighter:
     name: str
     base_hp: int
+    hp: int = field(init=False)
     speed: int
     strength: int
     defense: int
     moves: dict[str, Move]
-    index: int
     skeleton: Skeleton
+    index: int = 0
 
-    def __init__(self,
-                 name: str,
-                 base_hp: int,
-                 speed: int,
-                 strength: int,
-                 defense: int,
-                 moves: dict[str, Move],
-                 skeleton_params: dict[str, Any],
-                 world: BulletWorld,
-                 index: int = 0):
-        self.name = name
-        self.base_hp = base_hp
-        self.hp = base_hp
-        self.speed = speed
-        self.strength = strength
-        self.defense = defense
-        self.moves = moves
-        self.index = index
-
-        side = 1 if index else -1
-        offset = Vec3(-0.75, 0, 0) if index == 0 else Vec3(0.75, 0, 0)
-        rotation = Mat3(-side, 0, 0, 0, -side, 0, 0, 0, 1)
-        coord_xform = Mat4(rotation, offset)
-        self.skeleton = Skeleton(skeleton_params, world, coord_xform, speed, strength)
+    def __post_init__(self) -> None:
+        self.hp = self.base_hp
 
     @classmethod
     def from_character(cls, character: Character, world: BulletWorld, index: int = 0) -> 'Fighter':
         with open(f'data\\skeletons\\{character.skeleton}.json') as f:
-            skeleton_params = json.load(f)
+            skeleton_params: dict[str, Any] = json.load(f)
+        side = 1 if index else -1
+        offset = Vec3(-0.75, 0, 0) if index == 0 else Vec3(0.75, 0, 0)
+        rotation = Mat3(-side, 0, 0, 0, -side, 0, 0, 0, 1)
+        coord_xform = Mat4(rotation, offset)
+        skeleton = Skeleton.construct(skeleton_params, world, coord_xform, character.speed, character.strength)
         return cls(character.name,
                    character.hp,
                    character.speed,
                    character.strength,
                    character.defense,
                    character.moves,
-                   skeleton_params,
-                   world,
+                   skeleton,
                    index)
 
     @classmethod

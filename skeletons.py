@@ -1,5 +1,6 @@
 import math
 import json
+from dataclasses import dataclass, field
 from typing import Any
 
 from panda3d.bullet import BulletWorld, BulletGenericConstraint, BulletHingeConstraint, BulletRigidBodyNode
@@ -88,6 +89,7 @@ def shoulder_angles(origin: VBase3,
     return -gamma, beta, alpha, phi
 
 
+@dataclass
 class ArmController:
     origin: VBase3
     shoulder: BulletGenericConstraint
@@ -95,30 +97,18 @@ class ArmController:
     bicep: 'NodePath[BulletRigidBodyNode]'
     forearm: 'NodePath[BulletRigidBodyNode]'
     transform: Mat3
-    speed: float
+    speed: float  # proportional to maximum angular velocity of joint motors
 
-    def __init__(self,
-                 origin: VBase3,
-                 shoulder: BulletGenericConstraint,
-                 elbow: BulletHingeConstraint,
-                 bicep: 'NodePath[BulletRigidBodyNode]',
-                 forearm: 'NodePath[BulletRigidBodyNode]',
-                 transform: Mat3,
-                 speed: float):
-        self.origin = origin
-        self.shoulder = shoulder
-        self.elbow = elbow
-        self.bicep = bicep
-        self.forearm = forearm
-        self.transform = transform
-        self.speed = speed  # proportional to maximum angular velocity of joint motors
+    def __post_init__(self):
         render = ShowBaseGlobal.base.render
 
         self.lines = LineNodePath(name='debug', parent=render, colorVec=VBase4(0.2, 0.2, 0.5, 1))
         axes = LineNodePath(name='axes', parent=render)
-        paths = [dict(color=VBase4(1, 0, 0, 1)), dict(color=VBase4(0, 1, 0, 1)), dict(color=VBase4(0, 0, 1, 1))]
+        paths: list[dict[str, Any]] = [dict(color=VBase4(1, 0, 0, 1)),
+                                       dict(color=VBase4(0, 1, 0, 1)),
+                                       dict(color=VBase4(0, 0, 1, 1))]
         for i in range(3):
-            axis = shoulder.getAxis(i) * 0.25
+            axis = self.shoulder.getAxis(i) * 0.25
             paths[i]['points'] = [axis]
         draw_lines(axes, *paths, origin=self.origin)
 
@@ -148,22 +138,22 @@ class ArmController:
         draw_lines(self.lines, dict(points=[hand_pos]), origin=self.origin)
 
 
+@dataclass
 class Skeleton:
     parts: dict[str, NodePath]
     arm_controllers: dict[int, ArmController]
-    arm_targets: dict[int, Vec3 | None]
-    targeting: bool
+    arm_targets: dict[int, Vec3 | None] = field(default_factory=lambda: {LEFT: None, RIGHT: None})
+    targeting: bool = field(default=True, init=False)
 
-    def __init__(self,
-                 parameters: dict[str, dict[str, dict[str, Any]]],
-                 world: BulletWorld,
-                 coord_xform: Mat4,
-                 speed: float,
-                 strength: float):
-        self.parts = {}
-        self.arm_controllers: dict[int, ArmController] = {}
-        self.arm_targets: dict[int, Vec3 | None] = {LEFT: None, RIGHT: None}
-        self.targeting = True
+    @classmethod
+    def construct(cls,
+                  parameters: dict[str, dict[str, dict[str, Any]]],
+                  world: BulletWorld,
+                  coord_xform: Mat4,
+                  speed: float,
+                  strength: float) -> 'Skeleton':
+        parts: dict[str, NodePath] = {}
+        arm_controllers: dict[int, ArmController] = {}
 
         bodies = parameters['bodies']
         constraints = parameters['constraints']
@@ -173,10 +163,12 @@ class Skeleton:
         torso_data = bodies['torso']
         torso = physics.make_body('Torso', **torso_data, parent=render, world=world)
         torso.setMat(torso, coord_xform)
+        parts['torso'] = torso
 
         # Create a head
         head_data = bodies['head']
         head = physics.make_body('Head', **head_data, parent=torso, world=world)
+        parts['head'] = head
 
         # Attach the head to the torso
         neck_params = constraints['neck']
@@ -219,15 +211,15 @@ class Skeleton:
             position = render.getRelativePoint(torso, shoulder_pos)
             transform = coord_xform.getUpper3() * Mat3(1, 0, 0, 0, side, 0, 0, 0, 1)
 
-            self.parts[f'bicep_{string}'] = bicep
-            self.parts[f'forearm_{string}'] = forearm
+            parts['bicep_' + string] = bicep
+            parts['forearm_' + string] = forearm
             arm_controller = ArmController(position, shoulder, elbow, bicep, forearm, transform, speed)
             arm_controller.enable_motors(True)
-            self.arm_controllers[side] = arm_controller
+            arm_controllers[side] = arm_controller
 
-        self.parts['torso'] = torso
-        self.parts['head'] = head
+        return cls(parts, arm_controllers)
 
+    def __post_init__(self):
         taskMgr.add(self.move_arms, f'move_arms_{id(self)}')
 
     def get_shoulder_position(self, side: int) -> VBase3:
