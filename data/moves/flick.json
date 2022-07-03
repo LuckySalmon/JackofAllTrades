@@ -2,6 +2,7 @@
   "name": "flick",
   "damage": [0, 1],
   "accuracy": 100,
-  "target": "torso",
+  "target": "other",
+  "target_part": "torso",
   "effects": []
 }

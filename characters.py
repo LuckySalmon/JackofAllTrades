@@ -101,7 +101,7 @@ class Fighter:
         return cls.from_character(character, world, index)
 
     def use_move(self, move: Move, target: 'Fighter', world: BulletWorld) -> None:
-        target_part = target.skeleton.parts.get(move.target)
+        target_part = target.skeleton.parts.get(move.target_part)
         if target_part is None:
             move.apply(self, target)
             messenger.send('next_turn')

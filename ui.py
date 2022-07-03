@@ -1,3 +1,7 @@
+from collections.abc import Callable, Generator, Iterable, Sequence
+from itertools import product
+from typing import Literal
+
 from direct.gui.DirectGui import (
     DGG,
     DirectButton,
@@ -8,8 +12,6 @@ from direct.gui.DirectGui import (
 from direct.showbase.MessengerGlobal import messenger
 from direct.showbase.DirectObject import DirectObject
 from panda3d.core import TextNode
-from itertools import product
-from collections.abc import Callable, Generator, Iterable, Sequence
 
 from characters import Character, Fighter
 from moves import Move
@@ -200,7 +202,7 @@ class ActionSelector:
     selected_action: Move | None
     index: int
     backdrop: DirectFrame
-    use_button: DirectButton
+    use_buttons: list[DirectButton]
     action_buttons: list[DirectButton]
 
     def __init__(self, actions: Iterable[Move], pos: tuple[float, float, float], index: int):
@@ -211,8 +213,12 @@ class ActionSelector:
                                     frameSize=(-SELECTOR_WIDTH, SELECTOR_WIDTH, -0.5, 0.5),
                                     pos=pos)
 
-        self.use_button = self.make_button('', self.use_action, (SELECTOR_WIDTH/2, 0, 0))
-        self.use_button.hide()
+        self.use_buttons = []
+        for i, target in enumerate(('self', 'opponent')):
+            y = (2 * i + 1) * 0.1
+            button = self.make_button(f'Use on {target}', self.use_action, (SELECTOR_WIDTH/2, 0, 0.5 - y), [target])
+            button.hide()
+            self.use_buttons.append(button)
 
         self.action_buttons = []
         for i, action in enumerate(actions):
@@ -237,11 +243,21 @@ class ActionSelector:
     def select_action(self, action: Move) -> None:
         self.selected_action = action
         messenger.send('output_info', [self.index, action.info()])
-        self.use_button.setText(f'Use {action.name}')
-        self.use_button.show()
+        if action.target == 'self':
+            button_visibility = (True, False)
+        elif action.target == 'other':
+            button_visibility = (False, True)
+        else:
+            button_visibility = (True, True)
+        for visible, button in zip(button_visibility, self.use_buttons):
+            if visible:
+                button.show()
+            else:
+                button.hide()
 
-    def use_action(self) -> None:
-        messenger.send('use_action', [self.selected_action])
+    def use_action(self, target: Literal['self', 'opponent']) -> None:
+        target_index = self.index if target == 'self' else not self.index
+        messenger.send('use_action', [self.selected_action, target_index])
 
     def hide(self) -> None:
         self.backdrop.hide()

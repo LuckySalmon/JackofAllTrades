@@ -49,6 +49,7 @@ class Move:     # TODO: decide on whether these should be called moves or action
     accuracy: int
     effects: list[StatusEffect]
     target: str = ''
+    target_part: str = ''
     # TODO: effect system
 
     @classmethod

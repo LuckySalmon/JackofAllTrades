@@ -197,15 +197,12 @@ class App(ShowBase):
         else:
             self.debugNP.hide()
 
-    def use_action(self, move: Move) -> None:
+    def use_action(self, move: Move, target_index: int) -> None:
         """Make the character use the selected action, then move on to the next turn."""
         messenger.send('remove_query')
         user = self.fighters[self.index]
-
         self.index = (self.index + 1) % 2
-        opponent = self.fighters[self.index]
-
-        user.use_move(move, opponent, self.world)
+        user.use_move(move, self.fighters[target_index], self.world)
 
     def next_turn(self):
         fighter = self.fighters[self.index]
