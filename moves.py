@@ -1,9 +1,45 @@
-import random
 import json
-from dataclasses import dataclass
-from typing import Any
+import random
+from collections.abc import Callable
+from dataclasses import dataclass, replace, field
+from typing import TYPE_CHECKING, TypeAlias
 
 from direct.showbase.MessengerGlobal import messenger
+
+if TYPE_CHECKING:
+    from characters import Fighter
+
+
+# These should ideally return `None`, but using a function
+# with a return value won't have any ill effects.
+EffectProcedure: TypeAlias = 'Callable[[Fighter], object]'
+
+
+def noop(*_: object) -> None:
+    """Accept arbitrary positional arguments and do nothing."""
+    pass
+
+
+@dataclass
+class StatusEffect:
+    name: str
+    duration: int
+    #  The following are assigned to fields because assigning
+    #  them to a function directly confuses the IDE.
+    on_application: EffectProcedure = field(default=noop)
+    on_turn: EffectProcedure = field(default=noop)
+    on_removal: EffectProcedure = field(default=noop)
+
+    @classmethod
+    def from_preset(cls, name: str, strength: int, duration: int) -> 'StatusEffect':
+        constructor = EFFECT_CONSTRUCTORS.get(name)
+        if constructor is not None:
+            return constructor(strength, duration)
+        else:
+            return cls(name, duration)
+
+    def is_active(self) -> bool:
+        return self.duration > 0
 
 
 @dataclass
@@ -11,7 +47,7 @@ class Move:     # TODO: decide on whether these should be called moves or action
     name: str
     damage: tuple[int, int]
     accuracy: int
-    effects: Any
+    effects: list[StatusEffect]
     target: str = ''
     # TODO: effect system
 
@@ -19,9 +55,11 @@ class Move:     # TODO: decide on whether these should be called moves or action
     def from_json(cls, file) -> 'Move':
         j = json.load(file)
         name = j.pop('name').title()
-        return cls(name, **j)
+        effect_params = j.pop('effects')
+        effects = [StatusEffect.from_preset(**params) for params in effect_params]
+        return cls(name, **j, effects=effects)
 
-    def apply(self, user, target, confirmed=False):
+    def apply(self, user: 'Fighter', target: 'Fighter', confirmed: bool = False) -> None:
         if confirmed or self.accuracy > random.randint(0, 99):
             damage = random.randint(*self.damage)   # TODO: Use a different distribution?
             if random.randint(1, 100) <= 2:
@@ -29,13 +67,25 @@ class Move:     # TODO: decide on whether these should be called moves or action
                 msg = f"{user.name}'s {self.name} hit for {damage} damage!\nCritical Hit!"
             else:
                 msg = f"{user.name}'s {self.name} hit for {damage} damage!"
+            for effect in self.effects:
+                target.add_effect(replace(effect))
         else:
             damage = 0
             msg = f"{user.name}'s {self.name} missed!"
-
         messenger.send('output_info', [user.index, msg])
         target.apply_damage(damage)
 
     def info(self) -> str:
         """Return a string containing information about the move's damage and accuracy in a human-readable format."""
         return f'{self.name}\nDamage: {self.damage[0]} - {self.damage[1]}\nAccuracy: {self.accuracy}%'
+
+
+def make_poison_effect(strength: int, duration: int) -> 'StatusEffect':
+    def poison(target: 'Fighter') -> None:
+        target.apply_damage(strength)
+    return StatusEffect('poison', duration, on_turn=poison)
+
+
+EFFECT_CONSTRUCTORS: 'dict[str, Callable[[int, int], StatusEffect]]' = {
+    'poison': make_poison_effect,
+}

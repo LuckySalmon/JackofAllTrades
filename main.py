@@ -209,6 +209,7 @@ class App(ShowBase):
 
     def next_turn(self):
         fighter = self.fighters[self.index]
+        fighter.apply_current_effects()
         if fighter.hp <= 0:
             messenger.send('announce_win', [self.fighters[not self.index].name])
         else:

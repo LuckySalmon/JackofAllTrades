@@ -10,7 +10,7 @@ from panda3d.core import Vec3, Mat3, Mat4
 from direct.showbase.MessengerGlobal import messenger
 from direct.task.TaskManagerGlobal import taskMgr
 
-from moves import Move
+from moves import Move, StatusEffect
 from skeletons import Skeleton
 
 SOUND_ENABLED = False
@@ -72,6 +72,7 @@ class Fighter:
     moves: dict[str, Move]
     skeleton: Skeleton
     index: int = 0
+    status_effects: list[StatusEffect] = field(default_factory=list, init=False)
 
     def __post_init__(self) -> None:
         self.hp = self.base_hp
@@ -140,6 +141,18 @@ class Fighter:
         messenger.send('set_health_bar', [self.index, self.hp])
         if self.hp <= 0:
             self.kill()
+
+    def add_effect(self, effect: StatusEffect) -> None:
+        self.status_effects.append(effect)
+
+    def apply_current_effects(self) -> None:
+        new_effects: list[StatusEffect] = []
+        for effect in self.status_effects:
+            effect.on_turn(self)
+            effect.duration -= 1
+            if effect.is_active():
+                new_effects.append(effect)
+        self.status_effects = new_effects
 
     def kill(self) -> None:
         self.skeleton.kill()
