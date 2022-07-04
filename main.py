@@ -1,18 +1,19 @@
-from itertools import product
 from collections.abc import Iterable
+from itertools import product
+from pathlib import Path
 
+from direct.fsm.FSM import FSM
 from direct.showbase.MessengerGlobal import messenger
 from direct.showbase.DirectObject import DirectObject
 from direct.showbase.ShowBase import ShowBase
 from direct.task.Task import Task
 from panda3d.bullet import BulletDebugNode, BulletWorld
 from panda3d.core import NodePath, Vec3
-from direct.fsm.FSM import FSM
 
-from characters import Character, Fighter
-from moves import Move
 import physics
 import ui
+from characters import Character, Fighter
+from moves import Move
 
 gravity = 0
 
@@ -21,9 +22,6 @@ LEFT, RIGHT = -1, 1
 SIDES = (LEFT, RIGHT)
 
 CHARACTERS = []
-for name in ('regular', 'boxer', 'psycho', 'test'):
-    with open(f'data\\characters\\{name}.json') as f:
-        CHARACTERS.append(Character.from_json(f))
 
 
 class TargetMovingObject(DirectObject):
@@ -224,6 +222,9 @@ class App(ShowBase):
 
 def main() -> None:
     """Run an instance of the app."""
+    for fp in Path('data', 'characters').iterdir():
+        with fp.open() as f:
+            CHARACTERS.append(Character.from_json(f))
     app = App()
     app.run()
 

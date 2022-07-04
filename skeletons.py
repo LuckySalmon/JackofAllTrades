@@ -1,6 +1,7 @@
 import math
 import json
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
 from panda3d.bullet import (
@@ -27,7 +28,7 @@ import physics
 enableSound = False
 charList = ['regular', 'boxer', 'psycho', 'test']
 LEFT, RIGHT = -1, 1
-with open('data\\skeletons\\default.json') as f:
+with Path('data', 'skeletons', 'default.json').open() as f:
     default_parameters = json.load(f)
 
 
