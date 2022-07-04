@@ -3,7 +3,12 @@ import json
 from dataclasses import dataclass, field
 from typing import Any
 
-from panda3d.bullet import BulletWorld, BulletGenericConstraint, BulletHingeConstraint, BulletRigidBodyNode
+from panda3d.bullet import (
+    BulletWorld,
+    BulletGenericConstraint,
+    BulletHingeConstraint,
+    BulletRigidBodyNode
+)
 from panda3d.core import (
     VBase3,
     Vec3,
@@ -48,8 +53,11 @@ def draw_lines(lines: LineNodePath,
 def shoulder_angles(origin: VBase3,
                     point: VBase3,
                     theta: float,
-                    transform: Mat3 = Mat3.identMat()) -> tuple[float, float, float, float]:
-    """Return the shoulder and elbow angles required to place the hand at the given point."""
+                    transform: Mat3 = Mat3.identMat()
+                    ) -> tuple[float, float, float, float]:
+    """Return the shoulder and elbow angles required
+    to place the hand at the given point.
+    """
     point -= origin
     point = transform.xform(point)
 
@@ -66,9 +74,9 @@ def shoulder_angles(origin: VBase3,
     u1 = Vec3(z, 0, -x).normalized()
     u2 = Vec3(x*y, -x*x - z*z, y*z).normalized()
 
-    sp = (dist+l1+l2)/2                                     # semi-perimeter of OPQ
-    r = (2/dist)*math.sqrt(sp*(sp-dist)*(sp-l1)*(sp-l2))    # distance from OQ to P
-    d = (dist**2 + l1**2 - l2**2)/(2*dist)                  # length of projection of OP onto OQ
+    sp = (dist + l1 + l2) / 2  # semi-perimeter of OPQ
+    r = (2/dist)*math.sqrt(sp*(sp-dist)*(sp-l1)*(sp-l2))  # distance from OQ to P
+    d = (dist**2 + l1**2 - l2**2) / (2 * dist)  # length of projection of OP onto OQ
     elbow = u1*r*math.cos(theta) + u2*r*math.sin(theta) + q*d
 
     # e1, e2, and e3 describe a rotation matrix
@@ -102,7 +110,8 @@ class ArmController:
     def __post_init__(self):
         render = ShowBaseGlobal.base.render
 
-        self.lines = LineNodePath(name='debug', parent=render, colorVec=VBase4(0.2, 0.2, 0.5, 1))
+        self.lines = LineNodePath(name='debug', parent=render,
+                                  colorVec=VBase4(0.2, 0.2, 0.5, 1))
         axes = LineNodePath(name='axes', parent=render)
         paths: list[dict[str, Any]] = [dict(color=VBase4(1, 0, 0, 1)),
                                        dict(color=VBase4(0, 1, 0, 1)),
@@ -127,7 +136,9 @@ class ArmController:
         self.elbow.setMotorTarget(angle, 1 / self.speed)
 
     def move_toward(self, x: float, y: float, z: float, theta: float) -> None:
-        """Set shoulder and elbow motor velocities such that the hand moves toward the specified point."""
+        """Set shoulder and elbow motor velocities such that
+        the hand moves toward the specified point.
+        """
         shoulder_pos = Vec3(0, 0, 0)
         hand_pos = Vec3(x, y, z)
         target_angles = shoulder_angles(shoulder_pos, hand_pos, theta, self.transform)
@@ -142,7 +153,9 @@ class ArmController:
 class Skeleton:
     parts: dict[str, NodePath]
     arm_controllers: dict[int, ArmController]
-    arm_targets: dict[int, Vec3 | None] = field(default_factory=lambda: {LEFT: None, RIGHT: None})
+    arm_targets: dict[int, Vec3 | None] = field(
+        default_factory=lambda: {LEFT: None, RIGHT: None}
+    )
     targeting: bool = field(default=True, init=False)
 
     @classmethod
@@ -188,32 +201,42 @@ class Skeleton:
             shoulder_pos = Vec3(*shoulder_data['position'])
             elbow_pos = Vec3(*elbow_data['position'])
 
-            bicep = physics.make_body('Bicep', **bicep_data, parent=torso, world=world)
-            forearm = physics.make_body('Forearm', **forearm_data, parent=torso, world=world)
+            bicep = physics.make_body('Bicep', **bicep_data,
+                                      parent=torso, world=world)
+            forearm = physics.make_body('Forearm', **forearm_data,
+                                        parent=torso, world=world)
 
             rotation = Mat3(side, 0, 0, 0, 0, -side, 0, 1, 0)
-            shoulder = physics.make_ball_joint(shoulder_pos, torso, bicep, rotation)
+            shoulder = physics.make_ball_joint(shoulder_pos, torso,
+                                               bicep, rotation)
             world.attachConstraint(shoulder, True)
 
-            elbow = physics.make_hinge_joint(elbow_pos - bicep.getPos(), bicep, forearm, Vec3(0, 0, side))
+            elbow = physics.make_hinge_joint(elbow_pos - bicep.getPos(),
+                                             bicep, forearm, Vec3(0, 0, side))
             world.attachConstraint(elbow, True)
 
             for axis in range(3):
                 shoulder.getRotationalLimitMotor(axis).setMaxMotorForce(strength)
             elbow.setMaxMotorImpulse(strength)
 
-            shoulder.setAngularLimit(0, -in_limit, out_limit)            # limits for moving toward torso from T-pose
-            shoulder.setAngularLimit(1, -twist_limit, twist_limit)       # limit for twisting along the bicep axis
-            shoulder.setAngularLimit(2, -backward_limit, forward_limit)  # limits for moving forward from down by side
+            # limits for moving toward torso from T-pose
+            shoulder.setAngularLimit(0, -in_limit, out_limit)
+            # limit for twisting along the bicep axis
+            shoulder.setAngularLimit(1, -twist_limit, twist_limit)
+            # limits for moving forward from down by side
+            shoulder.setAngularLimit(2, -backward_limit, forward_limit)
 
             elbow.setLimit(*elbow_data['limits'])
 
             position = render.getRelativePoint(torso, shoulder_pos)
-            transform = coord_xform.getUpper3() * Mat3(1, 0, 0, 0, side, 0, 0, 0, 1)
+            transform = coord_xform.getUpper3() * Mat3(1, 0, 0,
+                                                       0, side, 0,
+                                                       0, 0, 1)
 
             parts['bicep_' + string] = bicep
             parts['forearm_' + string] = forearm
-            arm_controller = ArmController(position, shoulder, elbow, bicep, forearm, transform, speed)
+            arm_controller = ArmController(position, shoulder, elbow,
+                                           bicep, forearm, transform, speed)
             arm_controller.enable_motors(True)
             arm_controllers[side] = arm_controller
 
@@ -233,7 +256,8 @@ class Skeleton:
     def get_arm_target(self, side: int) -> Vec3:
         return Vec3(self.arm_targets[side])
 
-    def set_arm_target(self, side: int, target: VBase3, relative: bool = True) -> None:
+    def set_arm_target(self, side: int, target: VBase3,
+                       relative: bool = True) -> None:
         local_target = Vec3(target)
         if not relative:
             local_target -= self.get_shoulder_position(side)

@@ -36,10 +36,13 @@ class TargetMovingObject(DirectObject):
         self.fighters = fighters
         self.xyz = [0, 0, 0]
         self.targets = []
-        bindings = (('7-repeat', '1-repeat'), ('8-repeat', '2-repeat'), ('9-repeat', '3-repeat'))
+        bindings = (('7-repeat', '1-repeat'),
+                    ('8-repeat', '2-repeat'),
+                    ('9-repeat', '3-repeat'))
         for axis, keys in enumerate(bindings):
             for i, key in enumerate(keys):
-                self.accept(key, self.modify_coordinate, [axis, 0.01 * (-1)**i])
+                self.accept(key, self.modify_coordinate,
+                            [axis, 0.01 * (-1) ** i])
         self.accept('4-repeat', self.scale_targets, [0.99])
         self.accept('6-repeat', self.scale_targets, [1.01])
         self.accept('space', self.toggle_targeting)
@@ -95,7 +98,9 @@ class GameFSM(FSM):
         if self.main_menu is not None:
             self.main_menu.hide()
 
-    def enterCharacterMenu(self, title: str, character_list: Iterable[Character], mode: str) -> None:
+    def enterCharacterMenu(self, title: str,
+                           character_list: Iterable[Character],
+                           mode: str) -> None:
         if mode == 'split_screen':
             title += ', Player 1'
         if self.character_menu is not None:
@@ -133,8 +138,10 @@ class App(ShowBase):
         self.debugNP = None
 
         self.accept('main_menu', self.request, ['MainMenu'])
-        self.accept('character_menu', self.request, ['CharacterMenu', 'Select a Character', CHARACTERS, 'view'])
-        self.accept('fighter_selection', self.request, ['CharacterMenu', 'Select a Fighter', CHARACTERS])
+        self.accept('character_menu', self.request,
+                    ['CharacterMenu', 'Select a Character', CHARACTERS, 'view'])
+        self.accept('fighter_selection', self.request,
+                    ['CharacterMenu', 'Select a Fighter', CHARACTERS])
         self.accept('select_character', self.select_character)
         self.accept('use_action', self.use_action)
         self.accept('next_turn', self.next_turn)
@@ -198,7 +205,9 @@ class App(ShowBase):
             self.debugNP.hide()
 
     def use_action(self, move: Move, target_index: int) -> None:
-        """Make the character use the selected action, then move on to the next turn."""
+        """Make the character use the selected action,
+        then move on to the next turn.
+        """
         messenger.send('remove_query')
         user = self.fighters[self.index]
         self.index = (self.index + 1) % 2

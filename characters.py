@@ -42,14 +42,16 @@ class Character:
 
     def add_move(self, move: Move) -> None:
         """Attempt to add a move to this list of those available."""
-        if len(self.moves) < int(0.41 * self.level + 4):     # TODO: why this formula?
+        # TODO: why this formula?
+        if len(self.moves) < int(0.41 * self.level + 4):
             self.moves[move.name] = move
             if SOUND_ENABLED:
                 winsound.Beep(600, 125)
                 winsound.Beep(750, 100)
                 winsound.Beep(900, 150)
         else:
-            print("You have too many moves. Would you like to replace one?")    # TODO: actually handle this case
+            # TODO: actually handle this case
+            print("You have too many moves. Would you like to replace one?")
             if SOUND_ENABLED:
                 winsound.Beep(600, 175)
                 winsound.Beep(500, 100)
@@ -78,14 +80,17 @@ class Fighter:
         self.hp = self.base_hp
 
     @classmethod
-    def from_character(cls, character: Character, world: BulletWorld, index: int = 0) -> 'Fighter':
+    def from_character(cls, character: Character,
+                       world: BulletWorld,
+                       index: int = 0) -> 'Fighter':
         with open(f'data\\skeletons\\{character.skeleton}.json') as f:
             skeleton_params: dict[str, Any] = json.load(f)
         side = 1 if index else -1
         offset = Vec3(-0.75, 0, 0) if index == 0 else Vec3(0.75, 0, 0)
         rotation = Mat3(-side, 0, 0, 0, -side, 0, 0, 0, 1)
         coord_xform = Mat4(rotation, offset)
-        skeleton = Skeleton.construct(skeleton_params, world, coord_xform, character.speed, character.strength)
+        skeleton = Skeleton.construct(skeleton_params, world, coord_xform,
+                                      character.speed, character.strength)
         return cls(character.name,
                    character.hp,
                    character.speed,
@@ -100,7 +105,9 @@ class Fighter:
         character = Character.from_json(file)
         return cls.from_character(character, world, index)
 
-    def use_move(self, move: Move, target: 'Fighter', world: BulletWorld) -> None:
+    def use_move(self, move: Move,
+                 target: 'Fighter',
+                 world: BulletWorld) -> None:
         target_part = target.skeleton.parts.get(move.target_part)
         if target_part is None:
             move.apply(self, target)
@@ -108,7 +115,9 @@ class Fighter:
             return
 
         side = choice((-1, 1))
-        fist = self.skeleton.parts['forearm_left' if side == -1 else 'forearm_right']
+        fist = self.skeleton.parts[
+            'forearm_left' if side == -1 else 'forearm_right'
+        ]
         current_position = self.skeleton.get_arm_target(side)
         target_position = target_part.getNetTransform().getPos()
 
@@ -118,10 +127,14 @@ class Fighter:
 
         def use_move(task):
             if task.time >= 1:
-                messenger.send('output_info', [self.index, f"{self.name}'s {move.name} missed!"])
+                messenger.send(
+                    'output_info',
+                    [self.index, f"{self.name}'s {move.name} missed!"]
+                )
                 return task.done
 
-            contact_result = world.contactTestPair(fist.node(), target_part.node())
+            contact_result = world.contactTestPair(fist.node(),
+                                                   target_part.node())
             for contact in contact_result.getContacts():
                 manifold_point = contact.getManifoldPoint()
                 if abs(manifold_point.distance) > 0.01:
@@ -135,9 +148,13 @@ class Fighter:
         taskMgr.add(use_move, 'use_move', uponDeath=reset)
 
     def apply_damage(self, damage: int) -> None:
-        damage = min(max(damage - self.defense, 0), self.hp)    # TODO: Find and use a better formula
+        # TODO: Find and use a better formula
+        damage = min(max(damage - self.defense, 0), self.hp)
         self.hp -= damage
-        messenger.send('output_info', [self.index, f'{self.name} took {damage} damage!'])
+        messenger.send(
+            'output_info',
+            [self.index, f'{self.name} took {damage} damage!']
+        )
         messenger.send('set_health_bar', [self.index, self.hp])
         if self.hp <= 0:
             self.kill()

@@ -26,11 +26,13 @@ from direct.showbase import ShowBaseGlobal
 from direct.task.Task import Task
 
 
-shape_constructors = dict(sphere=BulletSphereShape,
-                          box=lambda *args: BulletBoxShape(Vec3(*args)),
-                          capsule_x=lambda *args: BulletCapsuleShape(*args, 0),
-                          capsule_y=lambda *args: BulletCapsuleShape(*args, 1),
-                          capsule_z=lambda *args: BulletCapsuleShape(*args, 2))
+shape_constructors = dict(
+    sphere=BulletSphereShape,
+    box=lambda *args: BulletBoxShape(Vec3(*args)),
+    capsule_x=lambda *args: BulletCapsuleShape(*args, 0),
+    capsule_y=lambda *args: BulletCapsuleShape(*args, 1),
+    capsule_z=lambda *args: BulletCapsuleShape(*args, 2)
+)
 
 
 def make_quaternion(angle: float, axis: VBase3) -> Quat:
@@ -43,7 +45,9 @@ def make_quaternion(angle: float, axis: VBase3) -> Quat:
 
 
 def make_rigid_transform(rotation: Mat3, translation: VBase3) -> TransformState:
-    """Return a TransformState comprising the given rotation followed by the given translation"""
+    """Return a TransformState comprising the given rotation
+    followed by the given translation
+    """
     return TransformState.makeMat(Mat4(rotation, translation))
 
 
@@ -96,7 +100,10 @@ def make_cone_joint(position: VBase3,
     a_to_joint = position
     b_to_joint = node_path_b.getRelativePoint(node_path_a, position)
     frame_a = TransformState.makePosHpr(a_to_joint, hpr)
-    frame_b = TransformState.makePosHpr(b_to_joint, node_path_b.getRelativeVector(node_path_a, hpr))
+    frame_b = TransformState.makePosHpr(
+        b_to_joint,
+        node_path_b.getRelativeVector(node_path_a, hpr)
+    )
     joint = BulletConeTwistConstraint(node_path_a.node(), node_path_b.node(),
                                       frame_a, frame_b)
     return joint

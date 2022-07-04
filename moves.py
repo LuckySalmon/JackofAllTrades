@@ -43,7 +43,7 @@ class StatusEffect:
 
 
 @dataclass
-class Move:     # TODO: decide on whether these should be called moves or actions
+class Move:  # TODO: decide on whether these should be called moves or actions
     name: str
     damage: tuple[int, int]
     accuracy: int
@@ -60,25 +60,34 @@ class Move:     # TODO: decide on whether these should be called moves or action
         effects = [StatusEffect.from_preset(**params) for params in effect_params]
         return cls(name, **j, effects=effects)
 
-    def apply(self, user: 'Fighter', target: 'Fighter', confirmed: bool = False) -> None:
+    def apply(self, user: 'Fighter', target: 'Fighter',
+              confirmed: bool = False) -> None:
         if confirmed or self.accuracy > random.randint(0, 99):
-            damage = random.randint(*self.damage)   # TODO: Use a different distribution?
+            damage = random.randint(*self.damage)  # TODO: Use a different distribution?
+            template = "{}'s {} hit for {} damage!"
             if random.randint(1, 100) <= 2:
                 damage *= 1.5
-                msg = f"{user.name}'s {self.name} hit for {damage} damage!\nCritical Hit!"
-            else:
-                msg = f"{user.name}'s {self.name} hit for {damage} damage!"
+                template += '\nCritical Hit!'
             for effect in self.effects:
                 target.add_effect(replace(effect))
         else:
             damage = 0
-            msg = f"{user.name}'s {self.name} missed!"
-        messenger.send('output_info', [user.index, msg])
+            template = "{}'s {} missed!"
+        messenger.send(
+            'output_info',
+            [user.index, template.format(user.name, self.name, damage)]
+        )
         target.apply_damage(damage)
 
     def info(self) -> str:
-        """Return a string containing information about the move's damage and accuracy in a human-readable format."""
-        return f'{self.name}\nDamage: {self.damage[0]} - {self.damage[1]}\nAccuracy: {self.accuracy}%'
+        """Return a string containing information about the move's
+        damage and accuracy in a human-readable format.
+        """
+        return '\n'.join((
+            self.name,
+            f'{self.damage[0]} - {self.damage[1]}',
+            f'{self.accuracy}%',
+        ))
 
 
 def make_poison_effect(strength: int, duration: int) -> 'StatusEffect':
