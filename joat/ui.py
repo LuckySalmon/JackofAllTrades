@@ -77,7 +77,6 @@ class MainMenu:
 class CharacterMenu:
     mode: str
     selectedCharacter: Character | None
-    character_view: DirectFrame | None
     backdrop: DirectFrame
     title_text: OnscreenText
     character_view: DirectFrame
@@ -89,7 +88,6 @@ class CharacterMenu:
     def __init__(self, title: str, characters: Iterable[Character], mode: str):
         self.mode = mode
         self.selectedCharacter = None
-        self.character_view = None
         self.backdrop = DirectFrame(frameColor=(0, 0, 0, 0),
                                     frameSize=(-1, 1, -1, 1),
                                     pos=(0, 0, 0))
