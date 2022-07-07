@@ -51,4 +51,4 @@ for helping/testing are:
 2. Clone this repository (if you're unfamiliar with or new to Git, [GitHub Desktop](https://docs.github.com/en/get-started/using-github/github-desktop) makes this fairly easy)
 3. Make a [virtual environment](https://docs.python.org/3/tutorial/venv.html)
 4. Use `pip install -r requirements.txt`
-5. Run `main.py`
+5. Use `python -m joat`

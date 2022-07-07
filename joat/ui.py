@@ -13,8 +13,8 @@ from direct.showbase.MessengerGlobal import messenger
 from direct.showbase.DirectObject import DirectObject
 from panda3d.core import TextNode
 
-from characters import Character, Fighter
-from moves import Move
+from .characters import Character, Fighter
+from .moves import Move
 
 LEFT, RIGHT = -1, 1
 ASPECT_RATIO = 4 / 3

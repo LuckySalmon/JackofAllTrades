@@ -10,10 +10,10 @@ from direct.task.Task import Task
 from panda3d.bullet import BulletDebugNode, BulletWorld
 from panda3d.core import NodePath, Vec3
 
-import physics
-import ui
-from characters import Character, Fighter
-from moves import Move
+from . import physics
+from . import ui
+from .characters import Character, Fighter
+from .moves import Move
 
 gravity = 0
 
@@ -227,7 +227,3 @@ def main() -> None:
             CHARACTERS.append(Character.from_json(f))
     app = App()
     app.run()
-
-
-if __name__ == "__main__":
-    main()

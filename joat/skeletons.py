@@ -23,7 +23,7 @@ from direct.task.Task import Task
 from direct.task.TaskManagerGlobal import taskMgr
 from direct.showbase import ShowBaseGlobal
 
-import physics
+from . import physics
 
 enableSound = False
 charList = ['regular', 'boxer', 'psycho', 'test']
