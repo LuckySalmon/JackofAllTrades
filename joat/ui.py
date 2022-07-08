@@ -1,4 +1,4 @@
-from collections.abc import Callable, Generator, Iterable, Sequence
+from collections.abc import Callable, Iterable, Iterator, Sequence
 from itertools import product
 from typing import Literal
 
@@ -22,16 +22,19 @@ SELECTOR_WIDTH = 0.5
 
 
 def uniform_spacing(counts: Sequence[int],
-                    gaps: Sequence[float]) -> Generator[tuple[float, ...]]:
-    assert len(counts) == len(gaps)
-    lists = []
-    for count, gap in zip(counts, gaps):
+                    gaps: Sequence[float]) -> Iterator[tuple[float, ...]]:
+    """Yield tuples of coordinates such that there are `counts[i]`
+    rows of points spaced `gaps[i]` apart along each axis `i`.
+    """
+    # Make a list of tuples representing the coordinates that points
+    # should be generated at along each axis
+    spots_by_axis = []
+    for count, gap in zip(counts, gaps, strict=True):
         center = (count - 1) / 2
-        L = [(i - center) * gap for i in range(count)]
-        lists.append(L)
-    index_ranges = [range(n) for n in counts]
-    for index in product(*index_ranges):
-        yield tuple(L[i] for i, L in zip(index, lists))
+        spots = tuple((i - center) * gap for i in range(count))
+        spots_by_axis.append(spots)
+    # Yield a point for each combination of possible spots along each axis
+    return product(*spots_by_axis)
 
 
 class MainMenu:
