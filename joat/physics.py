@@ -111,13 +111,12 @@ def make_cone_joint(position: VBase3,
 
 def make_world(gravity: float) -> BulletWorld:
     world = BulletWorld()
-    world.setGravity(Vec3(0, 0, -gravity))
-
-    ground = ShowBaseGlobal.base.render.attachNewNode(BulletRigidBodyNode('Ground'))
-    ground.node().addShape(BulletPlaneShape(Vec3(0, 0, 1), 1))
-    ground.setPos(0, 0, -2)
-    world.attach(ground.node())
-
+    world.setGravity(0, 0, -gravity)
+    ground_node = BulletRigidBodyNode('Ground')
+    ground_node.addShape(BulletPlaneShape(Vec3(0, 0, 1), 1))
+    ground_node_path = ShowBaseGlobal.base.render.attachNewNode(ground_node)
+    ground_node_path.setPos(0, 0, -2)
+    world.attach(ground_node)
     return world
 
 
