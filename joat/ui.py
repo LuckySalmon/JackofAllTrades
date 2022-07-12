@@ -142,6 +142,28 @@ class CharacterMenu:
                                   parent=self.backdrop)
             self.buttons.append(button)
 
+    def reset(self, characters: Iterable[Character], mode: str):
+        self.selectedCharacter = None
+        self.character_view.hide()
+        self.mode = mode
+        if mode == 'view':
+            self.character_view_text.show()
+            self.confirmation_button.hide()
+        else:
+            self.confirmation_button.show()
+            self.character_view_text.hide()
+        self.buttons.clear()
+        for character, (x, y) in zip(characters, uniform_spacing((4, 4), (0.5, 0.5))):
+            button = DirectButton(text=character.name,
+                                  command=self.select_character,
+                                  extraArgs=[character],
+                                  pos=(y, 0, -x - 0.2),
+                                  frameSize=(-4, 4, -4, 4),
+                                  borderWidth=(0.25, 0.25),
+                                  scale=0.05,
+                                  parent=self.backdrop)
+            self.buttons.append(button)
+
     def select_character(self, character: Character) -> None:
         self.character_view.show()
         self.selectedCharacter = character

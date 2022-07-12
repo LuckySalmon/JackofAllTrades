@@ -102,6 +102,7 @@ class GameFSM(FSM):
         if mode == 'split_screen':
             title += ', Player 1'
         if self.character_menu is not None:
+            self.character_menu.reset(character_list, mode)
             self.character_menu.show()
         else:
             self.character_menu = ui.CharacterMenu(title, character_list, mode)
