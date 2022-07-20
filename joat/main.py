@@ -14,60 +14,48 @@ from . import physics
 from . import ui
 from .characters import Character, Fighter
 from .moves import Move
+from .skeletons import Skeleton
 
 gravity = 0
-
-DefaultTargetPos = (0.5, -0.25, 0)
 LEFT, RIGHT = -1, 1
-SIDES = (LEFT, RIGHT)
-
 CHARACTERS: list[Character] = []
 
 
 class TargetMovingObject(DirectObject):
-    fighters: Iterable[Fighter]
-    xyz: list[float]
-    targets: list[Vec3]
+    skeletons: tuple[Skeleton, ...]
+    xyz: Vec3
 
-    def __init__(self, fighters: Iterable[Fighter]):
+    def __init__(self, skeletons: Iterable[Skeleton]):
         super().__init__()
-        self.fighters = fighters
-        self.xyz = [0, 0, 0]
-        self.targets = []
-        bindings = (('7-repeat', '1-repeat'),
-                    ('8-repeat', '2-repeat'),
-                    ('9-repeat', '3-repeat'))
-        for axis, keys in enumerate(bindings):
-            for i, key in enumerate(keys):
-                self.accept(key, self.modify_coordinate,
-                            [axis, 0.01 * (-1) ** i])
-        self.accept('4-repeat', self.scale_targets, [0.99])
-        self.accept('6-repeat', self.scale_targets, [1.01])
+        self.skeletons = tuple(skeletons)
+        self.xyz = Vec3(0.5, -0.25, 0)
+        d = 0.01
+        self.accept('7-repeat', self.add_to_target, [Vec3(+d, 0, 0)])
+        self.accept('1-repeat', self.add_to_target, [Vec3(-d, 0, 0)])
+        self.accept('8-repeat', self.add_to_target, [Vec3(0, +d, 0)])
+        self.accept('2-repeat', self.add_to_target, [Vec3(0, -d, 0)])
+        self.accept('9-repeat', self.add_to_target, [Vec3(0, 0, +d)])
+        self.accept('3-repeat', self.add_to_target, [Vec3(0, 0, -d)])
+        self.accept('4-repeat', self.add_to_target, [Vec3(-d, -d, -d)])
+        self.accept('6-repeat', self.add_to_target, [Vec3(+d, +d, +d)])
         self.accept('space', self.toggle_targeting)
+        self.update()
 
     def update(self) -> None:
         x, y, z = self.xyz
-        coordinates = [[x, y, z], [x, -y, z], [-x, -y, z], [-x, y, z]]
-        self.targets = [Vec3(x, y, z) for x, y, z in coordinates]
-        for (fighter, side), target in zip(product(self.fighters, SIDES), self.targets):
-            fighter.skeleton.set_arm_target(side, Vec3(*target))
+        targets = (Vec3(+x, +y, z), Vec3(+x, -y, z),
+                   Vec3(-x, -y, z), Vec3(-x, +y, z))
+        iterator = zip(product(self.skeletons, (LEFT, RIGHT)), targets)
+        for (skel, side), target in iterator:
+            skel.set_arm_target(side, target)
 
-    def set_targets(self, x: float, y: float, z: float) -> None:
-        self.xyz = [x, y, z]
-        self.update()
-
-    def modify_coordinate(self, axis: int, delta: float) -> None:
-        self.xyz[axis] += delta
-        self.update()
-
-    def scale_targets(self, scale: float) -> None:
-        for axis in range(3):
-            self.xyz[axis] *= scale
+    def add_to_target(self, delta: Vec3) -> None:
+        self.xyz += delta
         self.update()
 
     def toggle_targeting(self):
-        for fighter in self.fighters:
-            fighter.skeleton.toggle_targeting()
+        for skel in self.skeletons:
+            skel.toggle_targeting()
 
 
 class GameFSM(FSM):
@@ -129,10 +117,8 @@ class App(ShowBase):
         ShowBase.__init__(self)
         self.fighters = []
         self.fsm = GameFSM(self)
-
         self.selected_characters = []
         self.index = 0
-
         self.world = None
         self.debugNP = None
 
@@ -187,8 +173,7 @@ class App(ShowBase):
         debug_object.accept('f1', self.toggle_debug)
 
         # Arm Control
-        target_moving_object = TargetMovingObject(self.fighters)
-        target_moving_object.set_targets(*DefaultTargetPos)
+        TargetMovingObject(fighter.skeleton for fighter in self.fighters)
 
         self.taskMgr.add(self.update, 'update')
 
