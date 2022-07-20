@@ -16,7 +16,6 @@ from panda3d.core import (
     NodePath,
     VBase3,
     Vec3,
-    Point3,
     Quat,
     Mat3,
     Mat4,
@@ -86,7 +85,7 @@ def make_hinge_joint(position: VBase3,
                      node_path_a: NodePath,
                      node_path_b: NodePath,
                      axis: Vec3) -> BulletHingeConstraint:
-    a_to_joint = Point3(position)
+    a_to_joint = position
     b_to_joint = node_path_b.getRelativePoint(node_path_a, position)
     joint = BulletHingeConstraint(node_path_a.node(), node_path_b.node(),
                                   a_to_joint, b_to_joint, axis, axis, True)

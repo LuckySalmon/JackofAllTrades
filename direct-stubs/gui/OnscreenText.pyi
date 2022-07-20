@@ -1,11 +1,11 @@
 from typing import Any, Literal, overload, TypeAlias
 
-from panda3d.core import NodePath
+from panda3d.core import NodePath, TextNode
 
 _Color: TypeAlias = tuple[float, float, float, float] | None
 _OrderedPair: TypeAlias = tuple[float, float]
 
-class OnscreenText(NodePath):
+class OnscreenText(NodePath[TextNode]):
     def __init__(self,
                  text: str = '',
                  style: int = 1,

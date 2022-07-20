@@ -185,13 +185,13 @@ class BattleInterface(DirectObject):
     infoBoxes: list[OnscreenText]
     healthBars: list[DirectWaitBar]
 
-    def __init__(self, character_list: list[Fighter]):
+    def __init__(self, characters: Iterable[Fighter]):
         super().__init__()
         self.sharedInfo = OnscreenText(pos=(0, 0.5), scale=0.07,
                                        align=TextNode.ACenter)
 
         self.actionSelectors, self.infoBoxes, self.healthBars = [], [], []
-        for character, side in zip(character_list, (LEFT, RIGHT)):
+        for character, side in zip(characters, (LEFT, RIGHT)):
             x = side * (ASPECT_RATIO - SELECTOR_WIDTH)
             index = 0 if side == LEFT else 1
 

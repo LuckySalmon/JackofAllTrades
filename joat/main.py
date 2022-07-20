@@ -21,7 +21,7 @@ DefaultTargetPos = (0.5, -0.25, 0)
 LEFT, RIGHT = -1, 1
 SIDES = (LEFT, RIGHT)
 
-CHARACTERS = []
+CHARACTERS: list[Character] = []
 
 
 class TargetMovingObject(DirectObject):
@@ -97,21 +97,21 @@ class GameFSM(FSM):
             self.main_menu.hide()
 
     def enterCharacterMenu(self, title: str,
-                           character_list: Iterable[Character],
+                           characters: Iterable[Character],
                            mode: str) -> None:
         if mode == 'split_screen':
             title += ', Player 1'
         if self.character_menu is not None:
-            self.character_menu.reset(character_list, mode)
+            self.character_menu.reset(characters, mode)
             self.character_menu.show()
         else:
-            self.character_menu = ui.CharacterMenu(title, character_list, mode)
+            self.character_menu = ui.CharacterMenu(title, characters, mode)
 
     def exitCharacterMenu(self) -> None:
         if self.character_menu is not None:
             self.character_menu.hide()
 
-    def enterBattle(self, characters: list[Character]) -> None:
+    def enterBattle(self, characters: Iterable[Character]) -> None:
         self.app.enter_battle(characters)
         self.battle_interface = ui.BattleInterface(self.fighters)
         messenger.send('query_action', [0])
@@ -163,7 +163,7 @@ class App(ShowBase):
             case 'copy':
                 self.request('Battle', [character, character])
 
-    def enter_battle(self, characters: list[Character]) -> None:
+    def enter_battle(self, characters: Iterable[Character]) -> None:
         # Set up the World
         self.world = physics.make_world(gravity)
         self.cam.setPos(0, -15, 2)

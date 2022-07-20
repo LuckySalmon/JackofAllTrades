@@ -43,11 +43,11 @@ def draw_lines(lines: LineNodePath,
         if 'color' in path:
             lines.setColor(*path['color'])
         points = path['points']
-        lines.moveTo(*origin)
+        lines.moveTo(origin)
         for point in points:
             if relative:
                 point += origin
-            lines.drawTo(*point)
+            lines.drawTo(point)
     lines.create()
 
 
@@ -152,7 +152,7 @@ class ArmController:
 
 @dataclass
 class Skeleton:
-    parts: dict[str, NodePath]
+    parts: 'dict[str, NodePath[BulletRigidBodyNode]]'
     arm_controllers: dict[int, ArmController]
     arm_targets: dict[int, Vec3 | None] = field(
         default_factory=lambda: {LEFT: None, RIGHT: None}
