@@ -51,51 +51,55 @@ def draw_lines(lines: LineNodePath,
     lines.create()
 
 
-def shoulder_angles(origin: VBase3,
-                    point: VBase3,
-                    theta: float,
-                    transform: Mat3 = Mat3.ident_mat()
-                    ) -> tuple[float, float, float, float]:
+def shoulder_angles(
+    target: VBase3,
+    theta: float,
+    transform: Mat3 = Mat3(),
+    arm_lengths: tuple[float, float] = (0.75, 0.75),
+) -> tuple[float, float, float, float]:
     """Return the shoulder and elbow angles required
     to place the hand at the given point.
     """
-    point -= origin
-    point = transform.xform(point)
+    l1, l2 = arm_lengths
+    target = transform.xform(target)
+    unit_target = target.normalized()
 
-    l1, l2 = 0.75, 0.75
-    q = point.normalized()
-    dist = point.length()
-    if dist > l1+l2:
+    dist = target.length()
+    if dist > (max_dist := l1+l2):
         # cap the distance of the target to l1+l2
-        dist = l1 + l2
-        point = q * dist
-    x, y, z = point
+        dist = max_dist
+        target = unit_target * dist
+        dist_squared = dist * dist
+    else:
+        dist_squared = target.length_squared()
 
-    # u1 and u2 form a basis for the plane perpendicular to OQ
-    u1 = Vec3(z, 0, -x).normalized()
-    u2 = Vec3(x*y, -x*x - z*z, y*z).normalized()
+    # u1 and u2 form a basis for a plane perpendicular to the shoulder-hand axis
+    u1 = Vec3(target.z, 0, -target.x).normalized()
+    u2 = unit_target.cross(u1)
 
-    sp = (dist + l1 + l2) / 2  # semi-perimeter of OPQ
-    r = (2/dist)*math.sqrt(sp*(sp-dist)*(sp-l1)*(sp-l2))  # distance from OQ to P
-    d = (dist**2 + l1**2 - l2**2) / (2 * dist)  # length of projection of OP onto OQ
-    elbow = u1*r*math.cos(theta) + u2*r*math.sin(theta) + q*d
+    # semi-perimeter of shoulder-elbow-hand triangle
+    sp = (dist + l1 + l2) / 2
+    # distance from the shoulder-hand axis to the elbow
+    r = (2 / dist) * math.sqrt(sp * (sp-dist) * (sp-l1) * (sp-l2))
+    # length of projection of shoulder-elbow onto shoulder-hand
+    d = (dist_squared + l1*l1 - l2*l2) / (2 * dist)
+    elbow = u1*r*math.cos(theta) + u2*r*math.sin(theta) + unit_target*d
 
     # e1, e2, and e3 describe a rotation matrix
     e1 = elbow.normalized()
-    e2 = (point - e1*point.dot(e1))
-    if e2.length() < 1e-06:
-        e2 = Vec3(-e1[2], 0, e1[0]).normalized()
+    if e1.almost_equal(unit_target):
+        e2 = Vec3(-elbow.z, 0, elbow.x).normalized()
     else:
-        e2 = e2.normalized()
+        e2 = (target - target.project(elbow)).normalized()
     e3 = e1.cross(e2)
 
-    # alpha, beta, and gamma are the shoulder angles, while phi is the elbow angle
-    alpha = math.atan2(e2[2], e2[0])
-    beta = math.atan2(e2[1], e2[0]/math.cos(alpha))
-    gamma = math.atan2(-e3[1]/math.cos(beta), -e1[1]/math.cos(beta))
-    phi = abs(math.acos((l1**2 + l2**2 - dist**2)/(2*l1*l2)) - math.pi)
+    # alpha, beta, and gamma are the shoulder angles; phi is the elbow angle
+    alpha = math.atan2(e2.z, e2.x)
+    beta = math.atan2(e2.y, e2.x / math.cos(alpha))
+    gamma = math.atan2(-e3.y, -e1.y)
+    phi = math.acos((l1*l1 + l2*l2 - dist_squared) / (2 * l1 * l2))
 
-    return -gamma, beta, alpha, phi
+    return -gamma, beta, alpha, math.pi - phi
 
 
 @dataclass
@@ -140,9 +144,8 @@ class ArmController:
         """Set shoulder and elbow motor velocities such that
         the hand moves toward the specified point.
         """
-        shoulder_pos = Vec3(0, 0, 0)
         hand_pos = Vec3(x, y, z)
-        target_angles = shoulder_angles(shoulder_pos, hand_pos, theta, self.transform)
+        target_angles = shoulder_angles(hand_pos, theta, self.transform)
         for axis in range(3):
             self.set_target_shoulder_angle(axis, target_angles[axis])
         self.set_target_elbow_angle(target_angles[3])
