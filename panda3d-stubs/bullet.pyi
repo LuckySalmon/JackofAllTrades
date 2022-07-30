@@ -19,8 +19,6 @@ class BulletShape(TypedWritableReferenceCount):
 class BulletBodyNode(PandaNode):
     def add_shape(self, shape: BulletShape, xform: TransformState = ...) -> None: ...
     def set_active(self, active: bool, force: bool = False) -> None: ...
-    addShape = add_shape
-    setActive = set_active
 
 class BulletBoxShape(BulletShape):
     def __init__(self, halfExtents: _Vec3f) -> None: ...
@@ -30,12 +28,10 @@ class BulletCapsuleShape(BulletShape):
 
 class BulletConstraint(TypedReferenceCount):
     def set_debug_draw_size(self, size: float) -> None: ...
-    setDebugDrawSize = set_debug_draw_size
 
 class BulletRigidBodyNode(BulletBodyNode):
     def __init__(self, name: str = 'rigid') -> None: ...
     def set_mass(self, mass: float) -> None: ...
-    setMass = set_mass
 
 class BulletConeTwistConstraint(BulletConstraint):
     def __init__(self,
@@ -50,11 +46,9 @@ class BulletManifoldPoint:
 
 class BulletContact:
     def get_manifold_point(self) -> BulletManifoldPoint: ...
-    getManifoldPoint = get_manifold_point
 
 class BulletContactResult:
     def get_contacts(self) -> tuple[BulletContact, ...]: ...
-    getContacts = get_contacts
 
 class BulletDebugNode(PandaNode):
     def __init__(self, name: str = 'debug'): ...
@@ -62,10 +56,6 @@ class BulletDebugNode(PandaNode):
     def show_constraints(self, show: bool) -> None: ...
     def show_bounding_boxes(self, show: bool) -> None: ...
     def show_normals(self, show: bool) -> None: ...
-    showWireframe = show_wireframe
-    showConstraints = show_constraints
-    showBoundingBoxes = show_bounding_boxes
-    showNormals = show_normals
 
 class BulletWorld(TypedReferenceCount):
     def __init__(self) -> None: ...
@@ -79,12 +69,6 @@ class BulletWorld(TypedReferenceCount):
     def attach_rigid_body(self, node: BulletRigidBodyNode) -> None: ...
     def attach_constraint(self, constraint: BulletConstraint, linked_collision: bool = False) -> None: ...
     def contact_test_pair(self, node0: PandaNode, node1: PandaNode) -> BulletContactResult: ...
-    setGravity = set_gravity
-    doPhysics = do_physics
-    setDebugNode = set_debug_node
-    attachRigidBody = attach_rigid_body
-    attachConstraint = attach_constraint
-    contactTestPair = contact_test_pair
 
 class BulletRotationalLimitMotor:
     @property
@@ -92,9 +76,6 @@ class BulletRotationalLimitMotor:
     def set_motor_enabled(self, enable: bool) -> None: ...
     def set_max_motor_force(self, force: float) -> None: ...
     def set_target_velocity(self, velocity: float) -> None: ...
-    setMotorEnabled = set_motor_enabled
-    setMaxMotorForce = set_max_motor_force
-    setTargetVelocity = set_target_velocity
 
 class BulletGenericConstraint(BulletConstraint):
     def __init__(self,
@@ -109,12 +90,6 @@ class BulletGenericConstraint(BulletConstraint):
     def get_rotational_limit_motor(self, axis: int) -> BulletRotationalLimitMotor: ...
     def get_frame_a(self) -> TransformState: ...
     def get_frame_b(self) -> TransformState: ...
-    getAxis = get_axis
-    getAngle = get_angle
-    setAngularLimit = set_angular_limit
-    getRotationalLimitMotor = get_rotational_limit_motor
-    getFrameA = get_frame_a
-    getFrameB = get_frame_b
 
 class BulletHingeConstraint(BulletConstraint):
     def __init__(self,
@@ -134,10 +109,6 @@ class BulletHingeConstraint(BulletConstraint):
     def enable_motor(self, enable: bool) -> None: ...
     def set_max_motor_impulse(self, max_impulse: float) -> None: ...
     def set_motor_target(self, target_angle: float, dt: float) -> None: ...
-    setLimit = set_limit
-    enableMotor = enable_motor
-    setMaxMotorImpulse = set_max_motor_impulse
-    setMotorTarget = set_motor_target
 
 class BulletPlaneShape(BulletShape):
     def __init__(self, normal: _Vec3f, constant: float) -> None: ...

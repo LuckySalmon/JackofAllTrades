@@ -27,14 +27,9 @@ class TransformState(NodeCachedReferenceCount):
     def make_mat(mat: _Mat4f) -> TransformState: ...
     def get_pos(self) -> LPoint3f: ...
     def get_mat(self) -> LMatrix4f: ...
-    makePosHpr = make_pos_hpr
-    makeMat = make_mat
-    getPos = get_pos
-    getMat = get_mat
 
 class PandaNode(TypedWritableReferenceCount, Namable):
     def set_transform(self, transform: TransformState, current_thread: Thread = ...): ...
-    setTransform = set_transform
 
 class NodePath(Generic[_T]):
     def node(self) -> _T: ...
@@ -50,13 +45,3 @@ class NodePath(Generic[_T]):
     def show(self) -> None: ...
     def hide(self) -> None: ...
     def is_hidden(self, camera_mask: DrawMask = ...) -> bool: ...
-    reparentTo = reparent_to
-    attachNewNode = attach_new_node
-    getNetTransform = get_net_transform
-    setPos = set_pos
-    getPos = get_pos
-    getMat = get_mat
-    lookAt = look_at
-    getRelativePoint = get_relative_point
-    getRelativeVector = get_relative_vector
-    isHidden = is_hidden

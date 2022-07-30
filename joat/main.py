@@ -152,8 +152,8 @@ class App(ShowBase):
     def enter_battle(self, characters: Iterable[Character]) -> None:
         # Set up the World
         self.world = physics.make_world(gravity)
-        self.cam.setPos(0, -15, 2)
-        self.cam.lookAt(0, 0, 0)
+        self.cam.set_pos(0, -15, 2)
+        self.cam.look_at(0, 0, 0)
 
         # Fighters
         self.fighters.clear()
@@ -165,10 +165,10 @@ class App(ShowBase):
 
         # Debug
         debug_node = BulletDebugNode('Debug')
-        debug_node.showConstraints(False)
-        self.debugNP = self.render.attachNewNode(debug_node)
+        debug_node.show_constraints(False)
+        self.debugNP = self.render.attach_new_node(debug_node)
         self.debugNP.show()
-        self.world.setDebugNode(debug_node)
+        self.world.set_debug_node(debug_node)
         debug_object = DirectObject()
         debug_object.accept('f1', self.toggle_debug)
 
@@ -183,7 +183,7 @@ class App(ShowBase):
 
     def toggle_debug(self) -> None:
         """Toggle debug display for physical objects."""
-        if self.debugNP.isHidden():
+        if self.debugNP.is_hidden():
             self.debugNP.show()
         else:
             self.debugNP.hide()

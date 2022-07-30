@@ -124,7 +124,7 @@ class Fighter:
             'forearm_left' if side == -1 else 'forearm_right'
         ]
         current_position = self.skeleton.get_arm_target(side)
-        target_position = target_part.getNetTransform().getPos()
+        target_position = target_part.get_net_transform().get_pos()
 
         def reset(_):
             self.skeleton.set_arm_target(side, current_position)
@@ -138,10 +138,10 @@ class Fighter:
                 )
                 return task.done
 
-            contact_result = world.contactTestPair(fist.node(),
-                                                   target_part.node())
-            for contact in contact_result.getContacts():
-                manifold_point = contact.getManifoldPoint()
+            contact_result = world.contact_test_pair(fist.node(),
+                                                     target_part.node())
+            for contact in contact_result.get_contacts():
+                manifold_point = contact.get_manifold_point()
                 if abs(manifold_point.distance) > 0.01:
                     continue
                 move.apply(self, target, True)
