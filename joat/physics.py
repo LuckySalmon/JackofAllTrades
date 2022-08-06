@@ -36,12 +36,13 @@ shape_constructors: dict[str, Callable[..., BulletShape]] = {
 
 
 def make_quaternion(angle: float, axis: VBase3) -> Quat:
-    """Return a quaternion with the given characteristics"""
-    radians = angle/360 * math.pi
-    cosine = math.cos(radians/2)
-    quaternion = Quat(cosine, *axis)
-    quaternion.normalize()
-    return quaternion
+    """Return a quaternion representing a rotation
+    with the given characteristics.
+    """
+    half_radians = angle/360 * math.pi
+    cosine = math.cos(half_radians)
+    sine = math.sin(half_radians)
+    return Quat(cosine, axis.normalized() * sine)
 
 
 def make_rigid_transform(rotation: Mat3, translation: VBase3) -> TransformState:
