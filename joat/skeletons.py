@@ -1,7 +1,5 @@
-import json
 import math
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Any, TypedDict
 from typing_extensions import NotRequired
 
@@ -22,8 +20,6 @@ from . import physics
 enableSound = False
 charList = ['regular', 'boxer', 'psycho', 'test']
 LEFT, RIGHT = -1, 1
-with Path('data', 'skeletons', 'default.json').open() as f:
-    default_parameters = json.load(f)
 
 
 class _PathInfo(TypedDict):
