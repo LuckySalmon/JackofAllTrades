@@ -9,8 +9,8 @@ from direct.gui.DirectGui import (
     DirectWaitBar,
     OnscreenText,
 )
-from direct.showbase.MessengerGlobal import messenger
 from direct.showbase.DirectObject import DirectObject
+from direct.showbase.MessengerGlobal import messenger
 from panda3d.core import TextNode
 
 from .characters import Character, Fighter

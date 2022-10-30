@@ -3,15 +3,14 @@ from itertools import product
 from pathlib import Path
 
 from direct.fsm.FSM import FSM
-from direct.showbase.MessengerGlobal import messenger
 from direct.showbase.DirectObject import DirectObject
+from direct.showbase.MessengerGlobal import messenger
 from direct.showbase.ShowBase import ShowBase
 from direct.task.Task import Task
 from panda3d.bullet import BulletDebugNode, BulletWorld
 from panda3d.core import NodePath, Vec3
 
-from . import physics
-from . import ui
+from . import physics, ui
 from .characters import Character, Fighter
 from .moves import Move
 from .skeletons import Skeleton

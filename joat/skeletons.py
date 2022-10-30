@@ -1,27 +1,20 @@
-import math
 import json
+import math
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from panda3d.bullet import (
-    BulletWorld,
-    BulletGenericConstraint,
-    BulletHingeConstraint,
-    BulletRigidBodyNode
-)
-from panda3d.core import (
-    VBase3,
-    Vec3,
-    VBase4,
-    Mat3,
-    Mat4,
-    NodePath,
-)
 from direct.directtools.DirectGeometry import LineNodePath
+from direct.showbase import ShowBaseGlobal
 from direct.task.Task import Task
 from direct.task.TaskManagerGlobal import taskMgr
-from direct.showbase import ShowBaseGlobal
+from panda3d.bullet import (
+    BulletGenericConstraint,
+    BulletHingeConstraint,
+    BulletRigidBodyNode,
+    BulletWorld,
+)
+from panda3d.core import Mat3, Mat4, NodePath, VBase3, VBase4, Vec3
 
 from . import physics
 

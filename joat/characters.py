@@ -8,7 +8,7 @@ from typing import Any
 from direct.showbase.MessengerGlobal import messenger
 from direct.task.TaskManagerGlobal import taskMgr
 from panda3d.bullet import BulletWorld
-from panda3d.core import Vec3, Mat3, Mat4
+from panda3d.core import Mat3, Mat4, Vec3
 
 from .moves import Move, StatusEffect
 from .skeletons import Skeleton

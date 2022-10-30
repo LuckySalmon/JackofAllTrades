@@ -1,29 +1,28 @@
 import math
 from collections.abc import Iterable
 
+from direct.showbase import ShowBaseGlobal
+from direct.task.Task import Task
 from panda3d.bullet import (
+    BulletBoxShape,
+    BulletCapsuleShape,
+    BulletConeTwistConstraint,
+    BulletGenericConstraint,
+    BulletHingeConstraint,
     BulletPlaneShape,
     BulletRigidBodyNode,
     BulletSphereShape,
-    BulletBoxShape,
-    BulletCapsuleShape,
     BulletWorld,
-    BulletGenericConstraint,
-    BulletHingeConstraint,
-    BulletConeTwistConstraint,
 )
 from panda3d.core import (
-    NodePath,
-    VBase3,
-    Vec3,
-    Quat,
     Mat3,
     Mat4,
+    NodePath,
+    Quat,
     TransformState,
+    VBase3,
+    Vec3,
 )
-from direct.showbase import ShowBaseGlobal
-from direct.task.Task import Task
-
 
 shape_constructors = dict(
     sphere=BulletSphereShape,

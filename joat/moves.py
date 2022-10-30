@@ -1,7 +1,7 @@
 import json
 import random
 from collections.abc import Callable
-from dataclasses import dataclass, replace, field
+from dataclasses import dataclass, field, replace
 from typing import TYPE_CHECKING, TypeAlias
 
 from direct.showbase.MessengerGlobal import messenger
