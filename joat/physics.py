@@ -1,5 +1,6 @@
 import math
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
+from functools import partial
 
 from direct.showbase import ShowBaseGlobal
 from direct.task.Task import Task
@@ -11,6 +12,7 @@ from panda3d.bullet import (
     BulletHingeConstraint,
     BulletPlaneShape,
     BulletRigidBodyNode,
+    BulletShape,
     BulletSphereShape,
     BulletWorld,
 )
@@ -24,13 +26,13 @@ from panda3d.core import (
     Vec3,
 )
 
-shape_constructors = dict(
-    sphere=BulletSphereShape,
-    box=lambda *args: BulletBoxShape(Vec3(*args)),
-    capsule_x=lambda *args: BulletCapsuleShape(*args, 0),
-    capsule_y=lambda *args: BulletCapsuleShape(*args, 1),
-    capsule_z=lambda *args: BulletCapsuleShape(*args, 2)
-)
+shape_constructors: dict[str, Callable[..., BulletShape]] = {
+    'sphere': BulletSphereShape,
+    'box': lambda *args: BulletBoxShape(Vec3(*args)),
+    'capsule_x': partial(BulletCapsuleShape, up=0),
+    'capsule_y': partial(BulletCapsuleShape, up=1),
+    'capsule_z': partial(BulletCapsuleShape, up=2),
+}
 
 
 def make_quaternion(angle: float, axis: VBase3) -> Quat:
