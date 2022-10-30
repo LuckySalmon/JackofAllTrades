@@ -66,7 +66,7 @@ class Move:  # TODO: decide on whether these should be called moves or actions
             damage = random.randint(*self.damage)  # TODO: Use a different distribution?
             template = "{}'s {} hit for {} damage!"
             if random.randint(1, 100) <= 2:
-                damage *= 1.5
+                damage = 3 * damage // 2
                 template += '\nCritical Hit!'
             for effect in self.effects:
                 target.add_effect(replace(effect))
