@@ -1,4 +1,4 @@
 [flake8]
 extend-ignore = E501
 extend-exclude = venv
-noqa_require_code =
+noqa_require_code = true
