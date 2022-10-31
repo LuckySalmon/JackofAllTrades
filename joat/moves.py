@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, TypeAlias
 from direct.showbase.MessengerGlobal import messenger
 
 if TYPE_CHECKING:
-    from characters import Fighter
+    from .characters import Fighter
 
 
 # These should ideally return `None`, but using a function

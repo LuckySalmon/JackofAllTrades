@@ -2,7 +2,8 @@ import json
 import math
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, TypedDict
+from typing_extensions import NotRequired
 
 from direct.directtools.DirectGeometry import LineNodePath
 from direct.showbase import ShowBaseGlobal
@@ -14,7 +15,7 @@ from panda3d.bullet import (
     BulletRigidBodyNode,
     BulletWorld,
 )
-from panda3d.core import Mat3, Mat4, NodePath, VBase3, VBase4, Vec3
+from panda3d.core import LColor, Mat3, Mat4, NodePath, VBase3, VBase4, Vec3
 
 from . import physics
 
@@ -25,8 +26,13 @@ with Path('data', 'skeletons', 'default.json').open() as f:
     default_parameters = json.load(f)
 
 
+class _PathInfo(TypedDict):
+    points: list[VBase3]
+    color: NotRequired[LColor]
+
+
 def draw_lines(lines: LineNodePath,
-               *paths: dict[str, list[VBase3]],
+               *paths: _PathInfo,
                origin: VBase3 | None = None,
                relative: bool = True) -> None:
     if origin is None:
@@ -81,7 +87,7 @@ def shoulder_angles(
     # e1, e2, and e3 describe a rotation matrix
     e1 = elbow.normalized()
     if e1.almost_equal(unit_target):
-        e2 = Vec3(-elbow.z, 0, elbow.x).normalized()
+        e2 = VBase3(-elbow.z, 0, elbow.x).normalized()
     else:
         e2 = (target - target.project(elbow)).normalized()
     e3 = e1.cross(e2)
@@ -111,12 +117,14 @@ class ArmController:
         self.lines = LineNodePath(name='debug', parent=render,
                                   colorVec=VBase4(0.2, 0.2, 0.5, 1))
         axes = LineNodePath(name='axes', parent=render)
-        paths: list[dict[str, Any]] = [dict(color=VBase4(1, 0, 0, 1)),
-                                       dict(color=VBase4(0, 1, 0, 1)),
-                                       dict(color=VBase4(0, 0, 1, 1))]
+        paths: list[_PathInfo] = [
+            {'points': [], 'color': VBase4(1, 0, 0, 1)},
+            {'points': [], 'color': VBase4(0, 1, 0, 1)},
+            {'points': [], 'color': VBase4(0, 0, 1, 1)},
+        ]
         for i in range(3):
             axis = self.shoulder.get_axis(i) * 0.25
-            paths[i]['points'] = [axis]
+            paths[i]['points'].append(axis)
         draw_lines(axes, *paths, origin=self.origin)
 
     def enable_motors(self, enabled: bool) -> None:
@@ -143,7 +151,7 @@ class ArmController:
             self.set_target_shoulder_angle(axis, target_angles[axis])
         self.set_target_elbow_angle(target_angles[3])
         self.bicep.node().set_active(True, False)
-        draw_lines(self.lines, dict(points=[hand_pos]), origin=self.origin)
+        draw_lines(self.lines, {'points': [hand_pos]}, origin=self.origin)
 
 
 @dataclass
@@ -248,10 +256,13 @@ class Skeleton:
 
     def position_shoulder(self, side: int, target: VBase3) -> None:
         arm_controller = self.arm_controllers[side]
-        arm_controller.move_toward(*target, 0)
+        x, y, z = target
+        arm_controller.move_toward(x, y, z, 0)
 
     def get_arm_target(self, side: int) -> Vec3:
-        return Vec3(self.arm_targets[side])
+        target = self.arm_targets[side]
+        assert target is not None
+        return Vec3(target)
 
     def set_arm_target(self, side: int, target: VBase3,
                        relative: bool = True) -> None:

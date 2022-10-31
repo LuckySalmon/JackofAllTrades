@@ -110,7 +110,7 @@ class App(ShowBase):
     selected_characters: list[Character]
     index: int
     world: BulletWorld | None
-    debugNP: 'NodePath[BulletDebugNode]'
+    debugNP: 'NodePath[BulletDebugNode] | None'
 
     def __init__(self):
         ShowBase.__init__(self)
@@ -137,6 +137,7 @@ class App(ShowBase):
         self.fsm.request(request, *args)
 
     def select_character(self, character: Character, mode: str) -> None:
+        assert self.fsm.character_menu is not None
         match mode:
             case 'split_screen':
                 i = len(self.selected_characters)
@@ -178,10 +179,12 @@ class App(ShowBase):
 
     def update(self, task: Task) -> int:
         """Update the world using physics."""
+        assert self.world is not None
         return physics.update_physics(self.world, task)
 
     def toggle_debug(self) -> None:
         """Toggle debug display for physical objects."""
+        assert self.debugNP is not None
         if self.debugNP.is_hidden():
             self.debugNP.show()
         else:
@@ -191,6 +194,7 @@ class App(ShowBase):
         """Make the character use the selected action,
         then move on to the next turn.
         """
+        assert self.world is not None
         messenger.send('remove_query')
         user = self.fighters[self.index]
         self.index = (self.index + 1) % 2
