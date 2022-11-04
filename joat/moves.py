@@ -7,6 +7,8 @@ from typing import TYPE_CHECKING, TypeAlias
 from direct.showbase.MessengerGlobal import messenger
 
 if TYPE_CHECKING:
+    from _typeshed import SupportsRead
+
     from .characters import Fighter
 
 
@@ -53,7 +55,7 @@ class Move:  # TODO: decide on whether these should be called moves or actions
     # TODO: effect system
 
     @classmethod
-    def from_json(cls, file) -> 'Move':
+    def from_json(cls, file: 'SupportsRead[str | bytes]') -> 'Move':
         j = json.load(file)
         name = j.pop('name').title()
         effect_params = j.pop('effects')

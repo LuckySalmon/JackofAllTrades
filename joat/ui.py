@@ -43,7 +43,7 @@ class MainMenu:
     characterButton: DirectButton
     quitButton: DirectButton
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.backdrop = DirectFrame(frameColor=(0, 0, 0, 0),
                                     frameSize=(-1, 1, -1, 1),
                                     pos=(0, 0, 0))
@@ -85,7 +85,12 @@ class CharacterMenu:
     back_button: DirectButton
     buttons: list[DirectButton]
 
-    def __init__(self, title: str, characters: Iterable[Character], mode: str):
+    def __init__(
+        self,
+        title: str,
+        characters: Iterable[Character],
+        mode: str,
+    ) -> None:
         self.mode = mode
         self.selectedCharacter = None
         self.backdrop = DirectFrame(frameColor=(0, 0, 0, 0),
@@ -140,7 +145,7 @@ class CharacterMenu:
                                   parent=self.backdrop)
             self.buttons.append(button)
 
-    def reset(self, characters: Iterable[Character], mode: str):
+    def reset(self, characters: Iterable[Character], mode: str) -> None:
         self.selectedCharacter = None
         self.character_view.hide()
         self.mode = mode
@@ -185,7 +190,7 @@ class BattleInterface(DirectObject):
     infoBoxes: list[OnscreenText]
     healthBars: list[DirectWaitBar]
 
-    def __init__(self, characters: Iterable[Fighter]):
+    def __init__(self, characters: Iterable[Fighter]) -> None:
         super().__init__()
         self.sharedInfo = OnscreenText(pos=(0, 0.5), scale=0.07,
                                        align=TextNode.ACenter)
@@ -244,7 +249,7 @@ class ActionSelector:
     action_buttons: list[DirectButton]
 
     def __init__(self, actions: Iterable[Move],
-                 pos: tuple[float, float, float], index: int):
+                 pos: tuple[float, float, float], index: int) -> None:
         self.selected_action = None
         self.index = index
 

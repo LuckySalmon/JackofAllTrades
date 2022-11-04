@@ -3,15 +3,19 @@ import winsound
 from dataclasses import dataclass, field
 from pathlib import Path
 from random import choice
-from typing import Any
+from typing import TYPE_CHECKING, Any, Literal
 
 from direct.showbase.MessengerGlobal import messenger
+from direct.task import Task
 from direct.task.TaskManagerGlobal import taskMgr
 from panda3d.bullet import BulletWorld
 from panda3d.core import Mat3, Mat4, Vec3
 
 from .moves import Move, StatusEffect
 from .skeletons import Skeleton
+
+if TYPE_CHECKING:
+    from _typeshed import SupportsRead
 
 SOUND_ENABLED = False
 
@@ -29,7 +33,7 @@ class Character:
     level: int = field(default=0, init=False)
 
     @classmethod
-    def from_json(cls, file) -> 'Character':
+    def from_json(cls, file: 'SupportsRead[str | bytes]') -> 'Character':
         attributes = json.load(file)
         move_names = attributes.pop('basic_moves')
         moves = {}
@@ -106,7 +110,12 @@ class Fighter:
                    index)
 
     @classmethod
-    def from_json(cls, file, world: BulletWorld, index: int = 0) -> 'Fighter':
+    def from_json(
+        cls,
+        file: 'SupportsRead[str | bytes]',
+        world: BulletWorld,
+        index: int = 0,
+    ) -> 'Fighter':
         character = Character.from_json(file)
         return cls.from_character(character, world, index)
 
@@ -125,27 +134,27 @@ class Fighter:
         ]
         current_position = self.skeleton.get_arm_target(side)
         target_position = target_part.get_net_transform().get_pos()
+        target_node = target_part.node()
 
-        def reset(_):
+        def reset(_: object) -> None:
             self.skeleton.set_arm_target(side, current_position)
             messenger.send('next_turn')
 
-        def use_move(task):
+        def use_move(task: Task.Task) -> Literal[0, 1]:
             if task.time >= 1:
                 messenger.send(
                     'output_info',
                     [self.index, f"{self.name}'s {move.name} missed!"]
                 )
-                return task.done
+                return Task.done
 
-            contact_result = world.contact_test_pair(fist.node(),
-                                                     target_part.node())
+            contact_result = world.contact_test_pair(fist.node(), target_node)
             for contact in contact_result.get_contacts():
                 manifold_point = contact.get_manifold_point()
                 if abs(manifold_point.distance) > 0.01:
                     continue
                 move.apply(self, target, True)
-                return task.done
+                return Task.done
 
             return task.cont
 

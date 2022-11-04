@@ -1,6 +1,7 @@
 from collections.abc import Iterable
 from itertools import product
 from pathlib import Path
+from typing import Any
 
 from direct.fsm.FSM import FSM
 from direct.showbase.DirectObject import DirectObject
@@ -24,7 +25,7 @@ class TargetMovingObject(DirectObject):
     skeletons: tuple[Skeleton, ...]
     xyz: Vec3
 
-    def __init__(self, skeletons: Iterable[Skeleton]):
+    def __init__(self, skeletons: Iterable[Skeleton]) -> None:
         super().__init__()
         self.skeletons = tuple(skeletons)
         self.xyz = Vec3(0.5, -0.25, 0)
@@ -52,7 +53,7 @@ class TargetMovingObject(DirectObject):
         self.xyz += delta
         self.update()
 
-    def toggle_targeting(self):
+    def toggle_targeting(self) -> None:
         for skel in self.skeletons:
             skel.toggle_targeting()
 
@@ -64,7 +65,7 @@ class GameFSM(FSM):
     character_menu: ui.CharacterMenu | None
     battle_interface: ui.BattleInterface | None
 
-    def __init__(self, app: 'App'):
+    def __init__(self, app: 'App') -> None:
         FSM.__init__(self, 'GameFSM')
         self.app = app
         self.fighters = self.app.fighters
@@ -112,7 +113,7 @@ class App(ShowBase):
     world: BulletWorld | None
     debugNP: 'NodePath[BulletDebugNode] | None'
 
-    def __init__(self):
+    def __init__(self) -> None:
         ShowBase.__init__(self)
         self.fighters = []
         self.fsm = GameFSM(self)
@@ -133,7 +134,7 @@ class App(ShowBase):
 
         self.request('MainMenu')
 
-    def request(self, request: str, *args) -> None:
+    def request(self, request: str, *args: Any) -> None:
         self.fsm.request(request, *args)
 
     def select_character(self, character: Character, mode: str) -> None:
@@ -200,7 +201,7 @@ class App(ShowBase):
         self.index = (self.index + 1) % 2
         user.use_move(move, self.fighters[target_index], self.world)
 
-    def next_turn(self):
+    def next_turn(self) -> None:
         fighter = self.fighters[self.index]
         fighter.apply_current_effects()
         if fighter.hp <= 0:

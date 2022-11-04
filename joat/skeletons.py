@@ -108,7 +108,7 @@ class ArmController:
     transform: Mat3
     speed: float  # proportional to maximum angular velocity of joint motors
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         render = ShowBaseGlobal.base.render
 
         self.lines = LineNodePath(name='debug', parent=render,
@@ -244,7 +244,7 @@ class Skeleton:
 
         return cls(parts, arm_controllers)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         taskMgr.add(self.move_arms, f'move_arms_{id(self)}')
 
     def get_shoulder_position(self, side: int) -> VBase3:
