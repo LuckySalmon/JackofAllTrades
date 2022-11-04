@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 import winsound
 from dataclasses import dataclass, field
@@ -33,7 +35,7 @@ class Character:
     level: int = field(default=0, init=False)
 
     @classmethod
-    def from_json(cls, file: 'SupportsRead[str | bytes]') -> 'Character':
+    def from_json(cls, file: SupportsRead[str | bytes]) -> Character:
         attributes = json.load(file)
         move_names = attributes.pop('basic_moves')
         moves = {}
@@ -90,7 +92,7 @@ class Fighter:
     @classmethod
     def from_character(cls, character: Character,
                        world: BulletWorld,
-                       index: int = 0) -> 'Fighter':
+                       index: int = 0) -> Fighter:
         with Path('data', 'skeletons',
                   character.skeleton).with_suffix('.json').open() as f:
             skeleton_params: dict[str, Any] = json.load(f)
@@ -112,15 +114,15 @@ class Fighter:
     @classmethod
     def from_json(
         cls,
-        file: 'SupportsRead[str | bytes]',
+        file: SupportsRead[str | bytes],
         world: BulletWorld,
         index: int = 0,
-    ) -> 'Fighter':
+    ) -> Fighter:
         character = Character.from_json(file)
         return cls.from_character(character, world, index)
 
     def use_move(self, move: Move,
-                 target: 'Fighter',
+                 target: Fighter,
                  world: BulletWorld) -> None:
         target_part = target.skeleton.parts.get(move.target_part)
         if target_part is None:

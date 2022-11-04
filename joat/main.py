@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from collections.abc import Iterable
 from itertools import product
 from pathlib import Path
@@ -59,13 +61,13 @@ class TargetMovingObject(DirectObject):
 
 
 class GameFSM(FSM):
-    app: 'App'
+    app: App
     fighters: list[Fighter]
     main_menu: ui.MainMenu | None
     character_menu: ui.CharacterMenu | None
     battle_interface: ui.BattleInterface | None
 
-    def __init__(self, app: 'App') -> None:
+    def __init__(self, app: App) -> None:
         FSM.__init__(self, 'GameFSM')
         self.app = app
         self.fighters = self.app.fighters
@@ -111,7 +113,7 @@ class App(ShowBase):
     selected_characters: list[Character]
     index: int
     world: BulletWorld | None
-    debugNP: 'NodePath[BulletDebugNode] | None'
+    debugNP: NodePath[BulletDebugNode] | None
 
     def __init__(self) -> None:
         ShowBase.__init__(self)

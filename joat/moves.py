@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 import random
 from collections.abc import Callable
@@ -33,7 +35,7 @@ class StatusEffect:
     on_removal: EffectProcedure = field(default=noop)
 
     @classmethod
-    def from_preset(cls, name: str, strength: int, duration: int) -> 'StatusEffect':
+    def from_preset(cls, name: str, strength: int, duration: int) -> StatusEffect:
         constructor = EFFECT_CONSTRUCTORS.get(name)
         if constructor is not None:
             return constructor(strength, duration)
@@ -55,14 +57,14 @@ class Move:  # TODO: decide on whether these should be called moves or actions
     # TODO: effect system
 
     @classmethod
-    def from_json(cls, file: 'SupportsRead[str | bytes]') -> 'Move':
+    def from_json(cls, file: SupportsRead[str | bytes]) -> Move:
         j = json.load(file)
         name = j.pop('name').title()
         effect_params = j.pop('effects')
         effects = [StatusEffect.from_preset(**params) for params in effect_params]
         return cls(name, **j, effects=effects)
 
-    def apply(self, user: 'Fighter', target: 'Fighter',
+    def apply(self, user: Fighter, target: Fighter,
               confirmed: bool = False) -> None:
         if confirmed or self.accuracy > random.randint(0, 99):
             damage = random.randint(*self.damage)  # TODO: Use a different distribution?
@@ -92,12 +94,12 @@ class Move:  # TODO: decide on whether these should be called moves or actions
         ))
 
 
-def make_poison_effect(strength: int, duration: int) -> 'StatusEffect':
-    def poison(target: 'Fighter') -> None:
+def make_poison_effect(strength: int, duration: int) -> StatusEffect:
+    def poison(target: Fighter) -> None:
         target.apply_damage(strength)
     return StatusEffect('poison', duration, on_turn=poison)
 
 
-EFFECT_CONSTRUCTORS: 'dict[str, Callable[[int, int], StatusEffect]]' = {
+EFFECT_CONSTRUCTORS: dict[str, Callable[[int, int], StatusEffect]] = {
     'poison': make_poison_effect,
 }

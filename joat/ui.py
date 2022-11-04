@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from collections.abc import Callable, Iterable, Iterator, Sequence
 from itertools import product
 from typing import Literal
@@ -186,7 +188,7 @@ class CharacterMenu:
 
 class BattleInterface(DirectObject):
     sharedInfo: OnscreenText
-    actionSelectors: 'list[ActionSelector]'
+    actionSelectors: list[ActionSelector]
     infoBoxes: list[OnscreenText]
     healthBars: list[DirectWaitBar]
 

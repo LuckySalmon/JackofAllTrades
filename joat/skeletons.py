@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import math
 from dataclasses import dataclass, field
 from typing import Any, TypedDict
@@ -103,8 +105,8 @@ class ArmController:
     origin: VBase3
     shoulder: BulletGenericConstraint
     elbow: BulletHingeConstraint
-    bicep: 'NodePath[BulletRigidBodyNode]'
-    forearm: 'NodePath[BulletRigidBodyNode]'
+    bicep: NodePath[BulletRigidBodyNode]
+    forearm: NodePath[BulletRigidBodyNode]
     transform: Mat3
     speed: float  # proportional to maximum angular velocity of joint motors
 
@@ -153,7 +155,7 @@ class ArmController:
 
 @dataclass
 class Skeleton:
-    parts: 'dict[str, NodePath[BulletRigidBodyNode]]'
+    parts: dict[str, NodePath[BulletRigidBodyNode]]
     arm_controllers: dict[int, ArmController]
     arm_targets: dict[int, Vec3 | None] = field(
         default_factory=lambda: {LEFT: None, RIGHT: None}
@@ -166,7 +168,7 @@ class Skeleton:
                   world: BulletWorld,
                   coord_xform: Mat4,
                   speed: float,
-                  strength: float) -> 'Skeleton':
+                  strength: float) -> Skeleton:
         parts: dict[str, NodePath] = {}
         arm_controllers: dict[int, ArmController] = {}
 

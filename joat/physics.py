@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import math
 from collections.abc import Callable, Iterable
 from functools import partial
@@ -58,7 +60,7 @@ def make_body(name: str,
               mass: float,
               position: VBase3 | Iterable[float],
               parent: NodePath,
-              world: BulletWorld) -> 'NodePath[BulletRigidBodyNode]':
+              world: BulletWorld) -> NodePath[BulletRigidBodyNode]:
     """Return a NodePath for a new rigid body with the given characteristics"""
     constructor = shape_constructors[shape]
     node = BulletRigidBodyNode(name)
