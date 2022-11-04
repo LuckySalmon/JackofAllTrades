@@ -49,14 +49,15 @@ def draw_lines(lines: LineNodePath,
 def shoulder_angles(
     target: VBase3,
     theta: float,
-    transform: Mat3 = Mat3(),
+    transform: Mat3 | None = None,
     arm_lengths: tuple[float, float] = (0.75, 0.75),
 ) -> tuple[float, float, float, float]:
     """Return the shoulder and elbow angles required
     to place the hand at the given point.
     """
     l1, l2 = arm_lengths
-    target = transform.xform(target)
+    if transform is not None:
+        target = transform.xform(target)
     unit_target = target.normalized()
 
     dist = target.length()
