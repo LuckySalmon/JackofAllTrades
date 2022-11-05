@@ -47,8 +47,11 @@ areas of work include:
 Keep in mind that, currently, *there is no game*. Regardless, the basic steps
 for helping/testing are:
 
-1. Install [Python 3](https://www.python.org/downloads/)
-2. Clone this repository (if you're unfamiliar with or new to Git, [GitHub Desktop](https://docs.github.com/en/get-started/using-github/github-desktop) makes this fairly easy)
-3. Make a [virtual environment](https://docs.python.org/3/tutorial/venv.html)
-4. Use `pip install -r requirements.txt`
-5. Use `python -m joat`
+1. Install [Python 3](https://www.python.org/downloads/).
+2. Clone this repository (if you're unfamiliar with or new to Git,
+   [GitHub Desktop](https://docs.github.com/get-started/using-github/github-desktop)
+   makes this fairly easy).
+3. Make and activate a
+   [virtual environment](https://docs.python.org/3/tutorial/venv.html).
+4. Use `pip install -r requirements-dev.txt`.
+5. Use `python -m joat` to run the game.
