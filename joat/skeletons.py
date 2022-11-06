@@ -102,7 +102,7 @@ def shoulder_angles(
     return -gamma, beta, alpha, math.pi - phi
 
 
-@dataclass
+@dataclass(kw_only=True, repr=False)
 class ArmController:
     origin: VBase3
     shoulder: BulletGenericConstraint
@@ -156,9 +156,9 @@ class ArmController:
         draw_lines(self.lines, {'points': [hand_pos]}, origin=self.origin)
 
 
-@dataclass
+@dataclass(kw_only=True, repr=False)
 class Skeleton:
-    parts: dict[str, NodePath[BulletRigidBodyNode]]
+    parts: dict[str, NodePath[BulletRigidBodyNode]] = field(kw_only=False)
     arm_controllers: dict[int, ArmController]
     arm_targets: dict[int, Vec3 | None] = field(
         default_factory=lambda: {LEFT: None, RIGHT: None}
@@ -260,12 +260,18 @@ class Skeleton:
             parts['bicep_' + string] = bicep
             parts['forearm_' + string] = forearm
             arm_controller = ArmController(
-                position, shoulder, elbow, bicep, forearm, transform, speed
+                origin=position,
+                shoulder=shoulder,
+                elbow=elbow,
+                bicep=bicep,
+                forearm=forearm,
+                transform=transform,
+                speed=speed,
             )
             arm_controller.enable_motors(True)
             arm_controllers[side] = arm_controller
 
-        return cls(parts, arm_controllers)
+        return cls(parts, arm_controllers=arm_controllers)
 
     def __post_init__(self) -> None:
         taskMgr.add(self.move_arms, f'move_arms_{id(self)}')

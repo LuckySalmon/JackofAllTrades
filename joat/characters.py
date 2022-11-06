@@ -22,17 +22,17 @@ if TYPE_CHECKING:
 SOUND_ENABLED = False
 
 
-@dataclass
+@dataclass(kw_only=True)
 class Character:
-    name: str
+    name: str = field(kw_only=False)
     hp: int
     speed: int
     strength: int
     defense: int
-    moves: dict[str, Move] = field(default_factory=dict)
-    skeleton: str = 'default'
-    xp: int = field(default=0, init=False)
-    level: int = field(default=0, init=False)
+    moves: dict[str, Move] = field(default_factory=dict, repr=False)
+    skeleton: str = field(default='default', repr=False)
+    xp: int = field(default=0, init=False, repr=False)
+    level: int = field(default=0, init=False, repr=False)
 
     @classmethod
     def from_json(cls, file: SupportsRead[str | bytes]) -> Character:
@@ -71,17 +71,17 @@ class Character:
             self.xp -= threshold
 
 
-@dataclass
+@dataclass(kw_only=True)
 class Fighter:
-    name: str
+    name: str = field(kw_only=False)
     base_hp: int
     hp: int = field(init=False)
     speed: int
     strength: int
     defense: int
-    moves: dict[str, Move]
-    skeleton: Skeleton
-    index: int = 0
+    moves: dict[str, Move] = field(repr=False)
+    skeleton: Skeleton = field(repr=False)
+    index: int = field(default=0, repr=False)
     status_effects: list[StatusEffect] = field(
         default_factory=list, init=False
     )
@@ -109,13 +109,13 @@ class Fighter:
         )
         return cls(
             character.name,
-            character.hp,
-            character.speed,
-            character.strength,
-            character.defense,
-            character.moves,
-            skeleton,
-            index,
+            base_hp=character.hp,
+            speed=character.speed,
+            strength=character.strength,
+            defense=character.defense,
+            moves=character.moves,
+            skeleton=skeleton,
+            index=index,
         )
 
     @classmethod

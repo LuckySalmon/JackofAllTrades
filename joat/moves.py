@@ -24,15 +24,13 @@ def noop(*_: object) -> None:
     pass
 
 
-@dataclass
+@dataclass(kw_only=True)
 class StatusEffect:
-    name: str
-    duration: int
-    #  The following are assigned to fields because assigning
-    #  them to a function directly confuses the IDE.
-    on_application: EffectProcedure = field(default=noop)
-    on_turn: EffectProcedure = field(default=noop)
-    on_removal: EffectProcedure = field(default=noop)
+    name: str = field(kw_only=False)
+    duration: int = field(kw_only=False)
+    on_application: EffectProcedure = field(default=noop, repr=False)
+    on_turn: EffectProcedure = field(default=noop, repr=False)
+    on_removal: EffectProcedure = field(default=noop, repr=False)
 
     @classmethod
     def from_preset(
@@ -48,9 +46,9 @@ class StatusEffect:
         return self.duration > 0
 
 
-@dataclass
+@dataclass(kw_only=True)
 class Move:  # TODO: decide on whether these should be called moves or actions
-    name: str
+    name: str = field(kw_only=False)
     damage: tuple[int, int]
     accuracy: int
     effects: list[StatusEffect]
