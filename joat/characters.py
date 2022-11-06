@@ -40,13 +40,11 @@ class Character:
         move_names = attributes.pop('basic_moves')
         moves = {}
         for move_name in move_names:
-            try:
-                with Path('data', 'moves',
-                          move_name).with_suffix('.json').open() as f:
+            path = Path('data', 'moves', move_name).with_suffix('.json')
+            if path.exists():
+                with path.open() as f:
                     move = Move.from_json(f)
-                    moves[move_name] = move
-            except FileNotFoundError:
-                continue
+                moves[move_name] = move
         attributes.pop('trade')
         return cls(**attributes, moves=moves)
 
@@ -93,8 +91,8 @@ class Fighter:
     def from_character(cls, character: Character,
                        world: BulletWorld,
                        index: int = 0) -> Fighter:
-        with Path('data', 'skeletons',
-                  character.skeleton).with_suffix('.json').open() as f:
+        path = Path('data', 'skeletons', character.skeleton)
+        with path.with_suffix('.json').open() as f:
             skeleton_params: dict[str, Any] = json.load(f)
         side = 1 if index else -1
         offset = Vec3(-0.75, 0, 0) if index == 0 else Vec3(0.75, 0, 0)

@@ -158,7 +158,8 @@ class CharacterMenu:
             self.confirmation_button.show()
             self.character_view_text.hide()
         self.buttons.clear()
-        for character, (x, y) in zip(characters, uniform_spacing((4, 4), (0.5, 0.5))):
+        button_positions = uniform_spacing((4, 4), (0.5, 0.5))
+        for character, (x, y) in zip(characters, button_positions):
             button = DirectButton(text=character.name,
                                   command=self.select_character,
                                   extraArgs=[character],

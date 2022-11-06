@@ -220,7 +220,8 @@ class Skeleton:
             world.attach_constraint(elbow, True)
 
             for axis in range(3):
-                shoulder.get_rotational_limit_motor(axis).set_max_motor_force(strength)
+                motor = shoulder.get_rotational_limit_motor(axis)
+                motor.set_max_motor_force(strength)
             elbow.set_max_motor_impulse(strength)
 
             # limits for moving toward torso from T-pose
