@@ -82,15 +82,17 @@ class Fighter:
     moves: dict[str, Move]
     skeleton: Skeleton
     index: int = 0
-    status_effects: list[StatusEffect] = field(default_factory=list, init=False)
+    status_effects: list[StatusEffect] = field(
+        default_factory=list, init=False
+    )
 
     def __post_init__(self) -> None:
         self.hp = self.base_hp
 
     @classmethod
-    def from_character(cls, character: Character,
-                       world: BulletWorld,
-                       index: int = 0) -> Fighter:
+    def from_character(
+        cls, character: Character, world: BulletWorld, index: int = 0
+    ) -> Fighter:
         path = Path('data', 'skeletons', character.skeleton)
         with path.with_suffix('.json').open() as f:
             skeleton_params: dict[str, Any] = json.load(f)
@@ -98,16 +100,23 @@ class Fighter:
         offset = Vec3(-0.75, 0, 0) if index == 0 else Vec3(0.75, 0, 0)
         rotation = Mat3(-side, 0, 0, 0, -side, 0, 0, 0, 1)
         coord_xform = Mat4(rotation, offset)
-        skeleton = Skeleton.construct(skeleton_params, world, coord_xform,
-                                      character.speed, character.strength)
-        return cls(character.name,
-                   character.hp,
-                   character.speed,
-                   character.strength,
-                   character.defense,
-                   character.moves,
-                   skeleton,
-                   index)
+        skeleton = Skeleton.construct(
+            skeleton_params,
+            world,
+            coord_xform,
+            character.speed,
+            character.strength,
+        )
+        return cls(
+            character.name,
+            character.hp,
+            character.speed,
+            character.strength,
+            character.defense,
+            character.moves,
+            skeleton,
+            index,
+        )
 
     @classmethod
     def from_json(
@@ -119,9 +128,9 @@ class Fighter:
         character = Character.from_json(file)
         return cls.from_character(character, world, index)
 
-    def use_move(self, move: Move,
-                 target: Fighter,
-                 world: BulletWorld) -> None:
+    def use_move(
+        self, move: Move, target: Fighter, world: BulletWorld
+    ) -> None:
         target_part = target.skeleton.parts.get(move.target_part)
         if target_part is None:
             move.apply(self, target)
@@ -144,7 +153,7 @@ class Fighter:
             if task.time >= 1:
                 messenger.send(
                     'output_info',
-                    [self.index, f"{self.name}'s {move.name} missed!"]
+                    [self.index, f"{self.name}'s {move.name} missed!"],
                 )
                 return Task.done
 
@@ -166,8 +175,7 @@ class Fighter:
         damage = min(max(damage - self.defense, 0), self.hp)
         self.hp -= damage
         messenger.send(
-            'output_info',
-            [self.index, f'{self.name} took {damage} damage!']
+            'output_info', [self.index, f'{self.name} took {damage} damage!']
         )
         messenger.send('set_health_bar', [self.index, self.hp])
         if self.hp <= 0:

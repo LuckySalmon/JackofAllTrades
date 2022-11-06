@@ -45,8 +45,12 @@ class TargetMovingObject(DirectObject):
 
     def update(self) -> None:
         x, y, z = self.xyz
-        targets = (Vec3(+x, +y, z), Vec3(+x, -y, z),
-                   Vec3(-x, -y, z), Vec3(-x, +y, z))
+        targets = (
+            Vec3(+x, +y, z),
+            Vec3(+x, -y, z),
+            Vec3(-x, -y, z),
+            Vec3(-x, +y, z),
+        )
         iterator = zip(product(self.skeletons, (LEFT, RIGHT)), targets)
         for (skel, side), target in iterator:
             skel.set_arm_target(side, target)
@@ -86,9 +90,9 @@ class GameFSM(FSM):
         if self.main_menu is not None:
             self.main_menu.hide()
 
-    def enterCharacterMenu(self, title: str,
-                           characters: Iterable[Character],
-                           mode: str) -> None:
+    def enterCharacterMenu(
+        self, title: str, characters: Iterable[Character], mode: str
+    ) -> None:
         if mode == 'split_screen':
             title += ', Player 1'
         if self.character_menu is not None:
@@ -125,10 +129,16 @@ class App(ShowBase):
         self.debugNP = None
 
         self.accept('main_menu', self.request, ['MainMenu'])
-        self.accept('character_menu', self.request,
-                    ['CharacterMenu', 'Select a Character', CHARACTERS, 'view'])
-        self.accept('fighter_selection', self.request,
-                    ['CharacterMenu', 'Select a Fighter', CHARACTERS])
+        self.accept(
+            'character_menu',
+            self.request,
+            ['CharacterMenu', 'Select a Character', CHARACTERS, 'view'],
+        )
+        self.accept(
+            'fighter_selection',
+            self.request,
+            ['CharacterMenu', 'Select a Fighter', CHARACTERS],
+        )
         self.accept('select_character', self.select_character)
         self.accept('use_action', self.use_action)
         self.accept('next_turn', self.next_turn)
@@ -146,7 +156,9 @@ class App(ShowBase):
                 i = len(self.selected_characters)
                 self.selected_characters.append(character)
                 if i == 0:
-                    self.fsm.character_menu.title_text['text'] = 'Select a Fighter, Player 2'
+                    self.fsm.character_menu.title_text[
+                        'text'
+                    ] = 'Select a Fighter, Player 2'
                 else:
                     self.request('Battle', self.selected_characters)
             case 'copy':
@@ -207,7 +219,9 @@ class App(ShowBase):
         fighter = self.fighters[self.index]
         fighter.apply_current_effects()
         if fighter.hp <= 0:
-            messenger.send('announce_win', [self.fighters[not self.index].name])
+            messenger.send(
+                'announce_win', [self.fighters[not self.index].name]
+            )
         else:
             messenger.send('query_action', [self.index])
 

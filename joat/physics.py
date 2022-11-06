@@ -41,26 +41,30 @@ def make_quaternion(angle: float, axis: VBase3) -> Quat:
     """Return a quaternion representing a rotation
     with the given characteristics.
     """
-    half_radians = angle/360 * math.pi
+    half_radians = angle / 360 * math.pi
     cosine = math.cos(half_radians)
     sine = math.sin(half_radians)
     return Quat(cosine, axis.normalized() * sine)
 
 
-def make_rigid_transform(rotation: Mat3, translation: VBase3) -> TransformState:
+def make_rigid_transform(
+    rotation: Mat3, translation: VBase3
+) -> TransformState:
     """Return a TransformState comprising the given rotation
     followed by the given translation
     """
     return TransformState.make_mat(Mat4(rotation, translation))
 
 
-def make_body(name: str,
-              shape: str,
-              dimensions: Iterable[float],
-              mass: float,
-              position: VBase3 | Iterable[float],
-              parent: NodePath,
-              world: BulletWorld) -> NodePath[BulletRigidBodyNode]:
+def make_body(
+    name: str,
+    shape: str,
+    dimensions: Iterable[float],
+    mass: float,
+    position: VBase3 | Iterable[float],
+    parent: NodePath,
+    world: BulletWorld,
+) -> NodePath[BulletRigidBodyNode]:
     """Return a NodePath for a new rigid body with the given characteristics"""
     constructor = shape_constructors[shape]
     node = BulletRigidBodyNode(name)
@@ -72,43 +76,51 @@ def make_body(name: str,
     return path
 
 
-def make_ball_joint(position: VBase3,
-                    node_path_a: NodePath,
-                    node_path_b: NodePath,
-                    rotation: Mat3) -> BulletGenericConstraint:
+def make_ball_joint(
+    position: VBase3,
+    node_path_a: NodePath,
+    node_path_b: NodePath,
+    rotation: Mat3,
+) -> BulletGenericConstraint:
     a_to_joint = position
     b_to_joint = node_path_b.get_relative_point(node_path_a, position)
     frame_a = make_rigid_transform(rotation, a_to_joint)
     frame_b = make_rigid_transform(rotation, b_to_joint)
-    joint = BulletGenericConstraint(node_path_a.node(), node_path_b.node(),
-                                    frame_a, frame_b, True)
+    joint = BulletGenericConstraint(
+        node_path_a.node(), node_path_b.node(), frame_a, frame_b, True
+    )
     return joint
 
 
-def make_hinge_joint(position: VBase3,
-                     node_path_a: NodePath,
-                     node_path_b: NodePath,
-                     axis: Vec3) -> BulletHingeConstraint:
+def make_hinge_joint(
+    position: VBase3, node_path_a: NodePath, node_path_b: NodePath, axis: Vec3
+) -> BulletHingeConstraint:
     a_to_joint = position
     b_to_joint = node_path_b.get_relative_point(node_path_a, position)
-    joint = BulletHingeConstraint(node_path_a.node(), node_path_b.node(),
-                                  a_to_joint, b_to_joint, axis, axis, True)
+    joint = BulletHingeConstraint(
+        node_path_a.node(),
+        node_path_b.node(),
+        a_to_joint,
+        b_to_joint,
+        axis,
+        axis,
+        True,
+    )
     return joint
 
 
-def make_cone_joint(position: VBase3,
-                    node_path_a: NodePath,
-                    node_path_b: NodePath,
-                    hpr: VBase3) -> BulletConeTwistConstraint:
+def make_cone_joint(
+    position: VBase3, node_path_a: NodePath, node_path_b: NodePath, hpr: VBase3
+) -> BulletConeTwistConstraint:
     a_to_joint = position
     b_to_joint = node_path_b.get_relative_point(node_path_a, position)
     frame_a = TransformState.make_pos_hpr(a_to_joint, hpr)
     frame_b = TransformState.make_pos_hpr(
-        b_to_joint,
-        node_path_b.get_relative_vector(node_path_a, hpr)
+        b_to_joint, node_path_b.get_relative_vector(node_path_a, hpr)
     )
-    joint = BulletConeTwistConstraint(node_path_a.node(), node_path_b.node(),
-                                      frame_a, frame_b)
+    joint = BulletConeTwistConstraint(
+        node_path_a.node(), node_path_b.node(), frame_a, frame_b
+    )
     return joint
 
 

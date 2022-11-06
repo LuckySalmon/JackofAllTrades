@@ -23,8 +23,9 @@ ASPECT_RATIO = 4 / 3
 SELECTOR_WIDTH = 0.5
 
 
-def uniform_spacing(counts: Sequence[int],
-                    gaps: Sequence[float]) -> Iterator[tuple[float, ...]]:
+def uniform_spacing(
+    counts: Sequence[int], gaps: Sequence[float]
+) -> Iterator[tuple[float, ...]]:
     """Yield tuples of coordinates such that there are `counts[i]`
     rows of points spaced `gaps[i]` apart along each axis `i`.
     """
@@ -46,9 +47,9 @@ class MainMenu:
     quitButton: DirectButton
 
     def __init__(self) -> None:
-        self.backdrop = DirectFrame(frameColor=(0, 0, 0, 0),
-                                    frameSize=(-1, 1, -1, 1),
-                                    pos=(0, 0, 0))
+        self.backdrop = DirectFrame(
+            frameColor=(0, 0, 0, 0), frameSize=(-1, 1, -1, 1), pos=(0, 0, 0)
+        )
         self.battleButton = self.make_button(
             'Go To Battle', ['fighter_selection', ['split_screen']], 0.4
         )
@@ -57,17 +58,19 @@ class MainMenu:
         )
         self.quitButton = self.make_button('Quit', ['quit'], -0.4)
 
-    def make_button(self, text: str,
-                    event_args: Iterable,
-                    y: float) -> DirectButton:
-        return DirectButton(text=text,
-                            command=messenger.send,
-                            extraArgs=event_args,
-                            pos=(0, 0, y),
-                            frameSize=(-0.4, 0.4, -0.15, 0.15),
-                            borderWidth=(0.05, 0.05),
-                            text_scale=0.1,
-                            parent=self.backdrop)
+    def make_button(
+        self, text: str, event_args: Iterable, y: float
+    ) -> DirectButton:
+        return DirectButton(
+            text=text,
+            command=messenger.send,
+            extraArgs=event_args,
+            pos=(0, 0, y),
+            frameSize=(-0.4, 0.4, -0.15, 0.15),
+            borderWidth=(0.05, 0.05),
+            text_scale=0.1,
+            parent=self.backdrop,
+        )
 
     def hide(self) -> None:
         self.backdrop.hide()
@@ -95,31 +98,33 @@ class CharacterMenu:
     ) -> None:
         self.mode = mode
         self.selectedCharacter = None
-        self.backdrop = DirectFrame(frameColor=(0, 0, 0, 0),
-                                    frameSize=(-1, 1, -1, 1),
-                                    pos=(0, 0, 0))
-        self.title_text = OnscreenText(text=title,
-                                       pos=(0, 0.9),
-                                       parent=self.backdrop)
-        self.character_view = DirectFrame(frameColor=(.2, .2, .2, .8),
-                                          frameSize=(-ASPECT_RATIO,
-                                                     ASPECT_RATIO,
-                                                     -0.5, 0.5),
-                                          pos=(0, 0, -0.5),
-                                          parent=self.backdrop)
+        self.backdrop = DirectFrame(
+            frameColor=(0, 0, 0, 0), frameSize=(-1, 1, -1, 1), pos=(0, 0, 0)
+        )
+        self.title_text = OnscreenText(
+            text=title, pos=(0, 0.9), parent=self.backdrop
+        )
+        self.character_view = DirectFrame(
+            frameColor=(0.2, 0.2, 0.2, 0.8),
+            frameSize=(-ASPECT_RATIO, ASPECT_RATIO, -0.5, 0.5),
+            pos=(0, 0, -0.5),
+            parent=self.backdrop,
+        )
         self.character_view_text = OnscreenText(
             text='Character customization is unimplemented',
             pos=(0, 0.2),
-            parent=self.character_view
+            parent=self.character_view,
         )
-        self.confirmation_button = DirectButton(text='Select a Character',
-                                                command=self.confirm_selection,
-                                                pos=(0, 0, 0),
-                                                frameSize=(-.4, .4, -.15, .15),
-                                                borderWidth=(.05, .05),
-                                                text_scale=.07,
-                                                state=DGG.DISABLED,
-                                                parent=self.character_view)
+        self.confirmation_button = DirectButton(
+            text='Select a Character',
+            command=self.confirm_selection,
+            pos=(0, 0, 0),
+            frameSize=(-0.4, 0.4, -0.15, 0.15),
+            borderWidth=(0.05, 0.05),
+            text_scale=0.07,
+            state=DGG.DISABLED,
+            parent=self.character_view,
+        )
         if mode == 'view':
             self.confirmation_button.hide()
         else:
@@ -131,20 +136,24 @@ class CharacterMenu:
             command=lambda: messenger.send('main_menu'),
             pos=(-1.15, 0, 0.9),
             frameSize=(-2, 2, -1, 1),
-            borderWidth=(.2, .2),
+            borderWidth=(0.2, 0.2),
             scale=0.05,
-            parent=self.backdrop
+            parent=self.backdrop,
         )
         self.buttons = []
-        for character, (x, y) in zip(characters, uniform_spacing((4, 4), (0.5, 0.5))):
-            button = DirectButton(text=character.name,
-                                  command=self.select_character,
-                                  extraArgs=[character],
-                                  pos=(y, 0, -x - 0.2),
-                                  frameSize=(-4, 4, -4, 4),
-                                  borderWidth=(0.25, 0.25),
-                                  scale=0.05,
-                                  parent=self.backdrop)
+        for character, (x, y) in zip(
+            characters, uniform_spacing((4, 4), (0.5, 0.5))
+        ):
+            button = DirectButton(
+                text=character.name,
+                command=self.select_character,
+                extraArgs=[character],
+                pos=(y, 0, -x - 0.2),
+                frameSize=(-4, 4, -4, 4),
+                borderWidth=(0.25, 0.25),
+                scale=0.05,
+                parent=self.backdrop,
+            )
             self.buttons.append(button)
 
     def reset(self, characters: Iterable[Character], mode: str) -> None:
@@ -160,14 +169,16 @@ class CharacterMenu:
         self.buttons.clear()
         button_positions = uniform_spacing((4, 4), (0.5, 0.5))
         for character, (x, y) in zip(characters, button_positions):
-            button = DirectButton(text=character.name,
-                                  command=self.select_character,
-                                  extraArgs=[character],
-                                  pos=(y, 0, -x - 0.2),
-                                  frameSize=(-4, 4, -4, 4),
-                                  borderWidth=(0.25, 0.25),
-                                  scale=0.05,
-                                  parent=self.backdrop)
+            button = DirectButton(
+                text=character.name,
+                command=self.select_character,
+                extraArgs=[character],
+                pos=(y, 0, -x - 0.2),
+                frameSize=(-4, 4, -4, 4),
+                borderWidth=(0.25, 0.25),
+                scale=0.05,
+                parent=self.backdrop,
+            )
             self.buttons.append(button)
 
     def select_character(self, character: Character) -> None:
@@ -195,26 +206,30 @@ class BattleInterface(DirectObject):
 
     def __init__(self, characters: Iterable[Fighter]) -> None:
         super().__init__()
-        self.sharedInfo = OnscreenText(pos=(0, 0.5), scale=0.07,
-                                       align=TextNode.ACenter)
+        self.sharedInfo = OnscreenText(
+            pos=(0, 0.5), scale=0.07, align=TextNode.ACenter
+        )
 
         self.actionSelectors, self.infoBoxes, self.healthBars = [], [], []
         for character, side in zip(characters, (LEFT, RIGHT)):
             x = side * (ASPECT_RATIO - SELECTOR_WIDTH)
             index = 0 if side == LEFT else 1
 
-            action_selector = ActionSelector(character.moves.values(),
-                                             (x, 0, -0.5), index)
+            action_selector = ActionSelector(
+                character.moves.values(), (x, 0, -0.5), index
+            )
             action_selector.hide()
 
-            info_box = OnscreenText(pos=(x, 0.25),
-                                    scale=0.07,
-                                    align=TextNode.ACenter)
+            info_box = OnscreenText(
+                pos=(x, 0.25), scale=0.07, align=TextNode.ACenter
+            )
 
-            bar = DirectWaitBar(range=character.hp,
-                                value=character.hp,
-                                pos=(side * 0.5, 0, 0.75),
-                                frameSize=(side * -0.4, side * 0.5, 0, -0.05))
+            bar = DirectWaitBar(
+                range=character.hp,
+                value=character.hp,
+                pos=(side * 0.5, 0, 0.75),
+                frameSize=(side * -0.4, side * 0.5, 0, -0.05),
+            )
 
             self.actionSelectors.append(action_selector)
             self.infoBoxes.append(info_box)
@@ -251,47 +266,61 @@ class ActionSelector:
     use_buttons: list[DirectButton]
     action_buttons: list[DirectButton]
 
-    def __init__(self, actions: Iterable[Move],
-                 pos: tuple[float, float, float], index: int) -> None:
+    def __init__(
+        self,
+        actions: Iterable[Move],
+        pos: tuple[float, float, float],
+        index: int,
+    ) -> None:
         self.selected_action = None
         self.index = index
 
-        self.backdrop = DirectFrame(frameColor=(0, 0, 0, 0.5),
-                                    frameSize=(-SELECTOR_WIDTH,
-                                               SELECTOR_WIDTH,
-                                               -0.5, 0.5),
-                                    pos=pos)
+        self.backdrop = DirectFrame(
+            frameColor=(0, 0, 0, 0.5),
+            frameSize=(-SELECTOR_WIDTH, SELECTOR_WIDTH, -0.5, 0.5),
+            pos=pos,
+        )
 
         self.use_buttons = []
         for i, target in enumerate(('self', 'opponent')):
             y = (2 * i + 1) * 0.1
-            button = self.make_button(f'Use on {target}', self.use_action,
-                                      (SELECTOR_WIDTH/2, 0, 0.5 - y), [target])
+            button = self.make_button(
+                f'Use on {target}',
+                self.use_action,
+                (SELECTOR_WIDTH / 2, 0, 0.5 - y),
+                [target],
+            )
             button.hide()
             self.use_buttons.append(button)
 
         self.action_buttons = []
         for i, action in enumerate(actions):
-            y = (2*i + 1) * 0.1
-            button = self.make_button(action.name, self.select_action,
-                                      (-SELECTOR_WIDTH/2, 0, 0.5 - y), [action])
+            y = (2 * i + 1) * 0.1
+            button = self.make_button(
+                action.name,
+                self.select_action,
+                (-SELECTOR_WIDTH / 2, 0, 0.5 - y),
+                [action],
+            )
             self.action_buttons.append(button)
 
-    def make_button(self,
-                    text: str,
-                    command: Callable,
-                    pos: tuple[float, float, float],
-                    command_args: Iterable = ()) -> DirectButton:
-        return DirectButton(text=text,
-                            command=command,
-                            extraArgs=command_args,
-                            pos=pos,
-                            frameSize=(-SELECTOR_WIDTH/2,
-                                       SELECTOR_WIDTH/2,
-                                       -0.1, 0.1),
-                            borderWidth=(0.025, 0.025),
-                            text_scale=0.07,
-                            parent=self.backdrop)
+    def make_button(
+        self,
+        text: str,
+        command: Callable,
+        pos: tuple[float, float, float],
+        command_args: Iterable = (),
+    ) -> DirectButton:
+        return DirectButton(
+            text=text,
+            command=command,
+            extraArgs=command_args,
+            pos=pos,
+            frameSize=(-SELECTOR_WIDTH / 2, SELECTOR_WIDTH / 2, -0.1, 0.1),
+            borderWidth=(0.025, 0.025),
+            text_scale=0.07,
+            parent=self.backdrop,
+        )
 
     def select_action(self, action: Move) -> None:
         self.selected_action = action
