@@ -67,7 +67,8 @@ class Move:  # TODO: decide on whether these should be called moves or actions
     def apply(self, user: Fighter, target: Fighter,
               confirmed: bool = False) -> None:
         if confirmed or self.accuracy > random.randint(0, 99):
-            damage = random.randint(*self.damage)  # TODO: Use a different distribution?
+            # TODO: Use a different distribution?
+            damage = random.randint(*self.damage)
             template = "{}'s {} hit for {} damage!"
             if random.randint(1, 100) <= 2:
                 damage = 3 * damage // 2
