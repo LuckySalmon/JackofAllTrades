@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import json
+import logging
 import random
 from collections.abc import Callable
 from dataclasses import dataclass, field, replace
-from typing import TYPE_CHECKING, TypeAlias
+from typing import TYPE_CHECKING, Final, TypeAlias
 
 from direct.showbase.MessengerGlobal import messenger
 
@@ -13,6 +14,7 @@ if TYPE_CHECKING:
 
     from .characters import Fighter
 
+_logger: Final = logging.getLogger(__name__)
 
 # These should ideally return `None`, but using a function
 # with a return value won't have any ill effects.
@@ -82,11 +84,15 @@ class Move:  # TODO: decide on whether these should be called moves or actions
             if random.randint(1, 100) <= 2:
                 damage = 3 * damage // 2
                 template += '\nCritical Hit!'
+            _logger.debug(
+                f'{user} hit {target} with {self} for {damage} damage'
+            )
             for effect in self.effects:
                 target.add_effect(replace(effect))
         else:
             damage = 0
             template = "{}'s {} missed!"
+            _logger.debug(f'{user} missed {target} with {self}')
         messenger.send(
             'output_info',
             [user.index, template.format(user.name, self.name, damage)],

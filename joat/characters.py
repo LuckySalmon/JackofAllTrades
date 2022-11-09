@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import json
+import logging
 import winsound
 from dataclasses import dataclass, field
 from pathlib import Path
 from random import choice
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Final, Literal
 
 from direct.showbase.MessengerGlobal import messenger
 from direct.task import Task
@@ -18,6 +19,8 @@ from .skeletons import Skeleton
 
 if TYPE_CHECKING:
     from _typeshed import SupportsRead
+
+_logger: Final = logging.getLogger(__name__)
 
 SOUND_ENABLED = False
 
@@ -137,6 +140,7 @@ class Fighter:
     def use_move(
         self, move: Move, target: Fighter, world: BulletWorld
     ) -> None:
+        _logger.debug(f'{self} used {move} on {target}')
         target_part = target.skeleton.parts.get(move.target_part)
         if target_part is None:
             move.apply(self, target)
@@ -157,6 +161,7 @@ class Fighter:
 
         def use_move(task: Task.Task) -> Literal[0, 1]:
             if task.time >= 1:
+                _logger.debug(f'{move} missed')
                 messenger.send(
                     'output_info',
                     [self.index, f"{self.name}'s {move.name} missed!"],
@@ -168,6 +173,7 @@ class Fighter:
                 manifold_point = contact.get_manifold_point()
                 if abs(manifold_point.distance) > 0.01:
                     continue
+                _logger.debug(f'{move} landed')
                 move.apply(self, target, True)
                 return Task.done
 
@@ -179,6 +185,8 @@ class Fighter:
     def apply_damage(self, damage: int) -> None:
         # TODO: Find and use a better formula
         damage = min(max(damage - self.defense, 0), self.hp)
+        if damage:
+            _logger.debug(f'{self} took {damage} damage')
         self.hp -= damage
         messenger.send(
             'output_info', [self.index, f'{self.name} took {damage} damage!']
@@ -188,9 +196,14 @@ class Fighter:
             self.kill()
 
     def add_effect(self, effect: StatusEffect) -> None:
+        _logger.debug(f'Added {effect} to {self}')
         self.status_effects.append(effect)
 
     def apply_current_effects(self) -> None:
+        if self.status_effects:
+            _logger.debug(
+                f'Applying active effects to {self} ({self.status_effects})'
+            )
         new_effects: list[StatusEffect] = []
         for effect in self.status_effects:
             effect.on_turn(self)
@@ -200,4 +213,5 @@ class Fighter:
         self.status_effects = new_effects
 
     def kill(self) -> None:
+        _logger.info(f'{self} died')
         self.skeleton.kill()

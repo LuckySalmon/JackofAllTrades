@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import logging
 from collections.abc import Iterable
 from itertools import product
 from pathlib import Path
-from typing import Any
+from typing import Any, Final
 
 from direct.fsm.FSM import FSM
 from direct.showbase.DirectObject import DirectObject
@@ -17,6 +18,8 @@ from . import physics, ui
 from .characters import Character, Fighter
 from .moves import Move
 from .skeletons import Skeleton
+
+_logger: Final = logging.getLogger(__name__)
 
 gravity = 0
 LEFT, RIGHT = -1, 1
@@ -165,6 +168,7 @@ class App(ShowBase):
                 self.request('Battle', [character, character])
 
     def enter_battle(self, characters: Iterable[Character]) -> None:
+        _logger.info(f'Starting battle with {characters}')
         # Set up the World
         self.world = physics.make_world(gravity)
         self.cam.set_pos(0, -15, 2)
@@ -219,15 +223,30 @@ class App(ShowBase):
         fighter = self.fighters[self.index]
         fighter.apply_current_effects()
         if fighter.hp <= 0:
-            messenger.send(
-                'announce_win', [self.fighters[not self.index].name]
-            )
+            victor = self.fighters[1 - self.index]
+            _logger.info(f'{victor} won the battle')
+            messenger.send('announce_win', [victor.name])
         else:
             messenger.send('query_action', [self.index])
 
 
 def main() -> None:
     """Run an instance of the app."""
+    logger = logging.getLogger('joat')
+    logger.setLevel(logging.DEBUG)
+    file_handler = logging.FileHandler('log.log', mode='w')
+    file_handler.setFormatter(
+        logging.Formatter(
+            '[%(asctime)s] %(levelname)s - %(name)s - %(message)s'
+        )
+    )
+    stream_handler = logging.StreamHandler()
+    stream_handler.setFormatter(
+        logging.Formatter('%(levelname)s: %(message)s')
+    )
+    stream_handler.setLevel(logging.WARNING)
+    logger.addHandler(file_handler)
+    logger.addHandler(stream_handler)
     for fp in Path('data', 'characters').iterdir():
         with fp.open() as f:
             CHARACTERS.append(Character.from_json(f))
