@@ -34,6 +34,9 @@ class Character:
     xp: int = field(default=0, init=False, repr=False)
     level: int = field(default=0, init=False, repr=False)
 
+    def __str__(self) -> str:
+        return f'{type(self).__name__} {self.name!r}'
+
     @classmethod
     def from_json(cls, file: SupportsRead[str | bytes]) -> Character:
         attributes = json.load(file)
@@ -88,6 +91,9 @@ class Fighter:
 
     def __post_init__(self) -> None:
         self.hp = self.base_hp
+
+    def __str__(self) -> str:
+        return f'{type(self).__name__} {self.name!r} ({self.index})'
 
     @classmethod
     def from_character(

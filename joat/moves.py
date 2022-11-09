@@ -32,6 +32,9 @@ class StatusEffect:
     on_turn: EffectProcedure = field(default=noop, repr=False)
     on_removal: EffectProcedure = field(default=noop, repr=False)
 
+    def __str__(self) -> str:
+        return f'{type(self).__name__} {self.name!r}'
+
     @classmethod
     def from_preset(
         cls, name: str, strength: int, duration: int
@@ -55,6 +58,9 @@ class Move:  # TODO: decide on whether these should be called moves or actions
     target: str = ''
     target_part: str = ''
     # TODO: effect system
+
+    def __str__(self) -> str:
+        return f'{type(self).__name__} {self.name!r}'
 
     @classmethod
     def from_json(cls, file: SupportsRead[str | bytes]) -> Move:
