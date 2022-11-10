@@ -54,7 +54,7 @@ def shoulder_angles(
     target: VBase3,
     theta: float,
     transform: Mat3 | None = None,
-    arm_lengths: tuple[float, float] = (0.75, 0.75),
+    arm_lengths: tuple[float, float] = (0.5, 0.5),
 ) -> tuple[float, float, float, float]:
     """Return the shoulder and elbow angles required
     to place the hand at the given point.

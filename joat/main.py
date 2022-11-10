@@ -33,7 +33,7 @@ class TargetMovingObject(DirectObject):
     def __init__(self, skeletons: Iterable[Skeleton]) -> None:
         super().__init__()
         self.skeletons = tuple(skeletons)
-        self.xyz = Vec3(0.5, -0.25, 0)
+        self.xyz = Vec3(0.25, -0.125, 0)
         d = 0.01
         self.accept('7-repeat', self.add_to_target, [Vec3(+d, 0, 0)])
         self.accept('1-repeat', self.add_to_target, [Vec3(-d, 0, 0)])
@@ -171,7 +171,7 @@ class App(ShowBase):
         _logger.info(f'Starting battle with {characters}')
         # Set up the World
         self.world = physics.make_world(gravity)
-        self.cam.set_pos(0, -15, 2)
+        self.cam.set_pos(0, -10, 2)
         self.cam.look_at(0, 0, 0)
 
         # Fighters

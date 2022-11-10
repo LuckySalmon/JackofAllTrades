@@ -106,14 +106,14 @@ class Fighter:
         with path.with_suffix('.json').open() as f:
             skeleton_params: dict[str, Any] = json.load(f)
         side = 1 if index else -1
-        offset = Vec3(-0.75, 0, 0) if index == 0 else Vec3(0.75, 0, 0)
+        offset = Vec3(-0.5, 0, 0) if index == 0 else Vec3(0.5, 0, 0)
         rotation = Mat3(-side, 0, 0, 0, -side, 0, 0, 0, 1)
         coord_xform = Mat4(rotation, offset)
         skeleton = Skeleton.construct(
             skeleton_params,
             world,
             coord_xform,
-            character.speed,
+            (2 + character.speed) * 2,
             character.strength,
         )
         return cls(
