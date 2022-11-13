@@ -1,6 +1,10 @@
 {
   "name": "hook",
-  "damage": [12, 15],
   "accuracy": 85,
-  "effects": []
+  "instant_effects": [{
+    "name": "damage",
+    "lower_bound": 12,
+    "upper_bound": 15
+  }],
+  "status_effects": []
 }

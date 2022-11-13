@@ -5,7 +5,7 @@ import logging
 import random
 from collections.abc import Callable
 from dataclasses import dataclass, field, replace
-from typing import TYPE_CHECKING, Final, TypeAlias
+from typing import TYPE_CHECKING, Any, Final, TypeAlias
 
 from direct.showbase.MessengerGlobal import messenger
 
@@ -26,6 +26,26 @@ def noop(*_: object) -> None:
     pass
 
 
+@dataclass
+class InstantEffect:
+    name: str
+    apply: EffectProcedure
+
+    def __str__(self) -> str:
+        return f'{type(self).__name__} {self.name!r}'
+
+    @classmethod
+    def from_preset(
+        cls, name: str, *args: Any, **kwargs: Any
+    ) -> InstantEffect:
+        constructor = INSTANT_EFFECT_CONSTRUCTORS.get(name)
+        if constructor is None:
+            raise ValueError(
+                f'Could not find a constructor for effect {name!r}'
+            )
+        return constructor(*args, **kwargs)
+
+
 @dataclass(kw_only=True)
 class StatusEffect:
     name: str = field(kw_only=False)
@@ -41,7 +61,7 @@ class StatusEffect:
     def from_preset(
         cls, name: str, strength: int, duration: int
     ) -> StatusEffect:
-        constructor = EFFECT_CONSTRUCTORS.get(name)
+        constructor = STATUS_EFFECT_CONSTRUCTORS.get(name)
         if constructor is not None:
             return constructor(strength, duration)
         else:
@@ -54,9 +74,9 @@ class StatusEffect:
 @dataclass(kw_only=True)
 class Move:  # TODO: decide on whether these should be called moves or actions
     name: str = field(kw_only=False)
-    damage: tuple[int, int]
     accuracy: int
-    effects: list[StatusEffect]
+    instant_effects: list[InstantEffect]
+    status_effects: list[StatusEffect]
     target: str = ''
     target_part: str = ''
     # TODO: effect system
@@ -68,36 +88,40 @@ class Move:  # TODO: decide on whether these should be called moves or actions
     def from_json(cls, file: SupportsRead[str | bytes]) -> Move:
         j = json.load(file)
         name = j.pop('name').title()
-        effect_params = j.pop('effects')
-        effects = [
-            StatusEffect.from_preset(**params) for params in effect_params
+        instant_effects = [
+            InstantEffect.from_preset(**params)
+            for params in j.pop('instant_effects')
         ]
-        return cls(name, **j, effects=effects)
+        status_effects = [
+            StatusEffect.from_preset(**params)
+            for params in j.pop('status_effects')
+        ]
+        return cls(
+            name,
+            **j,
+            instant_effects=instant_effects,
+            status_effects=status_effects,
+        )
 
     def apply(
         self, user: Fighter, target: Fighter, confirmed: bool = False
     ) -> None:
         if confirmed or self.accuracy > random.randint(0, 99):
-            # TODO: Use a different distribution?
-            damage = random.randint(*self.damage)
-            template = "{}'s {} hit for {} damage!"
-            if random.randint(1, 100) <= 2:
-                damage = 3 * damage // 2
-                template += '\nCritical Hit!'
-            _logger.debug(
-                f'{user} hit {target} with {self} for {damage} damage'
+            messenger.send(
+                'output_info', [user.index, f"{user.name}'s {self.name} hit!"]
             )
-            for effect in self.effects:
-                target.add_effect(replace(effect))
+            _logger.debug(f'{user} hit {target} with {self}')
+            for instant_effect in self.instant_effects:
+                _logger.debug(f'Applying {instant_effect} to {target}')
+                instant_effect.apply(target)
+            for status_effect in self.status_effects:
+                target.add_effect(replace(status_effect))
         else:
-            damage = 0
-            template = "{}'s {} missed!"
             _logger.debug(f'{user} missed {target} with {self}')
-        messenger.send(
-            'output_info',
-            [user.index, template.format(user.name, self.name, damage)],
-        )
-        target.apply_damage(damage)
+            messenger.send(
+                'output_info',
+                [user.index, f"{user.name}'s {self.name} missed!"],
+            )
 
     def info(self) -> str:
         """Return a string containing information about the move's
@@ -106,10 +130,25 @@ class Move:  # TODO: decide on whether these should be called moves or actions
         return '\n'.join(
             (
                 self.name,
-                f'{self.damage[0]} - {self.damage[1]}',
                 f'{self.accuracy}%',
             )
         )
+
+
+def make_damage_effect(lower_bound: int, upper_bound: int) -> InstantEffect:
+    def apply_damage(target: Fighter) -> None:
+        # TODO: Use a different distribution?
+        damage = random.randint(lower_bound, upper_bound)
+        if random.randint(1, 100) <= 2:
+            damage = 3 * damage // 2
+        target.apply_damage(damage)
+
+    return InstantEffect("damage", apply_damage)
+
+
+INSTANT_EFFECT_CONSTRUCTORS: dict[str, Callable[..., InstantEffect]] = {
+    'damage': make_damage_effect
+}
 
 
 def make_poison_effect(strength: int, duration: int) -> StatusEffect:
@@ -119,6 +158,6 @@ def make_poison_effect(strength: int, duration: int) -> StatusEffect:
     return StatusEffect('poison', duration, on_turn=poison)
 
 
-EFFECT_CONSTRUCTORS: dict[str, Callable[[int, int], StatusEffect]] = {
+STATUS_EFFECT_CONSTRUCTORS: dict[str, Callable[[int, int], StatusEffect]] = {
     'poison': make_poison_effect,
 }

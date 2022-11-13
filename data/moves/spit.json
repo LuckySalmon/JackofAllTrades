@@ -1,9 +1,9 @@
 {
   "name": "spit",
-  "damage": [0, 0],
   "accuracy": 55,
   "target": "any",
-  "effects": [{
+  "instant_effects": [],
+  "status_effects": [{
     "name": "poison",
     "strength": 2,
     "duration": 2

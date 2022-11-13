@@ -1,6 +1,10 @@
 {
   "name": "jab",
-  "damage": [5, 10],
   "accuracy": 95,
-  "effects": []
+  "instant_effects": [{
+    "name": "damage",
+    "lower_bound": 5,
+    "upper_bound": 10
+  }],
+  "status_effects": []
 }

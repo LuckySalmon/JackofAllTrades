@@ -1,6 +1,10 @@
 {
   "name": "ruler slap",
-  "damage": [5, 15],
   "accuracy": 90,
-  "effects": []
+  "instant_effects": [{
+    "name": "damage",
+    "lower_bound": 5,
+    "upper_bound": 15
+  }],
+  "status_effects": []
 }

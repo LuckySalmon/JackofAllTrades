@@ -1,6 +1,10 @@
 {
   "name": "cross",
-  "damage": [8, 20],
   "accuracy": 85,
-  "effects": []
+  "instant_effects": [{
+    "name": "damage",
+    "lower_bound": 8,
+    "upper_bound": 20
+  }],
+  "status_effects": []
 }
