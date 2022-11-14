@@ -94,6 +94,8 @@ class Fighter:
 
     def __post_init__(self) -> None:
         self.hp = self.base_hp
+        for part in self.skeleton.parts.values():
+            part.node().python_tags['fighter'] = self
 
     def __str__(self) -> str:
         return f'{type(self).__name__} {self.name!r} ({self.index})'
@@ -159,6 +161,11 @@ class Fighter:
             self.skeleton.set_arm_target(side, current_position)
             messenger.send('next_turn')
 
+        if not (move.instant_effects or move.status_effects):
+            self.skeleton.set_arm_target(side, target_position, False)
+            taskMgr.do_method_later(1 / (1 + self.speed), reset, 'reset_move')
+            return
+
         def use_move(task: Task.Task) -> Literal[0, 1]:
             if task.time >= 1:
                 _logger.debug(f'{move} missed')
@@ -169,9 +176,8 @@ class Fighter:
                 return Task.done
 
             contact_result = world.contact_test_pair(fist.node(), target_node)
-            for contact in contact_result.get_contacts():
-                manifold_point = contact.get_manifold_point()
-                if abs(manifold_point.distance) > 0.01:
+            for contact in contact_result.contacts:
+                if abs(contact.manifold_point.distance) > 0.01:
                     continue
                 _logger.debug(f'{move} landed')
                 move.apply(self, target, True)
@@ -183,8 +189,6 @@ class Fighter:
         taskMgr.add(use_move, 'use_move', uponDeath=reset)
 
     def apply_damage(self, damage: int) -> None:
-        # TODO: Find and use a better formula
-        damage = min(max(damage - self.defense, 0), self.hp)
         if damage:
             _logger.debug(f'{self} took {damage} damage')
         self.hp -= damage

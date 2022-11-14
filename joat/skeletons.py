@@ -194,13 +194,15 @@ class Skeleton:
         head = physics.make_body(
             'Head', **head_data, parent=torso, world=world
         )
+        head.python_tags['damage_multiplier'] = 2
         parts['head'] = head
 
         # Attach the head to the torso
         neck_params = constraints['neck']
         neck_pos = Vec3(*neck_params['position'])
         neck = physics.make_cone_joint(neck_pos, torso, head, Vec3(0, 0, -90))
-        neck.setLimit(*neck_params['limits'])
+        # 0 softness means even small displacements are resisted
+        neck.set_limit(*neck_params['limits'], softness=0)
         world.attach_constraint(neck)
 
         # Create arms
@@ -226,6 +228,8 @@ class Skeleton:
             forearm = physics.make_body(
                 'Forearm', **forearm_data, parent=torso, world=world
             )
+            bicep.python_tags['damage_multiplier'] = 0.5
+            forearm.python_tags['damage_multiplier'] = 0.5
 
             rotation = Mat3(side, 0, 0, 0, 0, -side, 0, 1, 0)
             shoulder = physics.make_ball_joint(

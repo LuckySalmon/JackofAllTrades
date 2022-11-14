@@ -22,6 +22,7 @@ from .skeletons import Skeleton
 _logger: Final = logging.getLogger(__name__)
 
 gravity = 0
+MIN_DAMAGING_IMPULSE: Final = 20
 LEFT, RIGHT = -1, 1
 CHARACTERS: list[Character] = []
 
@@ -199,7 +200,29 @@ class App(ShowBase):
     def update(self, task: Task) -> int:
         """Update the world using physics."""
         assert self.world is not None
+        self.handle_collisions()
         return physics.update_physics(self.world, task)
+
+    def handle_collisions(self) -> None:
+        assert self.world is not None
+        for manifold in self.world.manifolds:
+            for node in (manifold.node0, manifold.node1):
+                fighter = node.python_tags.get('fighter')
+                if fighter is None:
+                    continue
+                for point in manifold.manifold_points:
+                    impulse = point.applied_impulse
+                    if impulse < MIN_DAMAGING_IMPULSE:
+                        continue
+                    multiplier = node.python_tags.get('damage_multiplier', 1)
+                    damage = int(impulse * multiplier / (10 + fighter.defense))
+                    if not damage:
+                        continue
+                    _logger.debug(
+                        f'{fighter} was hit in the {node.name}'
+                        f' with an impulse of {impulse}'
+                    )
+                    fighter.apply_damage(damage)
 
     def toggle_debug(self) -> None:
         """Toggle debug display for physical objects."""
