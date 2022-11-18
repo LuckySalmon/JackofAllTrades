@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import json
 import logging
+import random
 import winsound
 from dataclasses import dataclass, field
 from pathlib import Path
-from random import choice
 from typing import TYPE_CHECKING, Any, Final, Literal
 
 from direct.showbase.MessengerGlobal import messenger
@@ -149,12 +149,16 @@ class Fighter:
             messenger.send('next_turn')
             return
 
-        side = choice((-1, 1))
+        side = random.choice((-1, 1))
         fist = self.skeleton.parts[
             'forearm_left' if side == -1 else 'forearm_right'
         ]
         current_position = self.skeleton.get_arm_target(side)
-        target_position = target_part.get_net_transform().get_pos()
+        target_position = Vec3(target_part.get_net_transform().get_pos())
+        for i in range(3):
+            scale = 1 - 2 * random.random()
+            inaccuracy = 1 - move.accuracy / 100
+            target_position[i] *= 1 + inaccuracy * scale
         target_node = target_part.node()
 
         def reset(_: object) -> None:
