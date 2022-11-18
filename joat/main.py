@@ -44,7 +44,6 @@ class TargetMovingObject(DirectObject):
         self.accept('3-repeat', self.add_to_target, [Vec3(0, 0, -d)])
         self.accept('4-repeat', self.add_to_target, [Vec3(-d, -d, -d)])
         self.accept('6-repeat', self.add_to_target, [Vec3(+d, +d, +d)])
-        self.accept('space', self.toggle_targeting)
         self.update()
 
     def update(self) -> None:
@@ -62,10 +61,6 @@ class TargetMovingObject(DirectObject):
     def add_to_target(self, delta: Vec3) -> None:
         self.xyz += delta
         self.update()
-
-    def toggle_targeting(self) -> None:
-        for skel in self.skeletons:
-            skel.toggle_targeting()
 
 
 class GameFSM(FSM):

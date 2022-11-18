@@ -163,7 +163,6 @@ class Skeleton:
     arm_targets: dict[int, Vec3 | None] = field(
         default_factory=lambda: {LEFT: None, RIGHT: None}
     )
-    targeting: bool = field(default=True, init=False)
 
     @classmethod
     def construct(
@@ -303,15 +302,11 @@ class Skeleton:
         self.arm_targets[side] = local_target
 
     def move_arms(self, task: Task) -> int:
-        if self.targeting:
-            for side in LEFT, RIGHT:
-                target = self.arm_targets[side]
-                if target is not None:
-                    self.position_shoulder(side, target)
+        for side in LEFT, RIGHT:
+            target = self.arm_targets[side]
+            if target is not None:
+                self.position_shoulder(side, target)
         return task.cont
-
-    def toggle_targeting(self) -> None:
-        self.targeting = not self.targeting
 
     def kill(self) -> None:
         for arm_controller in self.arm_controllers.values():
