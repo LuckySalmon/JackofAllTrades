@@ -15,12 +15,10 @@ from panda3d.bullet import (
     BulletRigidBodyNode,
     BulletWorld,
 )
-from panda3d.core import LColor, Mat3, Mat4, NodePath, VBase3, VBase4, Vec3
+from panda3d.core import LColor, Mat3, Mat4, NodePath, VBase3, Vec3
 
 from . import physics
 
-enableSound = False
-charList = ['regular', 'boxer', 'psycho', 'test']
 LEFT, RIGHT = -1, 1
 
 
@@ -33,20 +31,17 @@ def draw_lines(
     lines: LineNodePath,
     *paths: _PathInfo,
     origin: VBase3 | None = None,
-    relative: bool = True,
 ) -> None:
     if origin is None:
         origin = lines.getCurrentPosition()
     lines.reset()
     for path in paths:
         if 'color' in path:
-            lines.setColor(*path['color'])
+            lines.setColor(path['color'])
         points = path['points']
         lines.moveTo(origin)
         for point in points:
-            if relative:
-                point += origin
-            lines.drawTo(point)
+            lines.drawTo(origin + point)
     lines.create()
 
 
@@ -60,15 +55,14 @@ def shoulder_angles(
     to place the hand at the given point.
     """
     l1, l2 = arm_lengths
+    max_dist = l1 + l2
     if transform is not None:
         target = transform.xform(target)
     unit_target = target.normalized()
 
     dist = target.length()
-    if dist > (max_dist := l1 + l2):
-        # cap the distance of the target to l1+l2
+    if dist > max_dist:
         dist = max_dist
-        target = unit_target * dist
         dist_squared = dist * dist
     else:
         dist_squared = target.length_squared()
@@ -87,7 +81,7 @@ def shoulder_angles(
 
     # e1, e2, and e3 describe a rotation matrix
     e1 = elbow.normalized()
-    if e1.almost_equal(unit_target):
+    if math.isclose(dist, max_dist):
         e2 = VBase3(-elbow.z, 0, elbow.x).normalized()
     else:
         e2 = (target - target.project(elbow)).normalized()
@@ -111,23 +105,23 @@ class ArmController:
     forearm: NodePath[BulletRigidBodyNode]
     transform: Mat3
     speed: float  # proportional to maximum angular velocity of joint motors
+    target_point: VBase3 | None = None
+    target_angle: float = 0
+    lines: LineNodePath = field(init=False)
 
     def __post_init__(self) -> None:
         render = ShowBaseGlobal.base.render
-
         self.lines = LineNodePath(
-            name='debug', parent=render, colorVec=VBase4(0.2, 0.2, 0.5, 1)
+            name='debug', parent=render, colorVec=LColor(0.2, 0.2, 0.5, 1)
         )
-        axes = LineNodePath(name='axes', parent=render)
-        paths: list[_PathInfo] = [
-            {'points': [], 'color': VBase4(1, 0, 0, 1)},
-            {'points': [], 'color': VBase4(0, 1, 0, 1)},
-            {'points': [], 'color': VBase4(0, 0, 1, 1)},
-        ]
-        for i in range(3):
-            axis = self.shoulder.get_axis(i) * 0.25
-            paths[i]['points'].append(axis)
-        draw_lines(axes, *paths, origin=self.origin)
+        get_shoulder_axis = self.shoulder.get_axis
+        draw_lines(
+            LineNodePath(name='axes', parent=render),
+            {'points': [get_shoulder_axis(0)/4], 'color': LColor(1, 0, 0, 1)},
+            {'points': [get_shoulder_axis(1)/4], 'color': LColor(0, 1, 0, 1)},
+            {'points': [get_shoulder_axis(2)/4], 'color': LColor(0, 0, 1, 1)},
+            origin=self.origin,
+        )
 
     def enable_motors(self, enabled: bool) -> None:
         for axis in range(3):
@@ -143,26 +137,29 @@ class ArmController:
     def set_target_elbow_angle(self, angle: float) -> None:
         self.elbow.set_motor_target(angle, 1 / self.speed)
 
-    def move_toward(self, x: float, y: float, z: float, theta: float) -> None:
-        """Set shoulder and elbow motor velocities such that
-        the hand moves toward the specified point.
+    def move(self, task: Task) -> int:
+        """Move toward the position described
+        by `target_point` and `target_angle`.
         """
-        hand_pos = Vec3(x, y, z)
-        target_angles = shoulder_angles(hand_pos, theta, self.transform)
+        if self.target_point is None:
+            return task.cont
+        target_angles = shoulder_angles(
+            self.target_point, self.target_angle, self.transform
+        )
         for axis in range(3):
             self.set_target_shoulder_angle(axis, target_angles[axis])
         self.set_target_elbow_angle(target_angles[3])
-        self.bicep.node().set_active(True, False)
-        draw_lines(self.lines, {'points': [hand_pos]}, origin=self.origin)
+        self.bicep.node().set_active(True)
+        draw_lines(
+            self.lines, {'points': [self.target_point]}, origin=self.origin
+        )
+        return task.cont
 
 
-@dataclass(kw_only=True, repr=False)
+@dataclass(repr=False)
 class Skeleton:
-    parts: dict[str, NodePath[BulletRigidBodyNode]] = field(kw_only=False)
-    arm_controllers: dict[int, ArmController]
-    arm_targets: dict[int, Vec3 | None] = field(
-        default_factory=lambda: {LEFT: None, RIGHT: None}
-    )
+    parts: dict[str, NodePath[BulletRigidBodyNode]]
+    arm_controllers: dict[int, ArmController] = field(kw_only=True)
 
     @classmethod
     def construct(
@@ -277,19 +274,15 @@ class Skeleton:
         return cls(parts, arm_controllers=arm_controllers)
 
     def __post_init__(self) -> None:
-        taskMgr.add(self.move_arms, f'move_arms_{id(self)}')
+        for controller in self.arm_controllers.values():
+            taskMgr.add(controller.move, f'move_arm_{id(controller)}')
 
     def get_shoulder_position(self, side: int) -> VBase3:
         arm_controller = self.arm_controllers[side]
         return arm_controller.origin
 
-    def position_shoulder(self, side: int, target: VBase3) -> None:
-        arm_controller = self.arm_controllers[side]
-        x, y, z = target
-        arm_controller.move_toward(x, y, z, 0)
-
     def get_arm_target(self, side: int) -> Vec3:
-        target = self.arm_targets[side]
+        target = self.arm_controllers[side].target_point
         assert target is not None
         return Vec3(target)
 
@@ -299,18 +292,11 @@ class Skeleton:
         local_target = Vec3(target)
         if not relative:
             local_target -= self.get_shoulder_position(side)
-        self.arm_targets[side] = local_target
-
-    def move_arms(self, task: Task) -> int:
-        for side in LEFT, RIGHT:
-            target = self.arm_targets[side]
-            if target is not None:
-                self.position_shoulder(side, target)
-        return task.cont
+        self.arm_controllers[side].target_point = local_target
 
     def kill(self) -> None:
         for arm_controller in self.arm_controllers.values():
             arm_controller.enable_motors(False)
         torso = self.parts['torso'].node()
         torso.set_mass(1.0)
-        torso.set_active(True, False)
+        torso.set_active(True)
