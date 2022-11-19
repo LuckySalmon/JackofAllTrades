@@ -114,12 +114,20 @@ class ArmController:
         self.lines = LineNodePath(
             name='debug', parent=render, colorVec=LColor(0.2, 0.2, 0.5, 1)
         )
-        get_shoulder_axis = self.shoulder.get_axis
         draw_lines(
             LineNodePath(name='axes', parent=render),
-            {'points': [get_shoulder_axis(0)/4], 'color': LColor(1, 0, 0, 1)},
-            {'points': [get_shoulder_axis(1)/4], 'color': LColor(0, 1, 0, 1)},
-            {'points': [get_shoulder_axis(2)/4], 'color': LColor(0, 0, 1, 1)},
+            {
+                'points': [self.shoulder.get_axis(0) / 4],
+                'color': LColor(1, 0, 0, 1),
+            },
+            {
+                'points': [self.shoulder.get_axis(1) / 4],
+                'color': LColor(0, 1, 0, 1),
+            },
+            {
+                'points': [self.shoulder.get_axis(2) / 4],
+                'color': LColor(0, 0, 1, 1),
+            },
             origin=self.origin,
         )
 
