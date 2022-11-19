@@ -172,114 +172,179 @@ class Skeleton:
     @classmethod
     def construct(
         cls,
-        parameters: dict[str, dict[str, dict[str, Any]]],
+        parameters: dict[str, dict[str, Any]],
         world: BulletWorld,
         coord_xform: Mat4,
         speed: float,
         strength: float,
     ) -> Skeleton:
-        parts: dict[str, NodePath] = {}
-        arm_controllers: dict[int, ArmController] = {}
-
-        bodies = parameters['bodies']
-        constraints = parameters['constraints']
         render = ShowBaseGlobal.base.render
+        measures: dict[str, float] = parameters['measures']
+        head_radius = measures['head_radius']
+        arm_length = measures['arm_length']
+        arm_radius = measures['arm_radius']
+        shoulder_width = measures['shoulder_width']
+        torso_height = measures['torso_height']
+        torso_width = shoulder_width - 2 * arm_radius
+        shoulder_height = torso_height / 2 - arm_radius
+        shoulder_pos_l = Vec3(0, +shoulder_width / 2, shoulder_height)
+        shoulder_pos_r = Vec3(0, -shoulder_width / 2, shoulder_height)
+        arm_vector_l = Vec3(0, +arm_length, 0)
+        arm_vector_r = Vec3(0, -arm_length, 0)
 
-        # Create a torso
-        torso_data = bodies['torso']
         torso = physics.make_body(
-            'Torso', **torso_data, parent=render, world=world
+            'Torso',
+            shape='box',
+            dimensions=(arm_radius, torso_width / 2, torso_height / 2),
+            position=Vec3(0, 0, 0.25),
+            mass=0,
+            parent=render,
+            world=world,
         )
         torso.set_mat(torso, coord_xform)
-        parts['torso'] = torso
-
-        # Create a head
-        head_data = bodies['head']
         head = physics.make_body(
-            'Head', **head_data, parent=torso, world=world
+            'Head',
+            shape='sphere',
+            dimensions=(head_radius,),
+            position=Vec3(0, 0, torso_height / 2 + head_radius),
+            mass=16,
+            parent=torso,
+            world=world,
         )
+        bicep_l = physics.make_body(
+            'Bicep',
+            shape='capsule_y',
+            dimensions=(arm_radius, arm_length / 2),
+            position=shoulder_pos_l + arm_vector_l / 4,
+            mass=5,
+            parent=torso,
+            world=world,
+        )
+        bicep_r = physics.make_body(
+            'Bicep',
+            shape='capsule_y',
+            dimensions=(arm_radius, arm_length / 2),
+            position=shoulder_pos_r + arm_vector_r / 4,
+            mass=5,
+            parent=torso,
+            world=world,
+        )
+        forearm_l = physics.make_body(
+            'Forearm',
+            shape='capsule_y',
+            dimensions=(arm_radius, arm_length / 2),
+            position=arm_vector_l / 2,
+            mass=5,
+            parent=bicep_l,
+            world=world,
+        )
+        forearm_r = physics.make_body(
+            'Forearm',
+            shape='capsule_y',
+            dimensions=(arm_radius, arm_length / 2),
+            position=arm_vector_r / 2,
+            mass=5,
+            parent=bicep_r,
+            world=world,
+        )
+
         head.python_tags['damage_multiplier'] = 2
-        parts['head'] = head
+        bicep_l.python_tags['damage_multiplier'] = 0.5
+        bicep_r.python_tags['damage_multiplier'] = 0.5
+        forearm_l.python_tags['damage_multiplier'] = 0.5
+        forearm_r.python_tags['damage_multiplier'] = 0.5
 
-        # Attach the head to the torso
-        neck_params = constraints['neck']
-        neck_pos = Vec3(*neck_params['position'])
-        neck = physics.make_cone_joint(neck_pos, torso, head, Vec3(0, 0, -90))
-        # 0 softness means even small displacements are resisted
-        neck.set_limit(*neck_params['limits'], softness=0)
+        neck = physics.make_cone_joint(
+            Vec3(0, 0, torso_height / 2),
+            torso,
+            head,
+            Vec3(0, 0, -90),
+        )
+        shoulder_l = physics.make_ball_joint(
+            shoulder_pos_l,
+            torso,
+            bicep_l,
+            Mat3(-1, 0, 0, 0, 0, 1, 0, 1, 0),
+        )
+        shoulder_r = physics.make_ball_joint(
+            shoulder_pos_r,
+            torso,
+            bicep_r,
+            Mat3(1, 0, 0, 0, 0, -1, 0, 1, 0),
+        )
+        elbow_l = physics.make_hinge_joint(
+            arm_vector_l / 4,
+            bicep_l,
+            forearm_l,
+            Vec3(0, 0, -1),
+        )
+        elbow_r = physics.make_hinge_joint(
+            arm_vector_r / 4,
+            bicep_r,
+            forearm_r,
+            Vec3(0, 0, +1),
+        )
+
+        for axis in range(3):
+            l_motor = shoulder_l.get_rotational_limit_motor(axis)
+            r_motor = shoulder_r.get_rotational_limit_motor(axis)
+            l_motor.set_max_motor_force(strength)
+            r_motor.set_max_motor_force(strength)
+        elbow_l.set_max_motor_impulse(strength)
+        elbow_r.set_max_motor_impulse(strength)
+
+        neck.set_limit(45, 45, 90, softness=0)
+        elbow_l.set_limit(0, 180)
+        elbow_r.set_limit(0, 180)
+        # limits for moving toward torso from T-pose
+        shoulder_l.set_angular_limit(0, -175, 90)
+        shoulder_r.set_angular_limit(0, -175, 90)
+        # limit for twisting along the bicep axis
+        shoulder_l.set_angular_limit(1, -90, 90)
+        shoulder_r.set_angular_limit(1, -90, 90)
+        # limits for moving forward from down by side
+        shoulder_l.set_angular_limit(2, -90, 175)
+        shoulder_r.set_angular_limit(2, -90, 175)
+
         world.attach_constraint(neck)
+        world.attach_constraint(shoulder_l, linked_collision=True)
+        world.attach_constraint(shoulder_r, linked_collision=True)
+        world.attach_constraint(elbow_l, linked_collision=True)
+        world.attach_constraint(elbow_r, linked_collision=True)
 
-        # Create arms
-        for side, string in zip((LEFT, RIGHT), ('left', 'right')):
-            shoulder_data = constraints[string + ' shoulder']
-            elbow_data = constraints[string + ' elbow']
-            bicep_data = bodies[string + ' bicep']
-            forearm_data = bodies[string + ' forearm']
-
-            (
-                in_limit,
-                out_limit,
-                forward_limit,
-                backward_limit,
-                twist_limit,
-            ) = shoulder_data['limits']
-            shoulder_pos = Vec3(*shoulder_data['position'])
-            elbow_pos = Vec3(*elbow_data['position'])
-
-            bicep = physics.make_body(
-                'Bicep', **bicep_data, parent=torso, world=world
-            )
-            forearm = physics.make_body(
-                'Forearm', **forearm_data, parent=torso, world=world
-            )
-            bicep.python_tags['damage_multiplier'] = 0.5
-            forearm.python_tags['damage_multiplier'] = 0.5
-
-            rotation = Mat3(side, 0, 0, 0, 0, -side, 0, 1, 0)
-            shoulder = physics.make_ball_joint(
-                shoulder_pos, torso, bicep, rotation
-            )
-            world.attach_constraint(shoulder, True)
-
-            elbow = physics.make_hinge_joint(
-                elbow_pos - bicep.get_pos(), bicep, forearm, Vec3(0, 0, side)
-            )
-            world.attach_constraint(elbow, True)
-
-            for axis in range(3):
-                motor = shoulder.get_rotational_limit_motor(axis)
-                motor.set_max_motor_force(strength)
-            elbow.set_max_motor_impulse(strength)
-
-            # limits for moving toward torso from T-pose
-            shoulder.set_angular_limit(0, -in_limit, out_limit)
-            # limit for twisting along the bicep axis
-            shoulder.set_angular_limit(1, -twist_limit, twist_limit)
-            # limits for moving forward from down by side
-            shoulder.set_angular_limit(2, -backward_limit, forward_limit)
-
-            elbow.set_limit(*elbow_data['limits'])
-
-            position = render.get_relative_point(torso, shoulder_pos)
-            transform = coord_xform.get_upper_3() * Mat3(
-                1, 0, 0, 0, side, 0, 0, 0, 1
-            )
-
-            parts['bicep_' + string] = bicep
-            parts['forearm_' + string] = forearm
-            arm_controller = ArmController(
-                origin=position,
-                shoulder=shoulder,
-                elbow=elbow,
-                bicep=bicep,
-                forearm=forearm,
-                transform=transform,
-                speed=speed,
-            )
-            arm_controller.enable_motors(True)
-            arm_controllers[side] = arm_controller
-
-        return cls(parts, arm_controllers=arm_controllers)
+        l_arm_controller = ArmController(
+            origin=render.get_relative_point(torso, shoulder_pos_l),
+            shoulder=shoulder_l,
+            elbow=elbow_l,
+            bicep=bicep_l,
+            forearm=forearm_l,
+            transform=coord_xform.get_upper_3()
+            * Mat3(1, 0, 0, 0, -1, 0, 0, 0, 1),
+            speed=speed,
+        )
+        r_arm_controller = ArmController(
+            origin=render.get_relative_point(torso, shoulder_pos_r),
+            shoulder=shoulder_r,
+            elbow=elbow_r,
+            bicep=bicep_r,
+            forearm=forearm_r,
+            transform=coord_xform.get_upper_3()
+            * Mat3(1, 0, 0, 0, +1, 0, 0, 0, 1),
+            speed=speed,
+        )
+        l_arm_controller.enable_motors(True)
+        r_arm_controller.enable_motors(True)
+        return cls(
+            {
+                'torso': torso,
+                'head': head,
+                'bicep_left': bicep_l,
+                'bicep_right': bicep_r,
+                'forearm_left': forearm_l,
+                'forearm_right': forearm_r,
+            },
+            arm_controllers={LEFT: l_arm_controller, RIGHT: r_arm_controller},
+        )
 
     def __post_init__(self) -> None:
         for controller in self.arm_controllers.values():

@@ -58,6 +58,7 @@ def make_rigid_transform(
 
 def make_body(
     name: str,
+    *,
     shape: str,
     dimensions: Iterable[float],
     mass: float,
