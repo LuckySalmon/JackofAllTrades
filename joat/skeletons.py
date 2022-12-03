@@ -248,11 +248,11 @@ class Skeleton:
             world=world,
         )
 
-        head.python_tags['damage_multiplier'] = 2
-        bicep_l.python_tags['damage_multiplier'] = 0.5
-        bicep_r.python_tags['damage_multiplier'] = 0.5
-        forearm_l.python_tags['damage_multiplier'] = 0.5
-        forearm_r.python_tags['damage_multiplier'] = 0.5
+        head.node().python_tags['damage_multiplier'] = 2
+        bicep_l.node().python_tags['damage_multiplier'] = 0.5
+        bicep_r.node().python_tags['damage_multiplier'] = 0.5
+        forearm_l.node().python_tags['damage_multiplier'] = 0.5
+        forearm_r.node().python_tags['damage_multiplier'] = 0.5
 
         neck = physics.make_cone_joint(
             Vec3(0, 0, torso_height / 2),
