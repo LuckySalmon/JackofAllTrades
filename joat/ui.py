@@ -53,14 +53,10 @@ class MainMenu:
         self.battleButton = self.make_button(
             'Go To Battle', ['fighter_selection', ['split_screen']], 0.4
         )
-        self.characterButton = self.make_button(
-            'Characters', ['character_menu'], 0
-        )
+        self.characterButton = self.make_button('Characters', ['character_menu'], 0)
         self.quitButton = self.make_button('Quit', ['quit'], -0.4)
 
-    def make_button(
-        self, text: str, event_args: Iterable, y: float
-    ) -> DirectButton:
+    def make_button(self, text: str, event_args: Iterable, y: float) -> DirectButton:
         return DirectButton(
             text=text,
             command=messenger.send,
@@ -101,9 +97,7 @@ class CharacterMenu:
         self.backdrop = DirectFrame(
             frameColor=(0, 0, 0, 0), frameSize=(-1, 1, -1, 1), pos=(0, 0, 0)
         )
-        self.title_text = OnscreenText(
-            text=title, pos=(0, 0.9), parent=self.backdrop
-        )
+        self.title_text = OnscreenText(text=title, pos=(0, 0.9), parent=self.backdrop)
         self.character_view = DirectFrame(
             frameColor=(0.2, 0.2, 0.2, 0.8),
             frameSize=(-ASPECT_RATIO, ASPECT_RATIO, -0.5, 0.5),
@@ -141,9 +135,7 @@ class CharacterMenu:
             parent=self.backdrop,
         )
         self.buttons = []
-        for character, (x, y) in zip(
-            characters, uniform_spacing((4, 4), (0.5, 0.5))
-        ):
+        for character, (x, y) in zip(characters, uniform_spacing((4, 4), (0.5, 0.5))):
             button = DirectButton(
                 text=character.name,
                 command=self.select_character,
@@ -206,9 +198,7 @@ class BattleInterface(DirectObject):
 
     def __init__(self, characters: Iterable[Fighter]) -> None:
         super().__init__()
-        self.sharedInfo = OnscreenText(
-            pos=(0, 0.5), scale=0.07, align=TextNode.ACenter
-        )
+        self.sharedInfo = OnscreenText(pos=(0, 0.5), scale=0.07, align=TextNode.ACenter)
 
         self.actionSelectors, self.infoBoxes, self.healthBars = [], [], []
         for character, side in zip(characters, (LEFT, RIGHT)):
@@ -220,9 +210,7 @@ class BattleInterface(DirectObject):
             )
             action_selector.hide()
 
-            info_box = OnscreenText(
-                pos=(x, 0.25), scale=0.07, align=TextNode.ACenter
-            )
+            info_box = OnscreenText(pos=(x, 0.25), scale=0.07, align=TextNode.ACenter)
 
             bar = DirectWaitBar(
                 range=character.hp,

@@ -35,14 +35,10 @@ class InstantEffect:
         return f'{type(self).__name__} {self.name!r}'
 
     @classmethod
-    def from_preset(
-        cls, name: str, *args: Any, **kwargs: Any
-    ) -> InstantEffect:
+    def from_preset(cls, name: str, *args: Any, **kwargs: Any) -> InstantEffect:
         constructor = INSTANT_EFFECT_CONSTRUCTORS.get(name)
         if constructor is None:
-            raise ValueError(
-                f'Could not find a constructor for effect {name!r}'
-            )
+            raise ValueError(f'Could not find a constructor for effect {name!r}')
         return constructor(*args, **kwargs)
 
 
@@ -58,9 +54,7 @@ class StatusEffect:
         return f'{type(self).__name__} {self.name!r}'
 
     @classmethod
-    def from_preset(
-        cls, name: str, strength: int, duration: int
-    ) -> StatusEffect:
+    def from_preset(cls, name: str, strength: int, duration: int) -> StatusEffect:
         constructor = STATUS_EFFECT_CONSTRUCTORS.get(name)
         if constructor is not None:
             return constructor(strength, duration)
@@ -89,12 +83,10 @@ class Move:  # TODO: decide on whether these should be called moves or actions
         j = json.load(file)
         name = j.pop('name').title()
         instant_effects = [
-            InstantEffect.from_preset(**params)
-            for params in j.pop('instant_effects')
+            InstantEffect.from_preset(**params) for params in j.pop('instant_effects')
         ]
         status_effects = [
-            StatusEffect.from_preset(**params)
-            for params in j.pop('status_effects')
+            StatusEffect.from_preset(**params) for params in j.pop('status_effects')
         ]
         return cls(
             name,
@@ -103,9 +95,7 @@ class Move:  # TODO: decide on whether these should be called moves or actions
             status_effects=status_effects,
         )
 
-    def apply(
-        self, user: Fighter, target: Fighter, confirmed: bool = False
-    ) -> None:
+    def apply(self, user: Fighter, target: Fighter, confirmed: bool = False) -> None:
         if confirmed or self.accuracy > random.randint(0, 99):
             messenger.send(
                 'output_info', [user.index, f"{user.name}'s {self.name} hit!"]

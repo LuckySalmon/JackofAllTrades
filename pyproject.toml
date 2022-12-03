@@ -1,9 +1,9 @@
 [tool.isort]
+line_length = 88
 multi_line_output = 3
 include_trailing_comma = true
 extra_standard_library = ["typing_extensions"]
 
 [tool.black]
 target_version = ["py310"]
-line_length = 79
 skip_string_normalization = true

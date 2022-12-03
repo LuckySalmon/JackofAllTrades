@@ -158,9 +158,7 @@ class ArmController:
             self.set_target_shoulder_angle(axis, target_angles[axis])
         self.set_target_elbow_angle(target_angles[3])
         self.bicep.node().set_active(True)
-        draw_lines(
-            self.lines, {'points': [self.target_point]}, origin=self.origin
-        )
+        draw_lines(self.lines, {'points': [self.target_point]}, origin=self.origin)
         return task.cont
 
 
@@ -318,8 +316,7 @@ class Skeleton:
             elbow=elbow_l,
             bicep=bicep_l,
             forearm=forearm_l,
-            transform=coord_xform.get_upper_3()
-            * Mat3(1, 0, 0, 0, -1, 0, 0, 0, 1),
+            transform=coord_xform.get_upper_3() * Mat3(1, 0, 0, 0, -1, 0, 0, 0, 1),
             speed=speed,
         )
         r_arm_controller = ArmController(
@@ -328,8 +325,7 @@ class Skeleton:
             elbow=elbow_r,
             bicep=bicep_r,
             forearm=forearm_r,
-            transform=coord_xform.get_upper_3()
-            * Mat3(1, 0, 0, 0, +1, 0, 0, 0, 1),
+            transform=coord_xform.get_upper_3() * Mat3(1, 0, 0, 0, +1, 0, 0, 0, 1),
             speed=speed,
         )
         l_arm_controller.enable_motors(True)
@@ -359,9 +355,7 @@ class Skeleton:
         assert target is not None
         return Vec3(target)
 
-    def set_arm_target(
-        self, side: int, target: VBase3, relative: bool = True
-    ) -> None:
+    def set_arm_target(self, side: int, target: VBase3, relative: bool = True) -> None:
         local_target = Vec3(target)
         if not relative:
             local_target -= self.get_shoulder_position(side)

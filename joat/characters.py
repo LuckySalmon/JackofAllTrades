@@ -88,9 +88,7 @@ class Fighter:
     moves: dict[str, Move] = field(repr=False)
     skeleton: Skeleton = field(repr=False)
     index: int = field(default=0, repr=False)
-    status_effects: list[StatusEffect] = field(
-        default_factory=list, init=False
-    )
+    status_effects: list[StatusEffect] = field(default_factory=list, init=False)
 
     def __post_init__(self) -> None:
         self.hp = self.base_hp
@@ -139,9 +137,7 @@ class Fighter:
         character = Character.from_json(file)
         return cls.from_character(character, world, index)
 
-    def use_move(
-        self, move: Move, target: Fighter, world: BulletWorld
-    ) -> None:
+    def use_move(self, move: Move, target: Fighter, world: BulletWorld) -> None:
         _logger.debug(f'{self} used {move} on {target}')
         target_part = target.skeleton.parts.get(move.target_part)
         if target_part is None:
@@ -150,9 +146,7 @@ class Fighter:
             return
 
         side = random.choice((-1, 1))
-        fist = self.skeleton.parts[
-            'forearm_left' if side == -1 else 'forearm_right'
-        ]
+        fist = self.skeleton.parts['forearm_left' if side == -1 else 'forearm_right']
         current_position = self.skeleton.get_arm_target(side)
         target_position = Vec3(target_part.get_net_transform().get_pos())
         for i in range(3):
@@ -209,9 +203,7 @@ class Fighter:
 
     def apply_current_effects(self) -> None:
         if self.status_effects:
-            _logger.debug(
-                f'Applying active effects to {self} ({self.status_effects})'
-            )
+            _logger.debug(f'Applying active effects to {self} ({self.status_effects})')
         new_effects: list[StatusEffect] = []
         for effect in self.status_effects:
             effect.on_turn(self)

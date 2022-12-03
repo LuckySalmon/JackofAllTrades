@@ -18,15 +18,7 @@ from panda3d.bullet import (
     BulletSphereShape,
     BulletWorld,
 )
-from panda3d.core import (
-    Mat3,
-    Mat4,
-    NodePath,
-    Quat,
-    TransformState,
-    VBase3,
-    Vec3,
-)
+from panda3d.core import Mat3, Mat4, NodePath, Quat, TransformState, VBase3, Vec3
 
 shape_constructors: dict[str, Callable[..., BulletShape]] = {
     'sphere': BulletSphereShape,
@@ -47,9 +39,7 @@ def make_quaternion(angle: float, axis: VBase3) -> Quat:
     return Quat(cosine, axis.normalized() * sine)
 
 
-def make_rigid_transform(
-    rotation: Mat3, translation: VBase3
-) -> TransformState:
+def make_rigid_transform(rotation: Mat3, translation: VBase3) -> TransformState:
     """Return a TransformState comprising the given rotation
     followed by the given translation
     """
