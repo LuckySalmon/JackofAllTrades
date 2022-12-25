@@ -113,17 +113,6 @@ class Move:  # TODO: decide on whether these should be called moves or actions
                 [user.index, f"{user.name}'s {self.name} missed!"],
             )
 
-    def info(self) -> str:
-        """Return a string containing information about the move's
-        damage and accuracy in a human-readable format.
-        """
-        return '\n'.join(
-            (
-                self.name,
-                f'{self.accuracy}%',
-            )
-        )
-
 
 def make_damage_effect(lower_bound: int, upper_bound: int) -> InstantEffect:
     def apply_damage(target: Fighter) -> None:

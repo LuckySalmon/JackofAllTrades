@@ -312,7 +312,8 @@ class ActionSelector:
 
     def select_action(self, action: Move) -> None:
         self.selected_action = action
-        messenger.send('output_info', [self.index, action.info()])
+        action_info = f'{action.name}\n{action.accuracy}%'
+        messenger.send('output_info', [self.index, action_info])
         if action.target == 'self':
             button_visibility = (True, False)
         elif action.target == 'other':
