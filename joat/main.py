@@ -201,6 +201,8 @@ class App(ShowBase):
     def handle_collisions(self) -> None:
         assert self.world is not None
         for manifold in self.world.manifolds:
+            if not manifold.node0.into_collide_mask & manifold.node1.into_collide_mask:
+                continue
             for node in (manifold.node0, manifold.node1):
                 impact_callback = node.python_tags.get('impact_callback')
                 if impact_callback is not None:

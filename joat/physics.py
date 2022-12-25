@@ -18,7 +18,16 @@ from panda3d.bullet import (
     BulletSphereShape,
     BulletWorld,
 )
-from panda3d.core import Mat3, Mat4, NodePath, Quat, TransformState, VBase3, Vec3
+from panda3d.core import (
+    CollideMask,
+    Mat3,
+    Mat4,
+    NodePath,
+    Quat,
+    TransformState,
+    VBase3,
+    Vec3,
+)
 
 shape_constructors: dict[str, Callable[..., BulletShape]] = {
     'sphere': BulletSphereShape,
@@ -55,6 +64,7 @@ def make_body(
     position: VBase3 | Iterable[float],
     parent: NodePath,
     world: BulletWorld,
+    collision_mask: CollideMask | int = CollideMask.all_on(),
 ) -> NodePath[BulletRigidBodyNode]:
     """Return a NodePath for a new rigid body with the given characteristics"""
     constructor = shape_constructors[shape]
@@ -63,6 +73,7 @@ def make_body(
     node.set_mass(mass)
     path = parent.attach_new_node(node)
     path.set_pos(*position)
+    path.set_collide_mask(CollideMask(collision_mask))
     world.attach(node)
     return path
 
