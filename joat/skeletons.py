@@ -10,6 +10,7 @@ from direct.showbase import ShowBaseGlobal
 from direct.task.Task import Task
 from direct.task.TaskManagerGlobal import taskMgr
 from panda3d.bullet import (
+    BulletConstraint,
     BulletGenericConstraint,
     BulletHingeConstraint,
     BulletRigidBodyNode,
@@ -165,6 +166,7 @@ class ArmController:
 @dataclass(repr=False)
 class Skeleton:
     parts: dict[str, NodePath[BulletRigidBodyNode]]
+    joints: dict[str, BulletConstraint]
     arm_controllers: dict[int, ArmController] = field(kw_only=True)
 
     @classmethod
@@ -338,6 +340,13 @@ class Skeleton:
                 'bicep_right': bicep_r,
                 'forearm_left': forearm_l,
                 'forearm_right': forearm_r,
+            },
+            {
+                'neck': neck,
+                'shoulder_left': shoulder_l,
+                'shoulder_right': shoulder_r,
+                'elbow_left': elbow_l,
+                'elbow_right': elbow_r,
             },
             arm_controllers={LEFT: l_arm_controller, RIGHT: r_arm_controller},
         )
