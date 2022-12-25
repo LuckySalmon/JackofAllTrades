@@ -21,7 +21,7 @@ from .skeletons import Skeleton
 
 _logger: Final = logging.getLogger(__name__)
 
-gravity = 0
+GRAVITY: Final = Vec3(0, 0, -9.81)
 MIN_DAMAGING_IMPULSE: Final = 20
 LEFT, RIGHT = -1, 1
 CHARACTERS: list[Character] = []
@@ -166,7 +166,7 @@ class App(ShowBase):
     def enter_battle(self, characters: Iterable[Character]) -> None:
         _logger.info(f'Starting battle with {characters}')
         # Set up the World
-        self.world = physics.make_world(gravity)
+        self.world = physics.make_world(gravity=GRAVITY)
         self.cam.set_pos(0, -10, 2)
         self.cam.look_at(0, 0, 0)
 

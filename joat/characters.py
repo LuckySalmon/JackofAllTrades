@@ -114,7 +114,7 @@ class Fighter:
             world,
             coord_xform,
             (2 + character.speed) * 2,
-            character.strength,
+            character.strength * 1.5,
         )
         return cls(
             character.name,
