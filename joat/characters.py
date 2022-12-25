@@ -12,8 +12,8 @@ from typing import TYPE_CHECKING, Any, Final, Literal
 from direct.showbase.MessengerGlobal import messenger
 from direct.task import Task
 from direct.task.TaskManagerGlobal import taskMgr
-from panda3d.bullet import BulletWorld
-from panda3d.core import Mat3, Mat4, Vec3
+from panda3d.bullet import BulletPersistentManifold, BulletWorld
+from panda3d.core import Mat3, Mat4, PandaNode, Vec3
 
 from .moves import Move, StatusEffect
 from .skeletons import Skeleton
@@ -94,7 +94,12 @@ class Fighter:
     def __post_init__(self) -> None:
         self.hp = self.base_hp
         for part in self.skeleton.parts.values():
-            part.node().python_tags['fighter'] = self
+            part.node().python_tags.update(
+                {
+                    'fighter': self,
+                    'impact_callback': damage_callback,
+                }
+            )
 
     def __str__(self) -> str:
         return f'{type(self).__name__} {self.name!r} ({self.index})'
@@ -220,3 +225,26 @@ class Fighter:
     def kill(self) -> None:
         _logger.info(f'{self} died')
         self.skeleton.kill()
+
+
+def damage_callback(
+    node: PandaNode,
+    manifold: BulletPersistentManifold,
+    *,
+    min_damaging_impulse: float = 20,
+) -> None:
+    fighter: Fighter | None = node.python_tags.get('fighter')
+    if fighter is None:
+        return
+    for point in manifold.manifold_points:
+        impulse = point.applied_impulse
+        if impulse < min_damaging_impulse:
+            continue
+        multiplier: float = node.python_tags.get('damage_multiplier', 1)
+        damage = int(impulse * multiplier / (10 + fighter.defense))
+        if not damage:
+            continue
+        _logger.debug(
+            f'{fighter} was hit in the {node.name} with an impulse of {impulse}'
+        )
+        fighter.apply_damage(damage)

@@ -202,22 +202,9 @@ class App(ShowBase):
         assert self.world is not None
         for manifold in self.world.manifolds:
             for node in (manifold.node0, manifold.node1):
-                fighter = node.python_tags.get('fighter')
-                if fighter is None:
-                    continue
-                for point in manifold.manifold_points:
-                    impulse = point.applied_impulse
-                    if impulse < MIN_DAMAGING_IMPULSE:
-                        continue
-                    multiplier = node.python_tags.get('damage_multiplier', 1)
-                    damage = int(impulse * multiplier / (10 + fighter.defense))
-                    if not damage:
-                        continue
-                    _logger.debug(
-                        f'{fighter} was hit in the {node.name}'
-                        f' with an impulse of {impulse}'
-                    )
-                    fighter.apply_damage(damage)
+                impact_callback = node.python_tags.get('impact_callback')
+                if impact_callback is not None:
+                    impact_callback(node, manifold)
 
     def toggle_debug(self) -> None:
         """Toggle debug display for physical objects."""
