@@ -373,6 +373,5 @@ class Skeleton:
     def kill(self) -> None:
         for arm_controller in self.arm_controllers.values():
             arm_controller.enable_motors(False)
-        torso = self.parts['torso'].node()
-        torso.set_mass(1.0)
-        torso.set_active(True)
+        for joint in self.joints.values():
+            joint.enabled = False
