@@ -4,7 +4,7 @@ import json
 import logging
 import random
 from collections.abc import Callable
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Final, TypeAlias
 
 from direct.showbase.MessengerGlobal import messenger
@@ -104,8 +104,7 @@ class Move:  # TODO: decide on whether these should be called moves or actions
             for instant_effect in self.instant_effects:
                 _logger.debug(f'Applying {instant_effect} to {target}')
                 instant_effect.apply(target)
-            for status_effect in self.status_effects:
-                target.add_effect(replace(status_effect))
+            target.copy_effects(self.status_effects)
         else:
             _logger.debug(f'{user} missed {target} with {self}')
             messenger.send(

@@ -4,7 +4,8 @@ import json
 import logging
 import random
 import winsound
-from dataclasses import dataclass, field
+from collections.abc import Iterable
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final, Literal
 
@@ -196,6 +197,10 @@ class Fighter:
         messenger.send('set_health_bar', [self.index, self.hp])
         if self.hp <= 0:
             self.kill()
+
+    def copy_effects(self, effects: Iterable[StatusEffect]) -> None:
+        for effect in effects:
+            self.add_effect(replace(effect))
 
     def add_effect(self, effect: StatusEffect) -> None:
         _logger.debug(f'Added {effect} to {self}')
