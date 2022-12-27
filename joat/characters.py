@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import logging
 import random
-import winsound
 from collections.abc import Iterable
 from dataclasses import dataclass, field, replace
 from pathlib import Path
@@ -23,8 +22,6 @@ if TYPE_CHECKING:
     from _typeshed import SupportsRead
 
 _logger: Final = logging.getLogger(__name__)
-
-SOUND_ENABLED = False
 
 
 @dataclass(kw_only=True)
@@ -61,16 +58,14 @@ class Character:
         # TODO: why this formula?
         if len(self.moves) < int(0.41 * self.level + 4):
             self.moves[move.name] = move
-            if SOUND_ENABLED:
-                winsound.Beep(600, 125)
-                winsound.Beep(750, 100)
-                winsound.Beep(900, 150)
+            # winsound.Beep(600, 125)
+            # winsound.Beep(750, 100)
+            # winsound.Beep(900, 150)
         else:
             # TODO: actually handle this case
             print("You have too many moves. Would you like to replace one?")
-            if SOUND_ENABLED:
-                winsound.Beep(600, 175)
-                winsound.Beep(500, 100)
+            # winsound.Beep(600, 175)
+            # winsound.Beep(500, 100)
 
     def update_level(self) -> None:
         """Use the character's XP to increase their level."""

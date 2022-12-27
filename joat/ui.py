@@ -18,10 +18,6 @@ from panda3d.core import TextNode
 from .characters import Character, Fighter
 from .moves import Move
 
-LEFT, RIGHT = -1, 1
-ASPECT_RATIO = 4 / 3
-SELECTOR_WIDTH = 0.5
-
 
 def uniform_spacing(
     counts: Sequence[int], gaps: Sequence[float]
@@ -91,6 +87,8 @@ class CharacterMenu:
         title: str,
         characters: Iterable[Character],
         mode: str,
+        *,
+        aspect_ratio: float = 4 / 3,
     ) -> None:
         self.mode = mode
         self.selectedCharacter = None
@@ -100,7 +98,7 @@ class CharacterMenu:
         self.title_text = OnscreenText(text=title, pos=(0, 0.9), parent=self.backdrop)
         self.character_view = DirectFrame(
             frameColor=(0.2, 0.2, 0.2, 0.8),
-            frameSize=(-ASPECT_RATIO, ASPECT_RATIO, -0.5, 0.5),
+            frameSize=(-aspect_ratio, aspect_ratio, -0.5, 0.5),
             pos=(0, 0, -0.5),
             parent=self.backdrop,
         )
@@ -196,17 +194,24 @@ class BattleInterface(DirectObject):
     infoBoxes: list[OnscreenText]
     healthBars: list[DirectWaitBar]
 
-    def __init__(self, characters: Iterable[Fighter]) -> None:
+    def __init__(
+        self,
+        characters: Iterable[Fighter],
+        *,
+        aspect_ratio: float = 4 / 3,
+        selector_width: float = 0.5,
+    ) -> None:
         super().__init__()
         self.sharedInfo = OnscreenText(pos=(0, 0.5), scale=0.07, align=TextNode.ACenter)
 
         self.actionSelectors, self.infoBoxes, self.healthBars = [], [], []
-        for character, side in zip(characters, (LEFT, RIGHT)):
-            x = side * (ASPECT_RATIO - SELECTOR_WIDTH)
-            index = 0 if side == LEFT else 1
+        for index, character in enumerate(characters):
+            assert index in (0, 1)
+            side = 1 if index else -1
+            x = side * (aspect_ratio - selector_width)
 
             action_selector = ActionSelector(
-                character.moves.values(), (x, 0, -0.5), index
+                character.moves.values(), (x, 0, -0.5), index, width=selector_width
             )
             action_selector.hide()
 
@@ -253,19 +258,23 @@ class ActionSelector:
     backdrop: DirectFrame
     use_buttons: list[DirectButton]
     action_buttons: list[DirectButton]
+    width: float
 
     def __init__(
         self,
         actions: Iterable[Move],
         pos: tuple[float, float, float],
         index: int,
+        *,
+        width: float = 0.5,
     ) -> None:
         self.selected_action = None
         self.index = index
+        self.width = width
 
         self.backdrop = DirectFrame(
             frameColor=(0, 0, 0, 0.5),
-            frameSize=(-SELECTOR_WIDTH, SELECTOR_WIDTH, -0.5, 0.5),
+            frameSize=(-width, width, -0.5, 0.5),
             pos=pos,
         )
 
@@ -275,7 +284,7 @@ class ActionSelector:
             button = self.make_button(
                 f'Use on {target}',
                 self.use_action,
-                (SELECTOR_WIDTH / 2, 0, 0.5 - y),
+                (width / 2, 0, 0.5 - y),
                 [target],
             )
             button.hide()
@@ -287,7 +296,7 @@ class ActionSelector:
             button = self.make_button(
                 action.name,
                 self.select_action,
-                (-SELECTOR_WIDTH / 2, 0, 0.5 - y),
+                (-width / 2, 0, 0.5 - y),
                 [action],
             )
             self.action_buttons.append(button)
@@ -304,7 +313,7 @@ class ActionSelector:
             command=command,
             extraArgs=command_args,
             pos=pos,
-            frameSize=(-SELECTOR_WIDTH / 2, SELECTOR_WIDTH / 2, -0.1, 0.1),
+            frameSize=(-self.width / 2, self.width / 2, -0.1, 0.1),
             borderWidth=(0.025, 0.025),
             text_scale=0.07,
             parent=self.backdrop,

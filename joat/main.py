@@ -17,14 +17,11 @@ from panda3d.core import NodePath, Vec3
 from . import physics, ui
 from .characters import Character, Fighter
 from .moves import Move
-from .skeletons import Skeleton
+from .skeletons import LEFT, RIGHT, Skeleton
 
 _logger: Final = logging.getLogger(__name__)
 
 GRAVITY: Final = Vec3(0, 0, -9.81)
-MIN_DAMAGING_IMPULSE: Final = 20
-LEFT, RIGHT = -1, 1
-CHARACTERS: list[Character] = []
 
 
 class TargetMovingObject(DirectObject):
@@ -118,7 +115,7 @@ class App(ShowBase):
     world: BulletWorld | None
     debugNP: NodePath[BulletDebugNode] | None
 
-    def __init__(self) -> None:
+    def __init__(self, *, available_characters: Iterable[Character] = ()) -> None:
         ShowBase.__init__(self)
         self.fighters = []
         self.fsm = GameFSM(self)
@@ -131,12 +128,12 @@ class App(ShowBase):
         self.accept(
             'character_menu',
             self.request,
-            ['CharacterMenu', 'Select a Character', CHARACTERS, 'view'],
+            ['CharacterMenu', 'Select a Character', available_characters, 'view'],
         )
         self.accept(
             'fighter_selection',
             self.request,
-            ['CharacterMenu', 'Select a Fighter', CHARACTERS],
+            ['CharacterMenu', 'Select a Fighter', available_characters],
         )
         self.accept('select_character', self.select_character)
         self.accept('use_action', self.use_action)
@@ -250,8 +247,9 @@ def main() -> None:
     stream_handler.setLevel(logging.WARNING)
     logger.addHandler(file_handler)
     logger.addHandler(stream_handler)
+    characters: list[Character] = []
     for fp in Path('data', 'characters').iterdir():
         with fp.open() as f:
-            CHARACTERS.append(Character.from_json(f))
-    app = App()
+            characters.append(Character.from_json(f))
+    app = App(available_characters=characters)
     app.run()
