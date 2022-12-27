@@ -13,8 +13,9 @@ from direct.showbase.MessengerGlobal import messenger
 from direct.task import Task
 from direct.task.TaskManagerGlobal import taskMgr
 from panda3d.bullet import BulletPersistentManifold, BulletWorld
-from panda3d.core import Mat3, Mat4, PandaNode, Vec3
+from panda3d.core import CollideMask, Mat3, Mat4, PandaNode, Vec3
 
+from . import physics
 from .moves import Move, StatusEffect
 from .skeletons import Skeleton
 
@@ -122,6 +123,7 @@ class Fighter:
             (2 + character.speed) * 2,
             character.strength * 1.5,
         )
+        skeleton.parts['head'].set_collide_mask(CollideMask.bit(index))
         return cls(
             character.name,
             base_hp=character.hp,
@@ -151,14 +153,32 @@ class Fighter:
             messenger.send('next_turn')
             return
 
-        side = random.choice((-1, 1))
-        fist = self.skeleton.parts['forearm_left' if side == -1 else 'forearm_right']
-        current_position = self.skeleton.get_arm_target(side)
         target_position = Vec3(target_part.get_net_transform().get_pos())
         for i in range(3):
             scale = 1 - 2 * random.random()
             inaccuracy = 1 - move.accuracy / 100
             target_position[i] *= 1 + inaccuracy * scale
+
+        if move.is_projectile:
+            head = self.skeleton.parts['head']
+            head_position = head.get_net_transform().get_pos()
+            physics.spawn_projectile(
+                name=move.name,
+                instant_effects=move.instant_effects,
+                status_effects=move.status_effects,
+                world=world,
+                position=head_position,
+                velocity=physics.required_projectile_velocity(
+                    target_position - head_position, self.strength * 4
+                ),
+                collision_mask=~head.get_collide_mask(),
+            )
+            messenger.send('next_turn')
+            return
+
+        side = random.choice((-1, 1))
+        fist = self.skeleton.parts['forearm_left' if side == -1 else 'forearm_right']
+        current_position = self.skeleton.get_arm_target(side)
         target_node = target_part.node()
 
         def reset(_: object) -> None:

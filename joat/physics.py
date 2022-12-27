@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import logging
 import math
 from collections.abc import Callable, Iterable
 from functools import partial
+from typing import Final
 
 from direct.showbase import ShowBaseGlobal
 from direct.task.Task import Task
@@ -12,6 +14,7 @@ from panda3d.bullet import (
     BulletConeTwistConstraint,
     BulletGenericConstraint,
     BulletHingeConstraint,
+    BulletPersistentManifold,
     BulletPlaneShape,
     BulletRigidBodyNode,
     BulletShape,
@@ -23,11 +26,16 @@ from panda3d.core import (
     Mat3,
     Mat4,
     NodePath,
+    PandaNode,
     Quat,
     TransformState,
     VBase3,
     Vec3,
 )
+
+from . import moves
+
+_logger: Final = logging.getLogger(__name__)
 
 shape_constructors: dict[str, Callable[..., BulletShape]] = {
     'sphere': BulletSphereShape,
@@ -124,6 +132,69 @@ def make_cone_joint(
         node_path_a.node(), node_path_b.node(), frame_a, frame_b
     )
     return joint
+
+
+def required_projectile_velocity(
+    delta_position: VBase3,
+    speed: float,
+    *,
+    gravity: VBase3 = Vec3(0, 0, -9.81),
+) -> Vec3:
+    g_squared = gravity.length_squared()
+    d_squared = delta_position.length_squared()
+    x = speed * speed + delta_position.dot(gravity)
+    try:
+        root = math.sqrt(x * x - d_squared * g_squared)
+    except ValueError:
+        root = 0
+    direction = delta_position * g_squared - gravity * (x - root)
+    return Vec3(direction.normalized() * speed)
+
+
+def spawn_projectile(
+    *,
+    name: str = 'projectile',
+    position: VBase3 = Vec3.zero(),
+    mass: float = 1,
+    velocity: VBase3 = Vec3.zero(),
+    world: BulletWorld,
+    instant_effects: Iterable[moves.InstantEffect] = (),
+    status_effects: Iterable[moves.StatusEffect] = (),
+    collision_mask: CollideMask | int = CollideMask.all_on(),
+) -> None:
+    projectile = make_body(
+        name,
+        shape='sphere',
+        dimensions=[0.1],
+        mass=mass,
+        position=position,
+        parent=ShowBaseGlobal.base.render,
+        world=world,
+        collision_mask=collision_mask,
+    )
+
+    def impact_callback(node: PandaNode, manifold: BulletPersistentManifold) -> None:
+        if node == manifold.node0:
+            other_node = manifold.node1
+        else:
+            other_node = manifold.node0
+        for point in manifold.manifold_points:
+            if point.distance > 0.01:
+                continue
+            _logger.debug(f'{name} hit {other_node.name}')
+            other_fighter = other_node.python_tags.get('fighter')
+            if other_fighter is not None:
+                _logger.debug(f'{other_fighter} was hit by {name}')
+                for effect in instant_effects:
+                    effect.apply(other_fighter)
+                other_fighter.copy_effects(status_effects)
+            world.remove(node)
+            projectile.remove_node()
+            break
+
+    projectile_node = projectile.node()
+    projectile_node.python_tags['impact_callback'] = impact_callback
+    projectile_node.linear_velocity = Vec3(velocity)
 
 
 def make_world(*, gravity: VBase3) -> BulletWorld:

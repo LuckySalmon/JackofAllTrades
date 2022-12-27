@@ -2,6 +2,8 @@
   "name": "spit",
   "accuracy": 55,
   "target": "any",
+  "target_part": "head",
+  "is_projectile": true,
   "instant_effects": [],
   "status_effects": [{
     "name": "poison",
