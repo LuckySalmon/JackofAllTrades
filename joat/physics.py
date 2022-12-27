@@ -2,15 +2,12 @@ from __future__ import annotations
 
 import logging
 import math
-from collections.abc import Callable, Iterable
-from functools import partial
+from collections.abc import Iterable
 from typing import Final
 
 from direct.showbase import ShowBaseGlobal
 from direct.task.Task import Task
 from panda3d.bullet import (
-    BulletBoxShape,
-    BulletCapsuleShape,
     BulletConeTwistConstraint,
     BulletGenericConstraint,
     BulletHingeConstraint,
@@ -37,14 +34,6 @@ from . import moves
 
 _logger: Final = logging.getLogger(__name__)
 
-shape_constructors: dict[str, Callable[..., BulletShape]] = {
-    'sphere': BulletSphereShape,
-    'box': lambda *args: BulletBoxShape(Vec3(*args)),
-    'capsule_x': partial(BulletCapsuleShape, up=0),
-    'capsule_y': partial(BulletCapsuleShape, up=1),
-    'capsule_z': partial(BulletCapsuleShape, up=2),
-}
-
 
 def make_quaternion(angle: float, axis: VBase3) -> Quat:
     """Return a quaternion representing a rotation
@@ -64,23 +53,21 @@ def make_rigid_transform(rotation: Mat3, translation: VBase3) -> TransformState:
 
 
 def make_body(
-    name: str,
     *,
-    shape: str,
-    dimensions: Iterable[float],
+    name: str,
+    shape: BulletShape,
     mass: float,
-    position: VBase3 | Iterable[float],
+    position: VBase3,
     parent: NodePath,
     world: BulletWorld,
     collision_mask: CollideMask | int = CollideMask.all_on(),
 ) -> NodePath[BulletRigidBodyNode]:
     """Return a NodePath for a new rigid body with the given characteristics"""
-    constructor = shape_constructors[shape]
     node = BulletRigidBodyNode(name)
-    node.add_shape(constructor(*dimensions))
+    node.add_shape(shape)
     node.set_mass(mass)
     path = parent.attach_new_node(node)
-    path.set_pos(*position)
+    path.set_pos(position)
     path.set_collide_mask(CollideMask(collision_mask))
     world.attach(node)
     return path
@@ -163,9 +150,8 @@ def spawn_projectile(
     collision_mask: CollideMask | int = CollideMask.all_on(),
 ) -> None:
     projectile = make_body(
-        name,
-        shape='sphere',
-        dimensions=[0.1],
+        name=name,
+        shape=BulletSphereShape(0.1),
         mass=mass,
         position=position,
         parent=ShowBaseGlobal.base.render,

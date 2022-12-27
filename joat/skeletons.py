@@ -10,10 +10,13 @@ from direct.showbase import ShowBaseGlobal
 from direct.task.Task import Task
 from direct.task.TaskManagerGlobal import taskMgr
 from panda3d.bullet import (
+    BulletBoxShape,
+    BulletCapsuleShape,
     BulletConstraint,
     BulletGenericConstraint,
     BulletHingeConstraint,
     BulletRigidBodyNode,
+    BulletSphereShape,
     BulletWorld,
 )
 from panda3d.core import LColor, Mat3, Mat4, NodePath, VBase3, Vec3
@@ -193,9 +196,8 @@ class Skeleton:
         arm_vector_r = Vec3(0, -arm_length, 0)
 
         torso = physics.make_body(
-            'Torso',
-            shape='box',
-            dimensions=(arm_radius, torso_width / 2, torso_height / 2),
+            name='Torso',
+            shape=BulletBoxShape(Vec3(arm_radius, torso_width / 2, torso_height / 2)),
             position=Vec3(0, 0, 0.25),
             mass=0,
             parent=render,
@@ -203,45 +205,40 @@ class Skeleton:
         )
         torso.set_mat(torso, coord_xform)
         head = physics.make_body(
-            'Head',
-            shape='sphere',
-            dimensions=(head_radius,),
+            name='Head',
+            shape=BulletSphereShape(head_radius),
             position=Vec3(0, 0, torso_height / 2 + head_radius),
             mass=16,
             parent=torso,
             world=world,
         )
         bicep_l = physics.make_body(
-            'Bicep',
-            shape='capsule_y',
-            dimensions=(arm_radius, arm_length / 2),
+            name='Bicep',
+            shape=BulletCapsuleShape(arm_radius, arm_length / 2, up=1),
             position=shoulder_pos_l + arm_vector_l / 4,
             mass=5,
             parent=torso,
             world=world,
         )
         bicep_r = physics.make_body(
-            'Bicep',
-            shape='capsule_y',
-            dimensions=(arm_radius, arm_length / 2),
+            name='Bicep',
+            shape=BulletCapsuleShape(arm_radius, arm_length / 2, up=1),
             position=shoulder_pos_r + arm_vector_r / 4,
             mass=5,
             parent=torso,
             world=world,
         )
         forearm_l = physics.make_body(
-            'Forearm',
-            shape='capsule_y',
-            dimensions=(arm_radius, arm_length / 2),
+            name='Forearm',
+            shape=BulletCapsuleShape(arm_radius, arm_length / 2, up=1),
             position=arm_vector_l / 2,
             mass=5,
             parent=bicep_l,
             world=world,
         )
         forearm_r = physics.make_body(
-            'Forearm',
-            shape='capsule_y',
-            dimensions=(arm_radius, arm_length / 2),
+            name='Forearm',
+            shape=BulletCapsuleShape(arm_radius, arm_length / 2, up=1),
             position=arm_vector_r / 2,
             mass=5,
             parent=bicep_r,
