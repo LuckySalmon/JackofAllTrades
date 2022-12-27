@@ -101,7 +101,7 @@ def shoulder_angles(
 
 
 @dataclass(kw_only=True, repr=False)
-class ArmController:
+class Arm:
     origin: VBase3
     shoulder: BulletGenericConstraint
     elbow: BulletHingeConstraint
@@ -170,7 +170,7 @@ class ArmController:
 class Skeleton:
     parts: dict[str, NodePath[BulletRigidBodyNode]]
     joints: dict[str, BulletConstraint]
-    arm_controllers: dict[int, ArmController] = field(kw_only=True)
+    arms: dict[int, Arm] = field(kw_only=True)
 
     @classmethod
     def construct(
@@ -309,7 +309,7 @@ class Skeleton:
         world.attach_constraint(elbow_l, linked_collision=True)
         world.attach_constraint(elbow_r, linked_collision=True)
 
-        l_arm_controller = ArmController(
+        left_arm = Arm(
             origin=render.get_relative_point(torso, shoulder_pos_l),
             shoulder=shoulder_l,
             elbow=elbow_l,
@@ -318,7 +318,7 @@ class Skeleton:
             transform=coord_xform.get_upper_3() * Mat3(1, 0, 0, 0, -1, 0, 0, 0, 1),
             speed=speed,
         )
-        r_arm_controller = ArmController(
+        right_arm = Arm(
             origin=render.get_relative_point(torso, shoulder_pos_r),
             shoulder=shoulder_r,
             elbow=elbow_r,
@@ -327,8 +327,8 @@ class Skeleton:
             transform=coord_xform.get_upper_3() * Mat3(1, 0, 0, 0, +1, 0, 0, 0, 1),
             speed=speed,
         )
-        l_arm_controller.enable_motors(True)
-        r_arm_controller.enable_motors(True)
+        left_arm.enable_motors(True)
+        right_arm.enable_motors(True)
         return cls(
             {
                 'torso': torso,
@@ -345,19 +345,19 @@ class Skeleton:
                 'elbow_left': elbow_l,
                 'elbow_right': elbow_r,
             },
-            arm_controllers={LEFT: l_arm_controller, RIGHT: r_arm_controller},
+            arms={LEFT: left_arm, RIGHT: right_arm},
         )
 
     def __post_init__(self) -> None:
-        for controller in self.arm_controllers.values():
-            taskMgr.add(controller.move, f'move_arm_{id(controller)}')
+        for arm in self.arms.values():
+            taskMgr.add(arm.move, f'move_arm_{id(arm)}')
 
     def get_shoulder_position(self, side: int) -> VBase3:
-        arm_controller = self.arm_controllers[side]
-        return arm_controller.origin
+        arm = self.arms[side]
+        return arm.origin
 
     def get_arm_target(self, side: int) -> Vec3:
-        target = self.arm_controllers[side].target_point
+        target = self.arms[side].target_point
         assert target is not None
         return Vec3(target)
 
@@ -365,10 +365,10 @@ class Skeleton:
         local_target = Vec3(target)
         if not relative:
             local_target -= self.get_shoulder_position(side)
-        self.arm_controllers[side].target_point = local_target
+        self.arms[side].target_point = local_target
 
     def kill(self) -> None:
-        for arm_controller in self.arm_controllers.values():
-            arm_controller.enable_motors(False)
+        for arm in self.arms.values():
+            arm.enable_motors(False)
         for joint in self.joints.values():
             joint.enabled = False
