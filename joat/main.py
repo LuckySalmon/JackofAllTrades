@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Iterable
-from itertools import product
 from pathlib import Path
 from typing import Any, Final
 
@@ -17,7 +16,7 @@ from panda3d.core import NodePath, Vec3
 from . import physics, ui
 from .characters import Character, Fighter
 from .moves import Move
-from .skeletons import LEFT, RIGHT, Skeleton
+from .skeletons import Skeleton
 
 _logger: Final = logging.getLogger(__name__)
 
@@ -51,9 +50,11 @@ class TargetMovingObject(DirectObject):
             Vec3(-x, -y, z),
             Vec3(-x, +y, z),
         )
-        iterator = zip(product(self.skeletons, (LEFT, RIGHT)), targets)
-        for (skel, side), target in iterator:
-            skel.set_arm_target(side, target)
+        for arm, target in zip(
+            (arm for skel in self.skeletons for arm in (skel.left_arm, skel.right_arm)),
+            targets,
+        ):
+            arm.target_point = target
 
     def add_to_target(self, delta: Vec3) -> None:
         self.xyz += delta

@@ -171,17 +171,17 @@ class Fighter:
             messenger.send('next_turn')
             return
 
-        side = random.choice((-1, 1))
-        fist = self.skeleton.parts['forearm_left' if side == -1 else 'forearm_right']
-        current_position = self.skeleton.get_arm_target(side)
+        arm = random.choice((self.skeleton.left_arm, self.skeleton.right_arm))
+        fist = arm.forearm
+        current_position = arm.target_point
         target_node = target_part.node()
 
         def reset(_: object) -> None:
-            self.skeleton.set_arm_target(side, current_position)
+            arm.target_point = current_position
             messenger.send('next_turn')
 
         if not (move.instant_effects or move.status_effects):
-            self.skeleton.set_arm_target(side, target_position, False)
+            arm.target_point = target_position - arm.origin
             taskMgr.do_method_later(1 / (1 + self.speed), reset, 'reset_move')
             return
 
@@ -204,7 +204,7 @@ class Fighter:
 
             return task.cont
 
-        self.skeleton.set_arm_target(side, target_position, False)
+        arm.target_point = target_position - arm.origin
         taskMgr.add(use_move, 'use_move', uponDeath=reset)
 
     def apply_damage(self, damage: int) -> None:

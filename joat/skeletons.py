@@ -23,8 +23,6 @@ from panda3d.core import LColor, Mat3, Mat4, NodePath, VBase3, Vec3
 
 from . import physics
 
-LEFT, RIGHT = -1, 1
-
 
 class _PathInfo(TypedDict):
     points: list[VBase3]
@@ -166,11 +164,12 @@ class Arm:
         return task.cont
 
 
-@dataclass(repr=False)
+@dataclass(repr=False, kw_only=True)
 class Skeleton:
     parts: dict[str, NodePath[BulletRigidBodyNode]]
     joints: dict[str, BulletConstraint]
-    arms: dict[int, Arm] = field(kw_only=True)
+    left_arm: Arm
+    right_arm: Arm
 
     @classmethod
     def construct(
@@ -330,7 +329,7 @@ class Skeleton:
         left_arm.enable_motors(True)
         right_arm.enable_motors(True)
         return cls(
-            {
+            parts={
                 'torso': torso,
                 'head': head,
                 'bicep_left': bicep_l,
@@ -338,37 +337,23 @@ class Skeleton:
                 'forearm_left': forearm_l,
                 'forearm_right': forearm_r,
             },
-            {
+            joints={
                 'neck': neck,
                 'shoulder_left': shoulder_l,
                 'shoulder_right': shoulder_r,
                 'elbow_left': elbow_l,
                 'elbow_right': elbow_r,
             },
-            arms={LEFT: left_arm, RIGHT: right_arm},
+            left_arm=left_arm,
+            right_arm=right_arm,
         )
 
     def __post_init__(self) -> None:
-        for arm in self.arms.values():
-            taskMgr.add(arm.move, f'move_arm_{id(arm)}')
-
-    def get_shoulder_position(self, side: int) -> VBase3:
-        arm = self.arms[side]
-        return arm.origin
-
-    def get_arm_target(self, side: int) -> Vec3:
-        target = self.arms[side].target_point
-        assert target is not None
-        return Vec3(target)
-
-    def set_arm_target(self, side: int, target: VBase3, relative: bool = True) -> None:
-        local_target = Vec3(target)
-        if not relative:
-            local_target -= self.get_shoulder_position(side)
-        self.arms[side].target_point = local_target
+        taskMgr.add(self.left_arm.move, f'move_left_arm_{id(self)}')
+        taskMgr.add(self.right_arm.move, f'move_right_arm_{id(self)}')
 
     def kill(self) -> None:
-        for arm in self.arms.values():
-            arm.enable_motors(False)
+        self.left_arm.enable_motors(False)
+        self.right_arm.enable_motors(False)
         for joint in self.joints.values():
             joint.enabled = False
