@@ -13,52 +13,13 @@ from direct.task.Task import Task
 from panda3d.bullet import BulletDebugNode, BulletWorld
 from panda3d.core import NodePath, Vec3
 
-from . import physics, ui
+from . import physics, stances, ui
 from .characters import Character, Fighter
 from .moves import Move
-from .skeletons import Skeleton
 
 _logger: Final = logging.getLogger(__name__)
 
 GRAVITY: Final = Vec3(0, 0, -9.81)
-
-
-class TargetMovingObject(DirectObject):
-    skeletons: tuple[Skeleton, ...]
-    xyz: Vec3
-
-    def __init__(self, skeletons: Iterable[Skeleton]) -> None:
-        super().__init__()
-        self.skeletons = tuple(skeletons)
-        self.xyz = Vec3(0.25, -0.125, 0)
-        d = 0.01
-        self.accept('7-repeat', self.add_to_target, [Vec3(+d, 0, 0)])
-        self.accept('1-repeat', self.add_to_target, [Vec3(-d, 0, 0)])
-        self.accept('8-repeat', self.add_to_target, [Vec3(0, +d, 0)])
-        self.accept('2-repeat', self.add_to_target, [Vec3(0, -d, 0)])
-        self.accept('9-repeat', self.add_to_target, [Vec3(0, 0, +d)])
-        self.accept('3-repeat', self.add_to_target, [Vec3(0, 0, -d)])
-        self.accept('4-repeat', self.add_to_target, [Vec3(-d, -d, -d)])
-        self.accept('6-repeat', self.add_to_target, [Vec3(+d, +d, +d)])
-        self.update()
-
-    def update(self) -> None:
-        x, y, z = self.xyz
-        targets = (
-            Vec3(x, +y, z),
-            Vec3(x, -y, z),
-            Vec3(x, +y, z),
-            Vec3(x, -y, z),
-        )
-        for arm, target in zip(
-            (arm for skel in self.skeletons for arm in (skel.left_arm, skel.right_arm)),
-            targets,
-        ):
-            arm.target_point = target
-
-    def add_to_target(self, delta: Vec3) -> None:
-        self.xyz += delta
-        self.update()
 
 
 class GameFSM(FSM):
@@ -185,9 +146,8 @@ class App(ShowBase):
         debug_object = DirectObject()
         debug_object.accept('f1', self.toggle_debug)
 
-        # Arm Control
-        TargetMovingObject(fighter.skeleton for fighter in self.fighters)
-
+        for fighter in self.fighters:
+            fighter.set_stance(stances.BOXING_STANCE)
         self.taskMgr.add(self.update, 'update')
 
     def update(self, task: Task) -> int:

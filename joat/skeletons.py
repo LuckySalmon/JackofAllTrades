@@ -21,7 +21,7 @@ from panda3d.bullet import (
 )
 from panda3d.core import LColor, Mat3, Mat4, NodePath, VBase3, Vec3
 
-from . import physics
+from . import physics, stances
 
 
 class _PathInfo(TypedDict):
@@ -243,6 +243,8 @@ class Skeleton:
     joints: dict[str, BulletConstraint]
     left_arm: Arm
     right_arm: Arm
+    stance: stances.Stance = stances.T_POSE
+    transform: Mat4 = Mat4.ident_mat()
 
     @classmethod
     def construct(
@@ -337,11 +339,19 @@ class Skeleton:
             },
             left_arm=left_arm,
             right_arm=right_arm,
+            transform=coord_xform,
         )
 
     def __post_init__(self) -> None:
+        self.assume_stance()
         taskMgr.add(self.left_arm.move, f'move_left_arm_{id(self)}')
         taskMgr.add(self.right_arm.move, f'move_right_arm_{id(self)}')
+
+    def assume_stance(self) -> None:
+        self.left_arm.target_point = self.stance.left_hand_pos
+        self.right_arm.target_point = self.stance.right_hand_pos
+        self.left_arm.target_angle = self.stance.left_arm_angle
+        self.right_arm.target_angle = self.stance.right_arm_angle
 
     def kill(self) -> None:
         self.left_arm.enable_motors(False)

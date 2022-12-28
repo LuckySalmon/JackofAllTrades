@@ -15,7 +15,7 @@ from direct.task.TaskManagerGlobal import taskMgr
 from panda3d.bullet import BulletPersistentManifold, BulletWorld
 from panda3d.core import CollideMask, Mat3, Mat4, PandaNode, Vec3
 
-from . import physics
+from . import physics, stances
 from .moves import Move, StatusEffect
 from .skeletons import Skeleton
 
@@ -141,6 +141,10 @@ class Fighter:
         character = Character.from_json(file)
         return cls.from_character(character, world, index)
 
+    def set_stance(self, stance: stances.Stance) -> None:
+        self.skeleton.stance = stance
+        self.skeleton.assume_stance()
+
     def use_move(self, move: Move, target: Fighter, world: BulletWorld) -> None:
         _logger.debug(f'{self} used {move} on {target}')
         target_part = target.skeleton.parts.get(move.target_part)
@@ -178,11 +182,10 @@ class Fighter:
 
         arm = random.choice((self.skeleton.left_arm, self.skeleton.right_arm))
         fist = arm.forearm
-        current_position = arm.target_point
         target_node = target_part.node()
 
         def reset(_: object) -> None:
-            arm.target_point = current_position
+            self.skeleton.assume_stance()
             messenger.send('next_turn')
 
         if not (move.instant_effects or move.status_effects):
