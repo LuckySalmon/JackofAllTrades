@@ -45,10 +45,10 @@ class TargetMovingObject(DirectObject):
     def update(self) -> None:
         x, y, z = self.xyz
         targets = (
-            Vec3(+x, +y, z),
-            Vec3(+x, -y, z),
-            Vec3(-x, -y, z),
-            Vec3(-x, +y, z),
+            Vec3(x, +y, z),
+            Vec3(x, -y, z),
+            Vec3(x, +y, z),
+            Vec3(x, -y, z),
         )
         for arm, target in zip(
             (arm for skel in self.skeletons for arm in (skel.left_arm, skel.right_arm)),

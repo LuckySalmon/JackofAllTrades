@@ -8,6 +8,7 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final, Literal
 
+from direct.showbase import ShowBaseGlobal
 from direct.showbase.MessengerGlobal import messenger
 from direct.task import Task
 from direct.task.TaskManagerGlobal import taskMgr
@@ -148,7 +149,7 @@ class Fighter:
             messenger.send('next_turn')
             return
 
-        target_position = Vec3(target_part.get_net_transform().get_pos())
+        target_position = target_part.get_pos(self.skeleton.parts['torso'])
         for i in range(3):
             scale = 1 - 2 * random.random()
             inaccuracy = 1 - move.accuracy / 100
@@ -156,7 +157,11 @@ class Fighter:
 
         if move.is_projectile:
             head = self.skeleton.parts['head']
-            head_position = head.get_net_transform().get_pos()
+            render = ShowBaseGlobal.base.render
+            head_position = head.get_pos(render)
+            target_position = render.get_relative_point(
+                self.skeleton.parts['torso'], target_position
+            )
             physics.spawn_projectile(
                 name=move.name,
                 instant_effects=move.instant_effects,

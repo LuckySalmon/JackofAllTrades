@@ -112,12 +112,11 @@ class Arm:
     lines: LineNodePath = field(init=False)
 
     def __post_init__(self) -> None:
-        render = ShowBaseGlobal.base.render
         self.lines = LineNodePath(
-            name='debug', parent=render, colorVec=LColor(0.2, 0.2, 0.5, 1)
+            name='debug', parent=self.bicep.parent, colorVec=LColor(0.2, 0.2, 0.5, 1)
         )
         draw_lines(
-            LineNodePath(name='axes', parent=render),
+            LineNodePath(name='axes', parent=self.bicep.parent),
             {
                 'points': [self.shoulder.get_axis(0) / 4],
                 'color': LColor(1, 0, 0, 1),
@@ -309,21 +308,21 @@ class Skeleton:
         world.attach_constraint(elbow_r, linked_collision=True)
 
         left_arm = Arm(
-            origin=render.get_relative_point(torso, shoulder_pos_l),
+            origin=shoulder_pos_l,
             shoulder=shoulder_l,
             elbow=elbow_l,
             bicep=bicep_l,
             forearm=forearm_l,
-            transform=coord_xform.get_upper_3() * Mat3(1, 0, 0, 0, -1, 0, 0, 0, 1),
+            transform=Mat3(1, 0, 0, 0, -1, 0, 0, 0, 1),
             speed=speed,
         )
         right_arm = Arm(
-            origin=render.get_relative_point(torso, shoulder_pos_r),
+            origin=shoulder_pos_r,
             shoulder=shoulder_r,
             elbow=elbow_r,
             bicep=bicep_r,
             forearm=forearm_r,
-            transform=coord_xform.get_upper_3() * Mat3(1, 0, 0, 0, +1, 0, 0, 0, 1),
+            transform=Mat3(1, 0, 0, 0, +1, 0, 0, 0, 1),
             speed=speed,
         )
         left_arm.enable_motors(True)
