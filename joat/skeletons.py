@@ -149,16 +149,10 @@ class Arm:
             world=world,
         )
         shoulder = physics.make_ball_joint(
-            origin,
-            parent,
-            bicep,
-            shoulder_transform,
+            parent, bicep, position=origin, rotation=shoulder_transform
         )
         elbow = physics.make_hinge_joint(
-            along / 4,
-            bicep,
-            forearm,
-            elbow_axis,
+            bicep, forearm, position=along / 4, axis=elbow_axis
         )
 
         for axis in range(3):
@@ -312,10 +306,10 @@ class Skeleton:
         right_arm.forearm.node().python_tags['damage_multiplier'] = 0.5
 
         neck = physics.make_cone_joint(
-            Vec3(0, 0, torso_height / 2),
             torso,
             head,
-            Vec3(0, 0, -90),
+            position=Vec3(0, 0, torso_height / 2),
+            rotation=Mat3(0, 0, 1, 0, 1, 0, -1, 0, 0),
         )
         neck.set_limit(45, 45, 90, softness=0)
         world.attach_constraint(neck)

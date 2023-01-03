@@ -74,49 +74,56 @@ def make_body(
 
 
 def make_ball_joint(
-    position: VBase3,
     node_path_a: NodePath,
     node_path_b: NodePath,
-    rotation: Mat3,
+    *,
+    position: VBase3,
+    rotation: Mat3 = Mat3.ident_mat(),
 ) -> BulletGenericConstraint:
     a_to_joint = position
     b_to_joint = node_path_b.get_relative_point(node_path_a, position)
     frame_a = make_rigid_transform(rotation, a_to_joint)
     frame_b = make_rigid_transform(rotation, b_to_joint)
     joint = BulletGenericConstraint(
-        node_path_a.node(), node_path_b.node(), frame_a, frame_b, True
+        node_path_a.node(),
+        node_path_b.node(),
+        frame_a=frame_a,
+        frame_b=frame_b,
+        use_frame_a=True,
     )
     return joint
 
 
 def make_hinge_joint(
-    position: VBase3, node_path_a: NodePath, node_path_b: NodePath, axis: Vec3
+    node_path_a: NodePath, node_path_b: NodePath, *, position: VBase3, axis: VBase3
 ) -> BulletHingeConstraint:
     a_to_joint = position
     b_to_joint = node_path_b.get_relative_point(node_path_a, position)
     joint = BulletHingeConstraint(
         node_path_a.node(),
         node_path_b.node(),
-        a_to_joint,
-        b_to_joint,
-        axis,
-        axis,
-        True,
+        pivot_a=a_to_joint,
+        pivot_b=b_to_joint,
+        axis_a=axis,
+        axis_b=axis,
+        use_frame_a=True,
     )
     return joint
 
 
 def make_cone_joint(
-    position: VBase3, node_path_a: NodePath, node_path_b: NodePath, hpr: VBase3
+    node_path_a: NodePath,
+    node_path_b: NodePath,
+    *,
+    position: VBase3,
+    rotation: Mat3 = Mat3.ident_mat(),
 ) -> BulletConeTwistConstraint:
     a_to_joint = position
     b_to_joint = node_path_b.get_relative_point(node_path_a, position)
-    frame_a = TransformState.make_pos_hpr(a_to_joint, hpr)
-    frame_b = TransformState.make_pos_hpr(
-        b_to_joint, node_path_b.get_relative_vector(node_path_a, hpr)
-    )
+    frame_a = make_rigid_transform(rotation, a_to_joint)
+    frame_b = make_rigid_transform(rotation, b_to_joint)
     joint = BulletConeTwistConstraint(
-        node_path_a.node(), node_path_b.node(), frame_a, frame_b
+        node_path_a.node(), node_path_b.node(), frame_a=frame_a, frame_b=frame_b
     )
     return joint
 
