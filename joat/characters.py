@@ -6,11 +6,10 @@ import random
 from collections.abc import Iterable
 from dataclasses import dataclass, field, replace
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Final, Literal
+from typing import TYPE_CHECKING, Any, Final
 
 from direct.showbase import ShowBaseGlobal
 from direct.showbase.MessengerGlobal import messenger
-from direct.task import Task
 from direct.task.TaskManagerGlobal import taskMgr
 from panda3d.bullet import BulletPersistentManifold, BulletWorld
 from panda3d.core import CollideMask, Mat3, Mat4, PandaNode, Vec3
@@ -181,39 +180,34 @@ class Fighter:
             return
 
         arm = random.choice((self.skeleton.left_arm, self.skeleton.right_arm))
-        fist = arm.forearm
-        target_node = target_part.node()
+        fist = arm.forearm.node()
+        current_callback = fist.python_tags.get('impact_callback')
 
         def reset(_: object) -> None:
             self.skeleton.assume_stance()
+            fist.python_tags['impact_callback'] = current_callback
             messenger.send('next_turn')
 
-        if not (move.instant_effects or move.status_effects):
-            arm.target_point = target_position - arm.origin
-            taskMgr.do_method_later(1 / (1 + self.speed), reset, 'reset_move')
-            return
-
-        def use_move(task: Task.Task) -> Literal[0, 1]:
-            if task.time >= 1:
-                _logger.debug(f'{move} missed')
-                messenger.send(
-                    'output_info',
-                    [self.index, f"{self.name}'s {move.name} missed!"],
-                )
-                return Task.done
-
-            contact_result = world.contact_test_pair(fist.node(), target_node)
-            for contact in contact_result.contacts:
-                if abs(contact.manifold_point.distance) > 0.01:
-                    continue
+        def temporary_impact_callback(
+            node: PandaNode, manifold: BulletPersistentManifold
+        ) -> None:
+            if node == manifold.node0:
+                other_node = manifold.node1
+            else:
+                other_node = manifold.node0
+            other_fighter = other_node.python_tags.get('fighter')
+            if other_fighter is target and any(
+                p.distance < 0.01 for p in manifold.manifold_points
+            ):
                 _logger.debug(f'{move} landed')
                 move.apply(self, target, True)
-                return Task.done
+                node.python_tags['impact_callback'] = current_callback
+            if current_callback is not None:
+                current_callback(node, manifold)
 
-            return task.cont
-
+        fist.python_tags['impact_callback'] = temporary_impact_callback
         arm.target_point = target_position - arm.origin
-        taskMgr.add(use_move, 'use_move', uponDeath=reset)
+        taskMgr.do_method_later(1 / (1 + self.speed), reset, 'reset_move')
 
     def apply_damage(self, damage: int) -> None:
         if damage:
