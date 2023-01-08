@@ -170,27 +170,35 @@ class Fighter:
             global_target_position = render.get_relative_point(
                 self.skeleton.core, target_position
             )
-            from_position = using_part.get_pos(render)
-            if arm is not None:
-                from_position += render.get_relative_vector(
-                    using_part, Vec3(0, -0.25, 0)
+
+            def throw_projectile(_: object = None) -> None:
+                from_position = using_part.get_pos(render)
+                if arm is not None:
+                    from_position += render.get_relative_vector(
+                        using_part, Vec3(0, -0.25, 0)
+                    )
+                projectile = physics.spawn_projectile(
+                    name=move.name,
+                    instant_effects=move.instant_effects,
+                    status_effects=move.status_effects,
+                    world=world,
+                    position=from_position,
+                    velocity=physics.required_projectile_velocity(
+                        global_target_position - from_position,
+                        self.strength * 4,
+                    ),
+                    collision_mask=~using_part.get_collide_mask(),
                 )
-            projectile = physics.spawn_projectile(
-                name=move.name,
-                instant_effects=move.instant_effects,
-                status_effects=move.status_effects,
-                world=world,
-                position=from_position,
-                velocity=physics.required_projectile_velocity(
-                    global_target_position - from_position,
-                    self.strength * 4,
-                ),
-                collision_mask=~using_part.get_collide_mask(),
-            )
+                taskMgr.do_method_later(
+                    0.2 / self.strength,
+                    lambda _: projectile.set_collide_mask(CollideMask.all_on()),
+                    'allow_projectile_collisions',
+                )
+
             taskMgr.do_method_later(
-                0.2 / self.strength,
-                lambda _: projectile.set_collide_mask(CollideMask.all_on()),
-                'allow_projectile_collisions',
+                0 if arm is None else 1 / (1 + self.speed) / 8,
+                throw_projectile,
+                'throw_projectile',
             )
 
         if arm is None:

@@ -1,0 +1,13 @@
+{
+  "name": "throw",
+  "accuracy": 75,
+  "using": "arm_right",
+  "target": "other",
+  "is_projectile": true,
+  "instant_effects": [{
+    "name": "damage",
+    "lower_bound": 1,
+    "upper_bound": 1
+  }],
+  "status_effects": []
+}
