@@ -235,6 +235,7 @@ class Arm:
 class Skeleton:
     parts: dict[str, NodePath[BulletRigidBodyNode]]
     joints: dict[str, BulletConstraint]
+    core: NodePath
     left_arm: Arm
     right_arm: Arm
     stance: stances.Stance = stances.T_POSE
@@ -331,6 +332,7 @@ class Skeleton:
                 'elbow_left': left_arm.elbow,
                 'elbow_right': right_arm.elbow,
             },
+            core=torso,
             left_arm=left_arm,
             right_arm=right_arm,
             transform=coord_xform,

@@ -152,7 +152,7 @@ class Fighter:
             messenger.send('next_turn')
             return
 
-        target_position = target_part.get_pos(self.skeleton.parts['torso'])
+        target_position = target_part.get_pos(self.skeleton.core)
         for i in range(3):
             scale = 1 - 2 * random.random()
             inaccuracy = 1 - move.accuracy / 100
@@ -163,7 +163,7 @@ class Fighter:
             render = ShowBaseGlobal.base.render
             head_position = head.get_pos(render)
             target_position = render.get_relative_point(
-                self.skeleton.parts['torso'], target_position
+                self.skeleton.core, target_position
             )
             projectile = physics.spawn_projectile(
                 name=move.name,
