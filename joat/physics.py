@@ -155,7 +155,7 @@ def spawn_projectile(
     instant_effects: Iterable[moves.InstantEffect] = (),
     status_effects: Iterable[moves.StatusEffect] = (),
     collision_mask: CollideMask | int = CollideMask.all_on(),
-) -> None:
+) -> NodePath[BulletRigidBodyNode]:
     projectile = make_body(
         name=name,
         shape=BulletSphereShape(0.1),
@@ -188,6 +188,7 @@ def spawn_projectile(
     projectile_node = projectile.node()
     projectile_node.python_tags['impact_callback'] = impact_callback
     projectile_node.linear_velocity = Vec3(velocity)
+    return projectile
 
 
 def make_world(*, gravity: VBase3) -> BulletWorld:
