@@ -165,7 +165,7 @@ class Fighter:
             target_position = render.get_relative_point(
                 self.skeleton.parts['torso'], target_position
             )
-            physics.spawn_projectile(
+            projectile = physics.spawn_projectile(
                 name=move.name,
                 instant_effects=move.instant_effects,
                 status_effects=move.status_effects,
@@ -175,6 +175,11 @@ class Fighter:
                     target_position - head_position, self.strength * 4
                 ),
                 collision_mask=~head.get_collide_mask(),
+            )
+            taskMgr.do_method_later(
+                0.2 / self.strength,
+                lambda _: projectile.set_collide_mask(CollideMask.all_on()),
+                'allow_projectile_collisions',
             )
             messenger.send('next_turn')
             return
