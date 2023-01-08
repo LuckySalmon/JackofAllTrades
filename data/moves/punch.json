@@ -1,6 +1,7 @@
 {
   "name": "punch",
   "accuracy": 90,
+  "using": "arm_right",
   "target": "any",
   "target_part": "head",
   "instant_effects": [],

@@ -146,12 +146,18 @@ class Fighter:
 
     def use_move(self, move: Move, target: Fighter, world: BulletWorld) -> None:
         _logger.debug(f'{self} used {move} on {target}')
-        target_part = target.skeleton.parts.get(move.target_part)
-        if target_part is None:
+        if move.using == 'arm_right':
+            arm = self.skeleton.right_arm
+        elif move.using == 'arm_left':
+            arm = self.skeleton.left_arm
+        elif not move.is_projectile:
             move.apply(self, target)
             messenger.send('next_turn')
             return
+        else:
+            arm = None
 
+        target_part = target.skeleton.parts[move.target_part]
         target_position = target_part.get_pos(self.skeleton.core)
         for i in range(3):
             scale = 1 - 2 * random.random()
@@ -159,32 +165,38 @@ class Fighter:
             target_position[i] *= 1 + inaccuracy * scale
 
         if move.is_projectile:
-            head = self.skeleton.parts['head']
             render = ShowBaseGlobal.base.render
-            head_position = head.get_pos(render)
-            target_position = render.get_relative_point(
+            using_part = self.skeleton.parts[move.using] if arm is None else arm.forearm
+            global_target_position = render.get_relative_point(
                 self.skeleton.core, target_position
             )
+            from_position = using_part.get_pos(render)
+            if arm is not None:
+                from_position += render.get_relative_vector(
+                    using_part, Vec3(0, -0.25, 0)
+                )
             projectile = physics.spawn_projectile(
                 name=move.name,
                 instant_effects=move.instant_effects,
                 status_effects=move.status_effects,
                 world=world,
-                position=head_position,
+                position=from_position,
                 velocity=physics.required_projectile_velocity(
-                    target_position - head_position, self.strength * 4
+                    global_target_position - from_position,
+                    self.strength * 4,
                 ),
-                collision_mask=~head.get_collide_mask(),
+                collision_mask=~using_part.get_collide_mask(),
             )
             taskMgr.do_method_later(
                 0.2 / self.strength,
                 lambda _: projectile.set_collide_mask(CollideMask.all_on()),
                 'allow_projectile_collisions',
             )
+
+        if arm is None:
             messenger.send('next_turn')
             return
 
-        arm = random.choice((self.skeleton.left_arm, self.skeleton.right_arm))
         fist = arm.forearm.node()
         current_callback = fist.python_tags.get('impact_callback')
 

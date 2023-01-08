@@ -1,6 +1,7 @@
 {
   "name": "flick",
   "accuracy": 100,
+  "using": "arm_left",
   "target": "other",
   "target_part": "torso",
   "instant_effects": [{

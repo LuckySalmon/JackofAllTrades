@@ -1,6 +1,7 @@
 {
   "name": "spit",
   "accuracy": 55,
+  "using": "head",
   "target": "any",
   "target_part": "head",
   "is_projectile": true,

@@ -71,8 +71,9 @@ class Move:  # TODO: decide on whether these should be called moves or actions
     accuracy: int
     instant_effects: list[InstantEffect]
     status_effects: list[StatusEffect]
+    using: str = ''
     target: str = ''
-    target_part: str = ''
+    target_part: str = 'torso'
     is_projectile: bool = False
     # TODO: effect system
 
