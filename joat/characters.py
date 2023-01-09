@@ -251,6 +251,7 @@ class Fighter:
 
     def add_effect(self, effect: StatusEffect) -> None:
         _logger.debug(f'Added {effect} to {self}')
+        effect.on_application(self)
         self.status_effects.append(effect)
 
     def apply_current_effects(self) -> None:
@@ -262,6 +263,8 @@ class Fighter:
             effect.duration -= 1
             if effect.is_active():
                 new_effects.append(effect)
+            else:
+                effect.on_removal(self)
         self.status_effects = new_effects
 
     def kill(self) -> None:
