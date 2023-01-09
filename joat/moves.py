@@ -69,8 +69,8 @@ class StatusEffect:
 class Move:  # TODO: decide on whether these should be called moves or actions
     name: str = field(kw_only=False)
     accuracy: int
-    instant_effects: list[InstantEffect]
-    status_effects: list[StatusEffect]
+    instant_effects: list[InstantEffect] = field(default_factory=list)
+    status_effects: list[StatusEffect] = field(default_factory=list)
     using: str = ''
     target: str = ''
     target_part: str = 'torso'
@@ -85,10 +85,12 @@ class Move:  # TODO: decide on whether these should be called moves or actions
         j = json.load(file)
         name = j.pop('name').title()
         instant_effects = [
-            InstantEffect.from_preset(**params) for params in j.pop('instant_effects')
+            InstantEffect.from_preset(**params)
+            for params in j.pop('instant_effects', [])
         ]
         status_effects = [
-            StatusEffect.from_preset(**params) for params in j.pop('status_effects')
+            StatusEffect.from_preset(**params)
+            for params in j.pop('status_effects', [])  # fmt: off
         ]
         return cls(
             name,
