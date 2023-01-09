@@ -1,0 +1,7 @@
+{
+  "name": "fastball",
+  "accuracy": 90,
+  "using": "arm_right",
+  "target": "other",
+  "is_projectile": true
+}

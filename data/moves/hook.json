@@ -1,10 +1,7 @@
 {
   "name": "hook",
   "accuracy": 85,
-  "instant_effects": [{
-    "name": "damage",
-    "lower_bound": 12,
-    "upper_bound": 15
-  }],
-  "status_effects": []
+  "using": "arm_right",
+  "target": "any",
+  "target_part": "torso"
 }

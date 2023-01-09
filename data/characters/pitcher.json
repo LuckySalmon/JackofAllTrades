@@ -1,14 +1,12 @@
 {
-  "trade": "boxer",
-  "name": "boxer jack",
+  "trade": "pitcher",
+  "name": "pitcher jack",
   "hp": 200,
-  "speed": 2,
+  "speed": 1,
   "strength": 5,
   "defense": 0,
   "basic_moves": [
-    "jab",
-    "cross",
-    "hook"
+    "fastball"
   ],
   "skeleton": "default"
 }

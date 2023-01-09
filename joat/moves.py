@@ -128,8 +128,18 @@ def make_damage_effect(lower_bound: int, upper_bound: int) -> InstantEffect:
     return InstantEffect("damage", apply_damage)
 
 
+def make_cleanse_effect() -> InstantEffect:
+    def cleanse(target: Fighter) -> None:
+        for effect in target.status_effects:
+            effect.on_removal(target)
+        target.status_effects.clear()
+
+    return InstantEffect('cleanse', cleanse)
+
+
 INSTANT_EFFECT_CONSTRUCTORS: dict[str, Callable[..., InstantEffect]] = {
-    'damage': make_damage_effect
+    'damage': make_damage_effect,
+    'cleanse': make_cleanse_effect,
 }
 
 
@@ -140,6 +150,27 @@ def make_poison_effect(strength: int, duration: int) -> StatusEffect:
     return StatusEffect('poison', duration, on_turn=poison)
 
 
+def make_invisibility_effect(strength: int, duration: int) -> StatusEffect:
+    old_debug_values: dict[str, bool] = {}
+
+    def apply_invisibility(target: Fighter) -> None:
+        for name, part in target.skeleton.parts.items():
+            old_debug_values[name] = part.node().debug_enabled
+            part.node().debug_enabled = False
+
+    def remove_invisibility(target: Fighter) -> None:
+        for name, part in target.skeleton.parts.items():
+            part.node().debug_enabled = old_debug_values[name]
+
+    return StatusEffect(
+        'invisibility',
+        duration,
+        on_application=apply_invisibility,
+        on_removal=remove_invisibility,
+    )
+
+
 STATUS_EFFECT_CONSTRUCTORS: dict[str, Callable[[int, int], StatusEffect]] = {
     'poison': make_poison_effect,
+    'invisibility': make_invisibility_effect,
 }

@@ -1,0 +1,17 @@
+{
+  "name": "throw poison",
+  "accuracy": 60,
+  "using": "arm_right",
+  "target": "any",
+  "is_projectile": true,
+  "instant_effects": [{
+    "name": "damage",
+    "lower_bound": 5,
+    "upper_bound": 15
+  }],
+  "status_effects": [{
+    "name": "poison",
+    "strength": 2,
+    "duration": 2
+  }]
+}

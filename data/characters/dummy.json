@@ -1,14 +1,12 @@
 {
-  "trade": "regular",
-  "name": "regular jack",
+  "trade": "dummy",
+  "name": "dummy jack",
   "hp": 50,
   "speed": 1,
   "strength": 1,
   "defense": 0,
   "basic_moves": [
-    "flick",
-    "punch",
-    "spit"
+    "punch"
   ],
   "skeleton": "default"
 }

@@ -3,7 +3,5 @@
   "accuracy": 90,
   "using": "arm_right",
   "target": "any",
-  "target_part": "head",
-  "instant_effects": [],
-  "status_effects": []
+  "target_part": "head"
 }

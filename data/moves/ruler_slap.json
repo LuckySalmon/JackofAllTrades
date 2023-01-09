@@ -1,10 +1,7 @@
 {
   "name": "ruler slap",
   "accuracy": 90,
-  "instant_effects": [{
-    "name": "damage",
-    "lower_bound": 5,
-    "upper_bound": 15
-  }],
-  "status_effects": []
+  "using": "arm_right",
+  "target": "any",
+  "target_part": "forearm_left"
 }

@@ -1,0 +1,19 @@
+{
+  "name": "throw water",
+  "accuracy": 60,
+  "using": "arm_right",
+  "target": "any",
+  "is_projectile": true,
+  "instant_effects": [{
+    "name": "damage",
+    "lower_bound": 0,
+    "upper_bound": 2
+  }, {
+    "name": "cleanse"
+  }],
+  "status_effects": [{
+    "name": "damp",
+    "strength": 1,
+    "duration": 2
+  }]
+}

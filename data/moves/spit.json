@@ -5,10 +5,9 @@
   "target": "any",
   "target_part": "head",
   "is_projectile": true,
-  "instant_effects": [],
   "status_effects": [{
     "name": "poison",
-    "strength": 2,
-    "duration": 2
+    "strength": 1,
+    "duration": 1
   }]
 }

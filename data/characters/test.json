@@ -6,7 +6,6 @@
   "strength": 1,
   "defense": 1,
   "basic_moves": [
-    "flick",
     "punch",
     "spit",
     "throw"
