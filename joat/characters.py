@@ -86,6 +86,7 @@ class Fighter:
     skeleton: Skeleton = field(repr=False)
     index: int = field(default=0, repr=False)
     status_effects: list[StatusEffect] = field(default_factory=list, init=False)
+    world: BulletWorld
 
     def __post_init__(self) -> None:
         self.hp = self.base_hp
@@ -128,6 +129,7 @@ class Fighter:
             moves=character.moves,
             skeleton=skeleton,
             index=index,
+            world=world,
         )
 
     @classmethod
@@ -144,7 +146,7 @@ class Fighter:
         self.skeleton.stance = stance
         self.skeleton.assume_stance()
 
-    def use_move(self, move: Move, target: Fighter, world: BulletWorld) -> None:
+    def use_move(self, move: Move, target: Fighter) -> None:
         _logger.debug(f'{self} used {move} on {target}')
         if move.using == 'arm_right':
             arm = self.skeleton.right_arm
@@ -181,7 +183,7 @@ class Fighter:
                     name=move.name,
                     instant_effects=move.instant_effects,
                     status_effects=move.status_effects,
-                    world=world,
+                    world=self.world,
                     position=from_position,
                     velocity=physics.required_projectile_velocity(
                         global_target_position - from_position,

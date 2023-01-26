@@ -182,7 +182,7 @@ class App(ShowBase):
         messenger.send('remove_query')
         user = self.fighters[self.index]
         self.index = (self.index + 1) % 2
-        user.use_move(move, self.fighters[target_index], self.world)
+        user.use_move(move, self.fighters[target_index])
 
     def next_turn(self) -> None:
         fighter = self.fighters[self.index]
