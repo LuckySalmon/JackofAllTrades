@@ -175,9 +175,6 @@ class App(ShowBase):
             self.debugNP.hide()
 
     def use_action(self, move: Move, target_index: int) -> None:
-        """Make the character use the selected action,
-        then move on to the next turn.
-        """
         assert self.world is not None
         messenger.send('remove_query')
         user = self.fighters[self.index]

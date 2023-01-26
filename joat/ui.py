@@ -338,6 +338,7 @@ class ActionSelector:
     def use_action(self, target: Literal['self', 'opponent']) -> None:
         target_index = self.index if target == 'self' else not self.index
         messenger.send('use_action', [self.selected_action, target_index])
+        messenger.send('next_turn')
 
     def hide(self) -> None:
         self.backdrop.hide()

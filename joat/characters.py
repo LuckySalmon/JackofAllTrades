@@ -154,7 +154,6 @@ class Fighter:
             arm = self.skeleton.left_arm
         elif not move.is_projectile:
             move.apply(self, target)
-            messenger.send('next_turn')
             return
         else:
             arm = None
@@ -204,7 +203,6 @@ class Fighter:
             )
 
         if arm is None:
-            messenger.send('next_turn')
             return
 
         fist = arm.forearm.node()
@@ -213,7 +211,6 @@ class Fighter:
         def reset(_: object) -> None:
             self.skeleton.assume_stance()
             fist.python_tags['impact_callback'] = current_callback
-            messenger.send('next_turn')
 
         def temporary_impact_callback(
             node: PandaNode, manifold: BulletPersistentManifold
