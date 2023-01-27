@@ -1,13 +1,13 @@
 from __future__ import annotations
 
+import functools
 import logging
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Any, Final
+from typing import Final
 
 from direct.fsm.FSM import FSM
 from direct.showbase.DirectObject import DirectObject
-from direct.showbase.MessengerGlobal import messenger
 from direct.showbase.ShowBase import ShowBase
 from direct.task.Task import Task
 from panda3d.bullet import BulletDebugNode, BulletWorld
@@ -15,7 +15,6 @@ from panda3d.core import NodePath, Vec3
 
 from . import physics, stances, ui
 from .characters import Character, Fighter
-from .moves import Move
 
 _logger: Final = logging.getLogger(__name__)
 
@@ -24,40 +23,53 @@ GRAVITY: Final = Vec3(0, 0, -9.81)
 
 class GameFSM(FSM):
     app: App
+    available_characters: list[Character]
     fighters: list[Fighter]
-    main_menu: ui.MainMenu | None
-    character_menu: ui.CharacterMenu | None
-    battle_interface: ui.BattleInterface | None
+    main_menu: ui.MainMenu | None = None
+    character_menu: ui.CharacterMenu | None = None
+    battle_interface: ui.BattleInterface | None = None
 
-    def __init__(self, app: App) -> None:
+    def __init__(
+        self, app: App, *, available_characters: Iterable[Character] = ()
+    ) -> None:
         FSM.__init__(self, 'GameFSM')
         self.app = app
+        self.available_characters = list(available_characters)
         self.fighters = self.app.fighters
-        self.main_menu = None
-        self.character_menu = None
-        self.battle_interface = None
+        self.request('MainMenu')
 
     def enterMainMenu(self) -> None:
         self.fighters.clear()
         if self.main_menu is not None:
             self.main_menu.show()
         else:
-            self.main_menu = ui.MainMenu()
+            self.main_menu = ui.MainMenu(
+                battle_function=functools.partial(
+                    self.request, 'CharacterMenu', 'Select a Fighter', 'split_screen'
+                ),
+                character_function=functools.partial(
+                    self.request, 'CharacterMenu', 'Select a Character', 'view'
+                ),
+                quit_function=self.app.userExit,
+            )
 
     def exitMainMenu(self) -> None:
         if self.main_menu is not None:
             self.main_menu.hide()
 
-    def enterCharacterMenu(
-        self, title: str, characters: Iterable[Character], mode: str
-    ) -> None:
+    def enterCharacterMenu(self, title: str, mode: str) -> None:
         if mode == 'split_screen':
             title += ', Player 1'
         if self.character_menu is not None:
-            self.character_menu.reset(characters, mode)
+            self.character_menu.reset(mode)
             self.character_menu.show()
         else:
-            self.character_menu = ui.CharacterMenu(title, characters, mode)
+            self.character_menu = ui.CharacterMenu(
+                title=title,
+                characters=self.available_characters,
+                mode=mode,
+                character_select_function=self.app.select_character,
+            )
 
     def exitCharacterMenu(self) -> None:
         if self.character_menu is not None:
@@ -65,47 +77,25 @@ class GameFSM(FSM):
 
     def enterBattle(self, characters: Iterable[Character]) -> None:
         self.app.enter_battle(characters)
-        self.battle_interface = ui.BattleInterface(self.fighters)
-        messenger.send('query_action', [0])
+        self.battle_interface = ui.BattleInterface(*self.fighters)
+        self.battle_interface.query_action(0)
 
 
 class App(ShowBase):
     fighters: list[Fighter]
     fsm: GameFSM
     selected_characters: list[Character]
-    index: int
-    world: BulletWorld | None
-    debugNP: NodePath[BulletDebugNode] | None
+    index: int = 0
+    world: BulletWorld | None = None
+    debugNP: NodePath[BulletDebugNode] | None = None
 
     def __init__(self, *, available_characters: Iterable[Character] = ()) -> None:
         ShowBase.__init__(self)
         self.fighters = []
-        self.fsm = GameFSM(self)
+        self.fsm = GameFSM(self, available_characters=available_characters)
         self.selected_characters = []
-        self.index = 0
-        self.world = None
-        self.debugNP = None
-
-        self.accept('main_menu', self.request, ['MainMenu'])
-        self.accept(
-            'character_menu',
-            self.request,
-            ['CharacterMenu', 'Select a Character', available_characters, 'view'],
-        )
-        self.accept(
-            'fighter_selection',
-            self.request,
-            ['CharacterMenu', 'Select a Fighter', available_characters],
-        )
-        self.accept('select_character', self.select_character)
-        self.accept('use_action', self.use_action)
+        self.accept('main_menu', self.fsm.request, ['MainMenu'])
         self.accept('next_turn', self.next_turn)
-        self.accept('quit', self.userExit)
-
-        self.request('MainMenu')
-
-    def request(self, request: str, *args: Any) -> None:
-        self.fsm.request(request, *args)
 
     def select_character(self, character: Character, mode: str) -> None:
         assert self.fsm.character_menu is not None
@@ -118,9 +108,9 @@ class App(ShowBase):
                         'text'
                     ] = 'Select a Fighter, Player 2'
                 else:
-                    self.request('Battle', self.selected_characters)
+                    self.fsm.request('Battle', self.selected_characters)
             case 'copy':
-                self.request('Battle', [character, character])
+                self.fsm.request('Battle', [character, character])
 
     def enter_battle(self, characters: Iterable[Character]) -> None:
         _logger.info(f'Starting battle with {characters}')
@@ -174,22 +164,17 @@ class App(ShowBase):
         else:
             self.debugNP.hide()
 
-    def use_action(self, move: Move, target_index: int) -> None:
-        assert self.world is not None
-        messenger.send('remove_query')
-        user = self.fighters[self.index]
-        self.index = (self.index + 1) % 2
-        user.use_move(move, self.fighters[target_index])
-
     def next_turn(self) -> None:
+        assert self.fsm.battle_interface is not None
+        self.index = (self.index + 1) % 2
         fighter = self.fighters[self.index]
         fighter.apply_current_effects()
         if fighter.hp <= 0:
             victor = self.fighters[1 - self.index]
             _logger.info(f'{victor} won the battle')
-            messenger.send('announce_win', [victor.name])
+            self.fsm.battle_interface.announce_win(victor.name)
         else:
-            messenger.send('query_action', [self.index])
+            self.fsm.battle_interface.query_action(self.index)
 
 
 def main() -> None:
