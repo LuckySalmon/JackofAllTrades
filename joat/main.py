@@ -87,7 +87,10 @@ class App(ShowBase):
         self.fsm = GameFSM(self, available_characters=available_characters)
         self.selected_characters = []
         self.accept('main_menu', self.fsm.request, ['MainMenu'])
-        self.accept('next_turn', self.next_turn)
+        self.accept(
+            'next_turn',
+            lambda: self.taskMgr.add(self.next_turn, delay=1, extraArgs=()),
+        )
 
     def select_character(self, character: Character, mode: str) -> None:
         assert self.fsm.character_menu is not None
