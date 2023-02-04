@@ -7,13 +7,10 @@ from pathlib import Path
 from typing import Final
 
 from direct.fsm.FSM import FSM
-from direct.showbase.DirectObject import DirectObject
 from direct.showbase.ShowBase import ShowBase
-from direct.task.Task import Task
-from panda3d.bullet import BulletDebugNode, BulletWorld
-from panda3d.core import NodePath, Vec3
+from panda3d.core import Vec3
 
-from . import physics, stances, ui
+from . import arenas, physics, stances, ui
 from .characters import Character, Fighter
 
 _logger: Final = logging.getLogger(__name__)
@@ -24,7 +21,6 @@ GRAVITY: Final = Vec3(0, 0, -9.81)
 class GameFSM(FSM):
     app: App
     available_characters: list[Character]
-    fighters: list[Fighter]
     main_menu: ui.MainMenu | None = None
     character_menu: ui.CharacterMenu | None = None
     battle_interface: ui.BattleInterface | None = None
@@ -35,11 +31,9 @@ class GameFSM(FSM):
         FSM.__init__(self, 'GameFSM')
         self.app = app
         self.available_characters = list(available_characters)
-        self.fighters = self.app.fighters
         self.request('MainMenu')
 
     def enterMainMenu(self) -> None:
-        self.fighters.clear()
         if self.main_menu is not None:
             self.main_menu.show()
         else:
@@ -77,21 +71,19 @@ class GameFSM(FSM):
 
     def enterBattle(self, characters: Iterable[Character]) -> None:
         self.app.enter_battle(characters)
-        self.battle_interface = ui.BattleInterface(*self.fighters)
+        assert self.app.arena is not None
+        self.battle_interface = ui.BattleInterface(self.app.arena)
         self.battle_interface.query_action(0)
 
 
 class App(ShowBase):
-    fighters: list[Fighter]
     fsm: GameFSM
     selected_characters: list[Character]
     index: int = 0
-    world: BulletWorld | None = None
-    debugNP: NodePath[BulletDebugNode] | None = None
+    arena: arenas.Arena | None = None
 
     def __init__(self, *, available_characters: Iterable[Character] = ()) -> None:
         ShowBase.__init__(self)
-        self.fighters = []
         self.fsm = GameFSM(self, available_characters=available_characters)
         self.selected_characters = []
         self.accept('main_menu', self.fsm.request, ['MainMenu'])
@@ -113,64 +105,27 @@ class App(ShowBase):
                 self.fsm.request('Battle', [character, character])
 
     def enter_battle(self, characters: Iterable[Character]) -> None:
+        characters = sorted(characters, key=lambda c: c.speed)
         _logger.info(f'Starting battle with {characters}')
-        # Set up the World
-        self.world = physics.make_world(gravity=GRAVITY)
+        world = physics.make_world(gravity=GRAVITY)
         self.cam.set_pos(0, -10, 2)
         self.cam.look_at(0, 0, 0)
-
-        # Fighters
-        self.fighters.clear()
+        fighters: list[Fighter] = []
         for i, character in enumerate(characters):
-            fighter = Fighter.from_character(character, self.world, i)
-            fighter.hp = fighter.base_hp
-            self.fighters.append(fighter)
-        self.fighters.sort(key=lambda x: x.speed, reverse=True)
-
-        # Debug
-        debug_node = BulletDebugNode('Debug')
-        debug_node.show_constraints(False)
-        self.debugNP = self.render.attach_new_node(debug_node)
-        self.debugNP.show()
-        self.world.set_debug_node(debug_node)
-        debug_object = DirectObject()
-        debug_object.accept('f1', self.toggle_debug)
-
-        for fighter in self.fighters:
+            fighter = Fighter.from_character(character, world, i)
             fighter.set_stance(stances.BOXING_STANCE)
-        self.taskMgr.add(self.update, 'update')
-
-    def update(self, task: Task) -> int:
-        """Update the world using physics."""
-        assert self.world is not None
-        self.handle_collisions()
-        return physics.update_physics(self.world, task)
-
-    def handle_collisions(self) -> None:
-        assert self.world is not None
-        for manifold in self.world.manifolds:
-            if not manifold.node0.into_collide_mask & manifold.node1.into_collide_mask:
-                continue
-            for node in (manifold.node0, manifold.node1):
-                impact_callback = node.python_tags.get('impact_callback')
-                if impact_callback is not None:
-                    impact_callback(node, manifold)
-
-    def toggle_debug(self) -> None:
-        """Toggle debug display for physical objects."""
-        assert self.debugNP is not None
-        if self.debugNP.is_hidden():
-            self.debugNP.show()
-        else:
-            self.debugNP.hide()
+            fighters.append(fighter)
+        self.arena = arenas.Arena(*fighters, world=world)
+        self.taskMgr.add(self.arena.update, 'update')
 
     def next_turn(self) -> None:
+        assert self.arena is not None
         assert self.fsm.battle_interface is not None
         self.index = (self.index + 1) % 2
-        fighter = self.fighters[self.index]
+        fighter = self.arena.get_fighter(self.index)
         fighter.apply_current_effects()
         if fighter.hp <= 0:
-            victor = self.fighters[1 - self.index]
+            victor = self.arena.get_fighter(1 - self.index)
             _logger.info(f'{victor} won the battle')
             self.fsm.battle_interface.announce_win(victor.name)
         else:

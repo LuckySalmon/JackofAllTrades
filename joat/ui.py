@@ -8,7 +8,7 @@ from direct.showbase.DirectObject import DirectObject
 from direct.showbase.MessengerGlobal import messenger
 from panda3d.core import TextNode
 
-from . import moves
+from . import arenas, moves
 from .characters import Character, Fighter
 
 
@@ -183,8 +183,7 @@ class BattleInterface(DirectObject):
 
     def __init__(
         self,
-        fighter_1: Fighter,
-        fighter_2: Fighter,
+        arena: arenas.Arena,
         *,
         aspect_ratio: float = 4 / 3,
         selector_width: float = 0.5,
@@ -192,7 +191,8 @@ class BattleInterface(DirectObject):
         super().__init__()
         self.sharedInfo = OnscreenText(pos=(0, 0.5), scale=0.07, align=TextNode.ACenter)
         self.actionSelectors, self.infoBoxes, self.healthBars = [], [], []
-        for side, fighter in ((-1, fighter_1), (1, fighter_2)):
+        for side, index in ((-1, 0), (1, 1)):
+            fighter = arena.get_fighter(index)
             x = side * (aspect_ratio - selector_width)
             info_box = OnscreenText(pos=(x, 0.25), scale=0.07, align=TextNode.ACenter)
             action_selector = ActionSelector(
@@ -200,7 +200,7 @@ class BattleInterface(DirectObject):
                 pos=(x, 0, -0.5),
                 info_box=info_box,
                 width=selector_width,
-                opponent=fighter_2 if fighter is fighter_1 else fighter_1,
+                opponent=arena.get_fighter(1 - index),
             )
             action_selector.hide()
             bar = DirectWaitBar(
