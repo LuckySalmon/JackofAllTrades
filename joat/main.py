@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import functools
 import logging
+import math
 from collections.abc import Iterable
 from pathlib import Path
 from typing import Final
 
 from direct.fsm.FSM import FSM
 from direct.showbase.ShowBase import ShowBase
-from panda3d.core import Vec3
+from panda3d.core import PythonTask, Vec3
 
 from . import arenas, physics, stances, ui
 from .characters import Character, Fighter
@@ -110,9 +111,8 @@ class App(ShowBase):
     def enter_battle(self, characters: Iterable[Character]) -> None:
         characters = sorted(characters, key=lambda c: c.speed)
         _logger.info(f'Starting battle with {characters}')
+        self.set_camera_pos(r=10, theta=1.2 * math.pi, height=2)
         world = physics.make_world(gravity=GRAVITY)
-        self.cam.set_pos(0, -10, 2)
-        self.cam.look_at(0, 0, 0)
         fighters: list[Fighter] = []
         for i, character in enumerate(characters):
             fighter = Fighter.from_character(character, world, i)
@@ -120,6 +120,27 @@ class App(ShowBase):
             fighters.append(fighter)
         self.arena = arenas.Arena(*fighters, world=world)
         self.taskMgr.add(self.arena.update, 'update')
+
+    def set_camera_pos(self, *, r: float, theta: float, height: float) -> None:
+        self.cam.set_pos(r * math.cos(theta), r * math.sin(theta), height)
+        self.cam.look_at(0, 0, 0)
+
+    def move_camera(self, to_angle: float, *, time: float = 1) -> PythonTask:
+        x, y, height = self.cam.get_pos()
+        from_angle = math.atan2(y, x)
+        r = math.hypot(x, y)
+        speed = (to_angle - from_angle) / time
+
+        def update_camera_pos(task: PythonTask) -> int:
+            if task.time < time:
+                current_angle = from_angle + speed * task.time
+                self.set_camera_pos(r=r, theta=current_angle, height=height)
+                return PythonTask.DS_cont
+            else:
+                self.set_camera_pos(r=r, theta=to_angle, height=height)
+                return PythonTask.DS_done
+
+        return self.taskMgr.add(update_camera_pos)
 
     def next_turn(self) -> None:
         assert self.arena is not None
@@ -132,6 +153,7 @@ class App(ShowBase):
             _logger.info(f'{victor} won the battle')
             self.fsm.battle_interface.announce_win(victor.name)
         else:
+            self.move_camera((0.2 if self.index else 1.2) * math.pi)
             self.fsm.battle_interface.query_action(self.index)
 
 
