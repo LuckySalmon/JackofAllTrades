@@ -3,7 +3,7 @@ from __future__ import annotations
 import itertools
 from collections.abc import Callable, Iterable, Iterator
 
-from direct.gui.DirectGui import DirectButton, DirectFrame, DirectWaitBar, OnscreenText
+from direct.gui.DirectGui import DirectButton, DirectFrame, OnscreenText
 from direct.showbase.DirectObject import DirectObject
 from direct.showbase.MessengerGlobal import messenger
 from panda3d.core import TextNode
@@ -179,7 +179,6 @@ class BattleInterface(DirectObject):
     sharedInfo: OnscreenText
     actionSelectors: list[ActionSelector]
     infoBoxes: list[OnscreenText]
-    healthBars: list[DirectWaitBar]
 
     def __init__(
         self,
@@ -189,8 +188,10 @@ class BattleInterface(DirectObject):
         selector_width: float = 0.5,
     ) -> None:
         super().__init__()
-        self.sharedInfo = OnscreenText(pos=(0, 0.5), scale=0.07, align=TextNode.ACenter)
-        self.actionSelectors, self.infoBoxes, self.healthBars = [], [], []
+        self.sharedInfo = OnscreenText(
+            pos=(0, 0.75), scale=0.07, align=TextNode.ACenter
+        )
+        self.actionSelectors, self.infoBoxes = [], []
         for side, index in ((-1, 0), (1, 1)):
             fighter = arena.get_fighter(index)
             x = side * (aspect_ratio - selector_width)
@@ -203,17 +204,9 @@ class BattleInterface(DirectObject):
                 opponent=arena.get_fighter(1 - index),
             )
             action_selector.hide()
-            bar = DirectWaitBar(
-                range=fighter.hp,
-                value=fighter.hp,
-                pos=(side * 0.5, 0, 0.75),
-                frameSize=(side * -0.4, side * 0.5, 0, -0.05),
-            )
             self.actionSelectors.append(action_selector)
             self.infoBoxes.append(info_box)
-            self.healthBars.append(bar)
         self.accept('output_info', self.output_info)
-        self.accept('set_health_bar', self.set_health_bar)
 
     def query_action(self, index: int) -> None:
         """Set up buttons for a player to choose an action."""
@@ -221,9 +214,6 @@ class BattleInterface(DirectObject):
 
     def output_info(self, index: int, info: str) -> None:
         self.infoBoxes[index].setText(info)
-
-    def set_health_bar(self, index: int, health: int) -> None:
-        self.healthBars[index]['value'] = health
 
     def announce_win(self, winner: str) -> None:
         self.sharedInfo.setText(f'{winner} wins!')

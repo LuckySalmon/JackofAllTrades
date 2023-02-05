@@ -8,6 +8,7 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final
 
+from direct.gui.DirectWaitBar import DirectWaitBar
 from direct.showbase import ShowBaseGlobal
 from direct.showbase.MessengerGlobal import messenger
 from direct.task.TaskManagerGlobal import taskMgr
@@ -84,12 +85,21 @@ class Fighter:
     defense: int
     moves: dict[str, Move] = field(repr=False)
     skeleton: Skeleton = field(repr=False)
+    world: BulletWorld
     index: int = field(default=0, repr=False)
     status_effects: list[StatusEffect] = field(default_factory=list, init=False)
-    world: BulletWorld
+    health_bar: DirectWaitBar = field(init=False)
 
     def __post_init__(self) -> None:
         self.hp = self.base_hp
+        self.health_bar = DirectWaitBar(
+            parent=self.skeleton.core,
+            range=self.base_hp,
+            value=self.hp,
+            pos=(0, 0, 1.1),
+            frameSize=(-0.4, 0.4, 0, 0.1),
+        )
+        self.health_bar.set_billboard_point_eye()
         for part in self.skeleton.parts.values():
             part.node().python_tags.update(
                 {
@@ -237,10 +247,10 @@ class Fighter:
         if damage:
             _logger.debug(f'{self} took {damage} damage')
         self.hp -= damage
+        self.health_bar['value'] = self.hp
         messenger.send(
             'output_info', [self.index, f'{self.name} took {damage} damage!']
         )
-        messenger.send('set_health_bar', [self.index, self.hp])
         if self.hp <= 0:
             self.kill()
 
