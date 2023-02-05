@@ -248,9 +248,7 @@ class Fighter:
             _logger.debug(f'{self} took {damage} damage')
         self.hp -= damage
         self.health_bar['value'] = self.hp
-        messenger.send(
-            'output_info', [self.index, f'{self.name} took {damage} damage!']
-        )
+        messenger.send('output_info', [f'{self.name} took {damage} damage!'])
         if self.hp <= 0:
             self.kill()
 

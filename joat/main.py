@@ -24,7 +24,7 @@ class GameFSM(FSM):
     available_characters: list[Character]
     main_menu: ui.MainMenu | None = None
     character_menu: ui.CharacterMenu | None = None
-    battle_interface: ui.BattleInterface | None = None
+    battle_menu: ui.BattleMenu | None = None
 
     def __init__(
         self, app: App, *, available_characters: Iterable[Character] = ()
@@ -73,8 +73,8 @@ class GameFSM(FSM):
     def enterBattle(self, characters: Iterable[Character]) -> None:
         self.app.enter_battle(characters)
         assert self.app.arena is not None
-        self.battle_interface = ui.BattleInterface(self.app.arena)
-        self.battle_interface.query_action(0)
+        self.battle_menu = ui.BattleMenu(self.app.arena)
+        self.battle_menu.query_action(0)
 
 
 class App(ShowBase):
@@ -144,17 +144,17 @@ class App(ShowBase):
 
     def next_turn(self) -> None:
         assert self.arena is not None
-        assert self.fsm.battle_interface is not None
+        assert self.fsm.battle_menu is not None
         self.index = (self.index + 1) % 2
         fighter = self.arena.get_fighter(self.index)
         fighter.apply_current_effects()
         if fighter.hp <= 0:
             victor = self.arena.get_fighter(1 - self.index)
             _logger.info(f'{victor} won the battle')
-            self.fsm.battle_interface.announce_win(victor.name)
+            self.fsm.battle_menu.output_info(f'{victor.name} wins!')
         else:
             self.move_camera((0.2 if self.index else 1.2) * math.pi)
-            self.fsm.battle_interface.query_action(self.index)
+            self.fsm.battle_menu.query_action(self.index)
 
 
 def main() -> None:

@@ -175,10 +175,9 @@ class CharacterMenu:
         self.backdrop.show()
 
 
-class BattleInterface(DirectObject):
-    sharedInfo: OnscreenText
-    actionSelectors: list[ActionSelector]
-    infoBoxes: list[OnscreenText]
+class BattleMenu(DirectObject):
+    central_text: OnscreenText
+    interfaces: list[FighterInterface]
 
     def __init__(
         self,
@@ -188,40 +187,31 @@ class BattleInterface(DirectObject):
         selector_width: float = 0.5,
     ) -> None:
         super().__init__()
-        self.sharedInfo = OnscreenText(
+        self.central_text = OnscreenText(
             pos=(0, 0.75), scale=0.07, align=TextNode.ACenter
         )
-        self.actionSelectors, self.infoBoxes = [], []
-        for side, index in ((-1, 0), (1, 1)):
-            fighter = arena.get_fighter(index)
-            x = side * (aspect_ratio - selector_width)
-            info_box = OnscreenText(pos=(x, 0.25), scale=0.07, align=TextNode.ACenter)
-            action_selector = ActionSelector(
-                fighter=fighter,
-                pos=(x, 0, -0.5),
-                info_box=info_box,
+        self.interfaces = [
+            FighterInterface(
+                fighter=arena.get_fighter(i),
+                opponent=arena.get_fighter(1 - i),
+                pos=(selector_width - aspect_ratio, 0, -0.5),
                 width=selector_width,
-                opponent=arena.get_fighter(1 - index),
+                hidden=True,
             )
-            action_selector.hide()
-            self.actionSelectors.append(action_selector)
-            self.infoBoxes.append(info_box)
+            for i in range(2)
+        ]
         self.accept('output_info', self.output_info)
 
     def query_action(self, index: int) -> None:
         """Set up buttons for a player to choose an action."""
-        self.actionSelectors[index].show()
+        self.interfaces[index].show()
 
-    def output_info(self, index: int, info: str) -> None:
-        self.infoBoxes[index].setText(info)
-
-    def announce_win(self, winner: str) -> None:
-        self.sharedInfo.setText(f'{winner} wins!')
+    def output_info(self, info: str) -> None:
+        self.central_text.setText(info)
 
 
-class ActionSelector:
+class FighterInterface:
     fighter: Fighter
-    opponent: Fighter
     selected_action: moves.Move | None = None
     backdrop: DirectFrame
     use_buttons: list[DirectButton]
@@ -230,19 +220,24 @@ class ActionSelector:
 
     def __init__(
         self,
-        fighter: Fighter,
-        pos: tuple[float, float, float],
         *,
-        info_box: OnscreenText,
-        width: float = 0.5,
+        fighter: Fighter,
         opponent: Fighter,
+        pos: tuple[float, float, float],
+        width: float = 0.5,
+        hidden: bool = False,
     ) -> None:
         self.fighter = fighter
-        self.info_box = info_box
         self.backdrop = DirectFrame(
             frameColor=(0, 0, 0, 0.5),
             frameSize=(-width, width, -0.5, 0.5),
             pos=pos,
+        )
+        self.info_box = OnscreenText(
+            parent=self.backdrop,
+            pos=(0, 0.75),
+            scale=0.07,
+            align=TextNode.ACenter,
         )
         button_kwargs = {
             'frameSize': (-width / 2, width / 2, -0.1, 0.1),
@@ -278,6 +273,8 @@ class ActionSelector:
             )
             for i, action in enumerate(fighter.moves.values())
         ]
+        if hidden:
+            self.hide()
 
     def select_action(self, action: moves.Move) -> None:
         self.selected_action = action

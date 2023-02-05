@@ -101,9 +101,6 @@ class Move:  # TODO: decide on whether these should be called moves or actions
 
     def apply(self, user: Fighter, target: Fighter, confirmed: bool = False) -> None:
         if confirmed or self.accuracy > random.randint(0, 99):
-            messenger.send(
-                'output_info', [user.index, f"{user.name}'s {self.name} hit!"]
-            )
             _logger.debug(f'{user} hit {target} with {self}')
             for instant_effect in self.instant_effects:
                 _logger.debug(f'Applying {instant_effect} to {target}')
@@ -111,10 +108,7 @@ class Move:  # TODO: decide on whether these should be called moves or actions
             target.copy_effects(self.status_effects)
         else:
             _logger.debug(f'{user} missed {target} with {self}')
-            messenger.send(
-                'output_info',
-                [user.index, f"{user.name}'s {self.name} missed!"],
-            )
+            messenger.send('output_info', [f"{user.name}'s {self.name} missed!"])
 
 
 def make_damage_effect(lower_bound: int, upper_bound: int) -> InstantEffect:
