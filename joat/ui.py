@@ -88,16 +88,17 @@ class CharacterMenu:
 
     def __init__(
         self,
-        title: str,
         characters: Iterable[Character],
-        mode: str,
+        mode: str = 'view',
         *,
         character_select_function: Callable[[Character, str], object],
         aspect_ratio: float = 4 / 3,
     ) -> None:
         self.mode = mode
         self.backdrop = DirectFrame(frameColor=(0, 0, 0, 0), frameSize=(-1, 1, -1, 1))
-        self.title_text = OnscreenText(text=title, pos=(0, 0.9), parent=self.backdrop)
+        self.title_text = OnscreenText(
+            text='Select a Character', pos=(0, 0.9), parent=self.backdrop
+        )
         self.character_view = DirectFrame(
             frameColor=(0.2, 0.2, 0.2, 0.8),
             frameSize=(-aspect_ratio, aspect_ratio, -0.5, 0.5),
@@ -115,7 +116,7 @@ class CharacterMenu:
             character_select_function(self.selection, self.mode)
 
         self.confirmation_button = DirectButton(
-            text='Select a Character',
+            text='',
             command=confirm_selection,
             frameSize=(-0.4, 0.4, -0.15, 0.15),
             borderWidth=(0.05, 0.05),
