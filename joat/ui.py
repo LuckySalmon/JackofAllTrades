@@ -5,7 +5,6 @@ from collections.abc import Callable, Iterable, Iterator
 
 from direct.gui.DirectGui import DirectButton, DirectFrame, OnscreenText
 from direct.showbase.DirectObject import DirectObject
-from direct.showbase.MessengerGlobal import messenger
 from panda3d.core import TextNode
 
 from . import arenas, moves
@@ -92,6 +91,7 @@ class CharacterMenu:
         mode: str = 'view',
         *,
         character_select_function: Callable[[Character, str], object],
+        main_menu_function: Callable[[], object],
         aspect_ratio: float = 4 / 3,
     ) -> None:
         self.mode = mode
@@ -131,7 +131,7 @@ class CharacterMenu:
 
         self.back_button = DirectButton(
             text='Back',
-            command=lambda: messenger.send('main_menu'),
+            command=main_menu_function,
             pos=(-1.15, 0, 0.9),
             frameSize=(-2, 2, -1, 1),
             borderWidth=(0.2, 0.2),
@@ -186,6 +186,7 @@ class BattleMenu(DirectObject):
         *,
         aspect_ratio: float = 4 / 3,
         selector_width: float = 0.5,
+        next_turn_function: Callable[[], object],
     ) -> None:
         super().__init__()
         self.central_text = OnscreenText(
@@ -198,6 +199,7 @@ class BattleMenu(DirectObject):
                 pos=(selector_width - aspect_ratio, 0, -0.5),
                 width=selector_width,
                 hidden=True,
+                next_turn_function=next_turn_function,
             )
             for i in range(2)
         ]
@@ -218,6 +220,7 @@ class FighterInterface:
     use_buttons: list[DirectButton]
     action_buttons: list[DirectButton]
     info_box: OnscreenText
+    next_turn_function: Callable[[], object]
 
     def __init__(
         self,
@@ -225,10 +228,12 @@ class FighterInterface:
         fighter: Fighter,
         opponent: Fighter,
         pos: tuple[float, float, float],
+        next_turn_function: Callable[[], object],
         width: float = 0.5,
         hidden: bool = False,
     ) -> None:
         self.fighter = fighter
+        self.next_turn_function = next_turn_function
         self.backdrop = DirectFrame(
             frameColor=(0, 0, 0, 0.5),
             frameSize=(-width, width, -0.5, 0.5),
@@ -297,7 +302,7 @@ class FighterInterface:
         assert self.selected_action is not None
         self.hide()
         self.fighter.use_move(self.selected_action, target)
-        messenger.send('next_turn')
+        self.next_turn_function()
 
     def hide(self) -> None:
         self.backdrop.hide()

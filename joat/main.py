@@ -31,11 +31,6 @@ class App(ShowBase):
         ShowBase.__init__(self)
         self.available_characters = list(available_characters)
         self.selected_characters = []
-        self.accept('main_menu', self.enter_main_menu)
-        self.accept(
-            'next_turn',
-            lambda: self.taskMgr.add(self.next_turn, delay=1, extraArgs=()),
-        )
         self.main_menu = ui.MainMenu(
             battle_function=functools.partial(
                 self.enter_character_menu, 'split_screen'
@@ -46,6 +41,7 @@ class App(ShowBase):
         self.character_menu = ui.CharacterMenu(
             characters=self.available_characters,
             character_select_function=self.select_character,
+            main_menu_function=self.enter_main_menu,
         )
         self.enter_main_menu()
 
@@ -81,7 +77,12 @@ class App(ShowBase):
         fighter_2.set_stance(stances.BOXING_STANCE)
         self.arena = arenas.Arena(fighter_1, fighter_2, world=world)
         self.taskMgr.add(self.arena.update, 'update')
-        self.battle_menu = ui.BattleMenu(self.arena)
+        self.battle_menu = ui.BattleMenu(
+            self.arena,
+            next_turn_function=functools.partial(
+                self.taskMgr.add, self.next_turn, delay=1, extraArgs=()
+            ),
+        )
         self.battle_menu.query_action(0)
 
     def set_camera_pos(self, *, r: float, theta: float, height: float) -> None:
