@@ -4,10 +4,9 @@ from dataclasses import dataclass, field
 
 from direct.showbase import ShowBaseGlobal
 from direct.showbase.DirectObject import DirectObject
-from direct.task.Task import Task
 from panda3d import bullet
+from panda3d.core import AsyncTask
 
-from . import physics
 from .characters import Fighter
 
 
@@ -40,9 +39,10 @@ class Arena:
         else:
             raise IndexError(f'{self} has no fighter at index {index}')
 
-    def update(self, task: Task) -> int:
+    def update(self, task: AsyncTask) -> int:
         self.handle_collisions()
-        return physics.update_physics(self.world, task)
+        self.world.do_physics(ShowBaseGlobal.globalClock.dt)
+        return task.DS_cont
 
     def handle_collisions(self) -> None:
         for manifold in self.world.manifolds:

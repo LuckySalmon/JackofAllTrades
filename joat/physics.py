@@ -6,7 +6,6 @@ from collections.abc import Iterable
 from typing import Final
 
 from direct.showbase import ShowBaseGlobal
-from direct.task.Task import Task
 from panda3d.bullet import (
     BulletConeTwistConstraint,
     BulletGenericConstraint,
@@ -200,9 +199,3 @@ def make_world(*, gravity: VBase3) -> BulletWorld:
     ground_node_path.set_pos(0, 0, -2)
     world.attach(ground_node)
     return world
-
-
-def update_physics(world: BulletWorld, task: Task) -> int:
-    dt = ShowBaseGlobal.globalClock.get_dt()
-    world.do_physics(dt)
-    return task.cont
