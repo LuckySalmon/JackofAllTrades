@@ -11,7 +11,7 @@ from typing import Final
 from direct.showbase.ShowBase import ShowBase
 from panda3d.core import AsyncTaskPause, ClockObject, Vec3
 
-from . import arenas, physics, stances, tasks, ui
+from . import arenas, moves, physics, stances, tasks, ui
 from .characters import Character, Fighter
 
 _logger: Final = logging.getLogger(__name__)
@@ -97,12 +97,15 @@ class App(ShowBase):
 
     async def do_battle(self) -> None:
         assert self.arena is not None
-        battle_menu = ui.BattleMenu(self.arena)
+        battle_menu = ui.BattleMenu(self.arena.fighter_1, self.arena.fighter_2)
         for i, interface in itertools.cycle(enumerate(battle_menu.interfaces)):
             fighter = self.arena.get_fighter(i)
             opponent = self.arena.get_fighter(1 - i)
             move, target = await interface.query_action()
-            await fighter.use_move(move, target)
+            if target is moves.Target.SELF:
+                await fighter.use_move(move, fighter)
+            elif target is moves.Target.OTHER:
+                await fighter.use_move(move, opponent)
             opponent.apply_current_effects()
             if opponent.hp <= 0:
                 victor = self.arena.get_fighter(i)

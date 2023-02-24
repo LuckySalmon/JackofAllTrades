@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import enum
 import json
 import logging
 import random
@@ -24,6 +25,11 @@ EffectProcedure: TypeAlias = 'Callable[[Fighter], object]'
 def noop(*_: object) -> None:
     """Accept arbitrary positional arguments and do nothing."""
     pass
+
+
+class Target(enum.Enum):
+    SELF = enum.auto()
+    OTHER = enum.auto()
 
 
 @dataclass

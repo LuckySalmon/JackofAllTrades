@@ -7,7 +7,7 @@ from direct.gui.DirectGui import DirectButton, DirectFrame, OnscreenText
 from direct.showbase.DirectObject import DirectObject
 from panda3d.core import AsyncTaskPause, TextNode
 
-from . import arenas, moves
+from . import moves
 from .characters import Character, Fighter
 
 
@@ -182,8 +182,7 @@ class BattleMenu(DirectObject):
 
     def __init__(
         self,
-        arena: arenas.Arena,
-        *,
+        *fighters: Fighter,
         aspect_ratio: float = 4 / 3,
         selector_width: float = 0.5,
     ) -> None:
@@ -193,13 +192,12 @@ class BattleMenu(DirectObject):
         )
         self.interfaces = [
             FighterInterface(
-                fighter=arena.get_fighter(i),
-                opponent=arena.get_fighter(1 - i),
+                fighter.moves.values(),
                 pos=(selector_width - aspect_ratio, 0, -0.5),
                 width=selector_width,
                 hidden=True,
             )
-            for i in range(2)
+            for fighter in fighters
         ]
         self.accept('output_info', self.output_info)
 
@@ -208,7 +206,7 @@ class BattleMenu(DirectObject):
 
 
 class FighterInterface:
-    selected_target: Fighter | None = None
+    selected_target: moves.Target | None = None
     selected_action: moves.Move | None = None
     backdrop: DirectFrame
     use_buttons: list[DirectButton]
@@ -217,9 +215,8 @@ class FighterInterface:
 
     def __init__(
         self,
+        available_moves: Iterable[moves.Move],
         *,
-        fighter: Fighter,
-        opponent: Fighter,
         pos: tuple[float, float, float],
         width: float = 0.5,
         hidden: bool = False,
@@ -245,14 +242,14 @@ class FighterInterface:
             DirectButton(
                 text='Use on self',
                 command=self.select_target,
-                extraArgs=[fighter],
+                extraArgs=[moves.Target.SELF],
                 pos=(width / 2, 0, 0.4),
                 **button_kwargs,
             ),
             DirectButton(
                 text='Use on opponent',
                 command=self.select_target,
-                extraArgs=[opponent],
+                extraArgs=[moves.Target.OTHER],
                 pos=(width / 2, 0, 0.2),
                 **button_kwargs,
             ),
@@ -267,7 +264,7 @@ class FighterInterface:
                 pos=(-width / 2, 0, 0.4 - i * 0.2),
                 **button_kwargs,
             )
-            for i, action in enumerate(fighter.moves.values())
+            for i, action in enumerate(available_moves)
         ]
         if hidden:
             self.hide()
@@ -288,10 +285,10 @@ class FighterInterface:
             else:
                 button.hide()
 
-    def select_target(self, target: Fighter) -> None:
+    def select_target(self, target: moves.Target) -> None:
         self.selected_target = target
 
-    async def query_action(self) -> tuple[moves.Move, Fighter]:
+    async def query_action(self) -> tuple[moves.Move, moves.Target]:
         self.show()
         while self.selected_target is None or self.selected_action is None:
             await AsyncTaskPause(0)
