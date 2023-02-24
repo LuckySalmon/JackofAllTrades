@@ -8,9 +8,9 @@ from pathlib import Path
 from typing import Final
 
 from direct.showbase.ShowBase import ShowBase
-from panda3d.core import PythonTask, Vec3
+from panda3d.core import AsyncTaskPause, ClockObject, Vec3
 
-from . import arenas, physics, stances, ui
+from . import arenas, physics, stances, tasks, ui
 from .characters import Character, Fighter
 
 _logger: Final = logging.getLogger(__name__)
@@ -76,12 +76,9 @@ class App(ShowBase):
         fighter_1.set_stance(stances.BOXING_STANCE)
         fighter_2.set_stance(stances.BOXING_STANCE)
         self.arena = arenas.Arena(fighter_1, fighter_2, world=world)
-        self.taskMgr.add(self.arena.update, 'update')
+        tasks.add_task(self.arena.update())
         self.battle_menu = ui.BattleMenu(
-            self.arena,
-            next_turn_function=functools.partial(
-                self.taskMgr.add, self.next_turn, delay=1, extraArgs=()
-            ),
+            self.arena, next_turn_function=lambda: tasks.add_task(self.next_turn())
         )
         self.battle_menu.query_action(0)
 
@@ -89,26 +86,23 @@ class App(ShowBase):
         self.cam.set_pos(r * math.cos(theta), r * math.sin(theta), height)
         self.cam.look_at(0, 0, 0)
 
-    def move_camera(self, to_angle: float, *, time: float = 1) -> PythonTask:
+    async def move_camera(self, to_angle: float, *, time: float = 1) -> None:
+        clock = ClockObject.get_global_clock()
+        start_time = clock.frame_time
         x, y, height = self.cam.get_pos()
         from_angle = math.atan2(y, x)
         r = math.hypot(x, y)
         speed = (to_angle - from_angle) / time
+        while (dt := clock.frame_time - start_time) < time:
+            current_angle = from_angle + speed * dt
+            self.set_camera_pos(r=r, theta=current_angle, height=height)
+            await AsyncTaskPause(0)
+        self.set_camera_pos(r=r, theta=to_angle, height=height)
 
-        def update_camera_pos(task: PythonTask) -> int:
-            if task.time < time:
-                current_angle = from_angle + speed * task.time
-                self.set_camera_pos(r=r, theta=current_angle, height=height)
-                return PythonTask.DS_cont
-            else:
-                self.set_camera_pos(r=r, theta=to_angle, height=height)
-                return PythonTask.DS_done
-
-        return self.taskMgr.add(update_camera_pos)
-
-    def next_turn(self) -> None:
+    async def next_turn(self) -> None:
         assert self.arena is not None
         assert self.battle_menu is not None
+        await AsyncTaskPause(1)
         self.index = (self.index + 1) % 2
         fighter = self.arena.get_fighter(self.index)
         fighter.apply_current_effects()
@@ -117,8 +111,8 @@ class App(ShowBase):
             _logger.info(f'{victor} won the battle')
             self.battle_menu.output_info(f'{victor.name} wins!')
         else:
-            self.move_camera((0.2 if self.index else 1.2) * math.pi)
             self.battle_menu.query_action(self.index)
+            await self.move_camera((0.2 if self.index else 1.2) * math.pi)
 
 
 def main() -> None:

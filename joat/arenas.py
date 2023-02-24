@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing_extensions import Never
 
 from direct.showbase import ShowBaseGlobal
 from direct.showbase.DirectObject import DirectObject
 from panda3d import bullet
-from panda3d.core import AsyncTask
+from panda3d.core import AsyncTaskPause, ClockObject
 
 from .characters import Fighter
 
@@ -39,10 +40,15 @@ class Arena:
         else:
             raise IndexError(f'{self} has no fighter at index {index}')
 
-    def update(self, task: AsyncTask) -> int:
-        self.handle_collisions()
-        self.world.do_physics(ShowBaseGlobal.globalClock.dt)
-        return task.DS_cont
+    async def update(self) -> Never:
+        clock = ClockObject.get_global_clock()
+        prev_time = clock.frame_time
+        while True:
+            now = clock.frame_time
+            self.handle_collisions()
+            self.world.do_physics(now - prev_time)
+            prev_time = now
+            await AsyncTaskPause(0)
 
     def handle_collisions(self) -> None:
         for manifold in self.world.manifolds:

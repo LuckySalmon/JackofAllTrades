@@ -7,7 +7,7 @@ from direct.gui.DirectGui import DirectButton, DirectFrame, OnscreenText
 from direct.showbase.DirectObject import DirectObject
 from panda3d.core import TextNode
 
-from . import arenas, moves
+from . import arenas, moves, tasks
 from .characters import Character, Fighter
 
 
@@ -301,7 +301,7 @@ class FighterInterface:
     def use_action(self, target: Fighter) -> None:
         assert self.selected_action is not None
         self.hide()
-        self.fighter.use_move(self.selected_action, target)
+        tasks.add_task(self.fighter.use_move(self.selected_action, target))
         self.next_turn_function()
 
     def hide(self) -> None:

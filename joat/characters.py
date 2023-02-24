@@ -11,9 +11,8 @@ from typing import TYPE_CHECKING, Any, Final
 from direct.gui.DirectWaitBar import DirectWaitBar
 from direct.showbase import ShowBaseGlobal
 from direct.showbase.MessengerGlobal import messenger
-from direct.task.TaskManagerGlobal import taskMgr
 from panda3d.bullet import BulletPersistentManifold, BulletWorld
-from panda3d.core import CollideMask, Mat3, Mat4, PandaNode, Vec3
+from panda3d.core import AsyncTaskPause, CollideMask, Mat3, Mat4, PandaNode, Vec3
 
 from . import physics, stances
 from .moves import Move, StatusEffect
@@ -156,7 +155,7 @@ class Fighter:
         self.skeleton.stance = stance
         self.skeleton.assume_stance()
 
-    def use_move(self, move: Move, target: Fighter) -> None:
+    async def use_move(self, move: Move, target: Fighter) -> None:
         _logger.debug(f'{self} used {move} on {target}')
         if move.using == 'arm_right':
             arm = self.skeleton.right_arm
@@ -182,47 +181,34 @@ class Fighter:
                 offset = Vec3(0, 0, 0)
             else:
                 arm.target_point = target_position - arm.origin
+                await AsyncTaskPause(1 / (1 + self.speed) / 8)
                 using_part = arm.forearm
                 offset = Vec3(0, -0.25, 0)
             global_target_position = render.get_relative_point(
                 self.skeleton.core, target_position
             )
-
-            def throw_projectile(_: object = None) -> None:
-                from_position = render.get_relative_point(using_part, offset)
-                projectile = physics.spawn_projectile(
-                    name=move.name,
-                    instant_effects=move.instant_effects,
-                    status_effects=move.status_effects,
-                    world=self.world,
-                    position=from_position,
-                    velocity=physics.required_projectile_velocity(
-                        global_target_position - from_position,
-                        self.strength * 4,
-                    ),
-                    collision_mask=~using_part.get_collide_mask(),
-                )
-                self.skeleton.assume_stance()
-                taskMgr.do_method_later(
-                    0.2 / self.strength,
-                    lambda _: projectile.set_collide_mask(CollideMask.all_on()),
-                    'allow_projectile_collisions',
-                )
-
-            taskMgr.do_method_later(
-                0 if arm is None else 1 / (1 + self.speed) / 8,
-                throw_projectile,
-                'throw_projectile',
+            from_position = render.get_relative_point(using_part, offset)
+            projectile = physics.spawn_projectile(
+                name=move.name,
+                instant_effects=move.instant_effects,
+                status_effects=move.status_effects,
+                world=self.world,
+                position=from_position,
+                velocity=physics.required_projectile_velocity(
+                    global_target_position - from_position,
+                    self.strength * 4,
+                ),
+                collision_mask=~using_part.get_collide_mask(),
             )
+            self.skeleton.assume_stance()
+            await AsyncTaskPause(0.2 / self.strength)
+            if not projectile.is_empty():
+                projectile.set_collide_mask(CollideMask.all_on())
             return
 
         assert arm is not None
         fist = arm.forearm.node()
         current_callback = fist.python_tags.get('impact_callback')
-
-        def reset(_: object) -> None:
-            self.skeleton.assume_stance()
-            fist.python_tags['impact_callback'] = current_callback
 
         def temporary_impact_callback(
             node: PandaNode, manifold: BulletPersistentManifold
@@ -243,7 +229,9 @@ class Fighter:
 
         fist.python_tags['impact_callback'] = temporary_impact_callback
         arm.target_point = target_position - arm.origin
-        taskMgr.do_method_later(1 / (1 + self.speed), reset, 'reset_move')
+        await AsyncTaskPause(1 / (1 + self.speed))
+        self.skeleton.assume_stance()
+        fist.python_tags['impact_callback'] = current_callback
 
     def apply_damage(self, damage: int) -> None:
         if damage:

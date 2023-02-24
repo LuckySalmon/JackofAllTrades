@@ -3,12 +3,10 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, field
 from typing import Any, TypedDict
-from typing_extensions import NotRequired
+from typing_extensions import Never, NotRequired
 
 from direct.directtools.DirectGeometry import LineNodePath
 from direct.showbase import ShowBaseGlobal
-from direct.task.Task import Task
-from direct.task.TaskManagerGlobal import taskMgr
 from panda3d.bullet import (
     BulletBoxShape,
     BulletCapsuleShape,
@@ -19,9 +17,9 @@ from panda3d.bullet import (
     BulletSphereShape,
     BulletWorld,
 )
-from panda3d.core import LColor, Mat3, Mat4, NodePath, VBase3, Vec3
+from panda3d.core import AsyncTaskPause, LColor, Mat3, Mat4, NodePath, VBase3, Vec3
 
-from . import physics, stances
+from . import physics, stances, tasks
 
 
 class _PathInfo(TypedDict):
@@ -214,21 +212,22 @@ class Arm:
     def set_target_elbow_angle(self, angle: float) -> None:
         self.elbow.set_motor_target(angle, 1 / self.speed)
 
-    def move(self, task: Task) -> int:
+    async def move(self) -> Never:
         """Move toward the position described
         by `target_point` and `target_angle`.
         """
-        if self.target_point is None:
-            return task.cont
-        target_angles = shoulder_angles(
-            self.target_point, self.target_angle, self.transform
-        )
-        for axis in range(3):
-            self.set_target_shoulder_angle(axis, target_angles[axis])
-        self.set_target_elbow_angle(target_angles[3])
-        self.bicep.node().set_active(True)
-        draw_lines(self.lines, {'points': [self.target_point]}, origin=self.origin)
-        return task.cont
+        while True:
+            await AsyncTaskPause(0)
+            if self.target_point is None:
+                continue
+            target_angles = shoulder_angles(
+                self.target_point, self.target_angle, self.transform
+            )
+            for axis in range(3):
+                self.set_target_shoulder_angle(axis, target_angles[axis])
+            self.set_target_elbow_angle(target_angles[3])
+            self.bicep.node().set_active(True)
+            draw_lines(self.lines, {'points': [self.target_point]}, origin=self.origin)
 
 
 @dataclass(repr=False, kw_only=True)
@@ -340,8 +339,8 @@ class Skeleton:
 
     def __post_init__(self) -> None:
         self.assume_stance()
-        taskMgr.add(self.left_arm.move, f'move_left_arm_{id(self)}')
-        taskMgr.add(self.right_arm.move, f'move_right_arm_{id(self)}')
+        tasks.add_task(self.left_arm.move())
+        tasks.add_task(self.right_arm.move())
 
     def assume_stance(self) -> None:
         self.left_arm.target_point = self.stance.left_hand_pos
