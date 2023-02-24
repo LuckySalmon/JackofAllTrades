@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import functools
+import itertools
 import logging
 import math
 from collections.abc import Iterable
@@ -21,9 +22,7 @@ GRAVITY: Final = Vec3(0, 0, -9.81)
 class App(ShowBase):
     available_characters: list[Character]
     selected_characters: list[Character]
-    index: int = 0
     arena: arenas.Arena | None = None
-    battle_menu: ui.BattleMenu | None = None
     character_menu: ui.CharacterMenu
     main_menu: ui.MainMenu
 
@@ -77,10 +76,7 @@ class App(ShowBase):
         fighter_2.set_stance(stances.BOXING_STANCE)
         self.arena = arenas.Arena(fighter_1, fighter_2, world=world)
         tasks.add_task(self.arena.update())
-        self.battle_menu = ui.BattleMenu(
-            self.arena, next_turn_function=lambda: tasks.add_task(self.next_turn())
-        )
-        self.battle_menu.query_action(0)
+        tasks.add_task(self.do_battle())
 
     def set_camera_pos(self, *, r: float, theta: float, height: float) -> None:
         self.cam.set_pos(r * math.cos(theta), r * math.sin(theta), height)
@@ -99,20 +95,23 @@ class App(ShowBase):
             await AsyncTaskPause(0)
         self.set_camera_pos(r=r, theta=to_angle, height=height)
 
-    async def next_turn(self) -> None:
+    async def do_battle(self) -> None:
         assert self.arena is not None
-        assert self.battle_menu is not None
-        await AsyncTaskPause(1)
-        self.index = (self.index + 1) % 2
-        fighter = self.arena.get_fighter(self.index)
-        fighter.apply_current_effects()
-        if fighter.hp <= 0:
-            victor = self.arena.get_fighter(1 - self.index)
-            _logger.info(f'{victor} won the battle')
-            self.battle_menu.output_info(f'{victor.name} wins!')
-        else:
-            self.battle_menu.query_action(self.index)
-            await self.move_camera((0.2 if self.index else 1.2) * math.pi)
+        battle_menu = ui.BattleMenu(self.arena)
+        for i, interface in itertools.cycle(enumerate(battle_menu.interfaces)):
+            fighter = self.arena.get_fighter(i)
+            opponent = self.arena.get_fighter(1 - i)
+            move, target = await interface.query_action()
+            await fighter.use_move(move, target)
+            opponent.apply_current_effects()
+            if opponent.hp <= 0:
+                victor = self.arena.get_fighter(i)
+                _logger.info(f'{victor} won the battle')
+                battle_menu.output_info(f'{victor.name} wins!')
+                return
+            else:
+                await AsyncTaskPause(0.5)
+                await self.move_camera((1.2 if i else 0.2) * math.pi)
 
 
 def main() -> None:

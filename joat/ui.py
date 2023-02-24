@@ -5,9 +5,9 @@ from collections.abc import Callable, Iterable, Iterator
 
 from direct.gui.DirectGui import DirectButton, DirectFrame, OnscreenText
 from direct.showbase.DirectObject import DirectObject
-from panda3d.core import TextNode
+from panda3d.core import AsyncTaskPause, TextNode
 
-from . import arenas, moves, tasks
+from . import arenas, moves
 from .characters import Character, Fighter
 
 
@@ -186,7 +186,6 @@ class BattleMenu(DirectObject):
         *,
         aspect_ratio: float = 4 / 3,
         selector_width: float = 0.5,
-        next_turn_function: Callable[[], object],
     ) -> None:
         super().__init__()
         self.central_text = OnscreenText(
@@ -199,28 +198,22 @@ class BattleMenu(DirectObject):
                 pos=(selector_width - aspect_ratio, 0, -0.5),
                 width=selector_width,
                 hidden=True,
-                next_turn_function=next_turn_function,
             )
             for i in range(2)
         ]
         self.accept('output_info', self.output_info)
-
-    def query_action(self, index: int) -> None:
-        """Set up buttons for a player to choose an action."""
-        self.interfaces[index].show()
 
     def output_info(self, info: str) -> None:
         self.central_text.setText(info)
 
 
 class FighterInterface:
-    fighter: Fighter
+    selected_target: Fighter | None = None
     selected_action: moves.Move | None = None
     backdrop: DirectFrame
     use_buttons: list[DirectButton]
     action_buttons: list[DirectButton]
     info_box: OnscreenText
-    next_turn_function: Callable[[], object]
 
     def __init__(
         self,
@@ -228,12 +221,9 @@ class FighterInterface:
         fighter: Fighter,
         opponent: Fighter,
         pos: tuple[float, float, float],
-        next_turn_function: Callable[[], object],
         width: float = 0.5,
         hidden: bool = False,
     ) -> None:
-        self.fighter = fighter
-        self.next_turn_function = next_turn_function
         self.backdrop = DirectFrame(
             frameColor=(0, 0, 0, 0.5),
             frameSize=(-width, width, -0.5, 0.5),
@@ -254,14 +244,14 @@ class FighterInterface:
         self.use_buttons = [
             DirectButton(
                 text='Use on self',
-                command=self.use_action,
+                command=self.select_target,
                 extraArgs=[fighter],
                 pos=(width / 2, 0, 0.4),
                 **button_kwargs,
             ),
             DirectButton(
                 text='Use on opponent',
-                command=self.use_action,
+                command=self.select_target,
                 extraArgs=[opponent],
                 pos=(width / 2, 0, 0.2),
                 **button_kwargs,
@@ -298,11 +288,19 @@ class FighterInterface:
             else:
                 button.hide()
 
-    def use_action(self, target: Fighter) -> None:
+    def select_target(self, target: Fighter) -> None:
+        self.selected_target = target
+
+    async def query_action(self) -> tuple[moves.Move, Fighter]:
+        self.show()
+        while self.selected_target is None or self.selected_action is None:
+            await AsyncTaskPause(0)
+        assert self.selected_target is not None
         assert self.selected_action is not None
+        action, target = self.selected_action, self.selected_target
         self.hide()
-        tasks.add_task(self.fighter.use_move(self.selected_action, target))
-        self.next_turn_function()
+        del self.selected_target
+        return action, target
 
     def hide(self) -> None:
         self.backdrop.hide()
