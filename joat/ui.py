@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import collections
 import itertools
 from collections.abc import Callable, Iterable, Iterator
+from dataclasses import dataclass, field
 
 from direct.gui.DirectGui import DirectButton, DirectFrame, OnscreenText
 from direct.showbase.DirectObject import DirectObject
-from panda3d.core import AsyncTaskPause, TextNode
+from panda3d.core import AsyncTaskPause, NodePath, TextNode
 
 from . import moves
 from .characters import Character, Fighter
@@ -176,8 +178,26 @@ class CharacterMenu:
         self.backdrop.show()
 
 
+@dataclass
+class InfoStream:
+    backdrop: NodePath
+    lines: collections.deque[OnscreenText] = field(default_factory=collections.deque)
+    max_lines: int = field(default=16, kw_only=True)
+    height: float = field(default=1.9, kw_only=True)
+
+    def append_text(self, *new_lines: str) -> None:
+        for new_line in new_lines:
+            self.lines.appendleft(OnscreenText(new_line, parent=self.backdrop))
+            if len(self.lines) > self.max_lines:
+                old_line = self.lines.pop()
+                old_line.destroy()
+        line_spacing = 1 / (self.max_lines - 1)
+        for i, line in enumerate(self.lines):
+            line.set_pos(0, 0, self.height * (i * line_spacing - 0.5))
+
+
 class BattleMenu(DirectObject):
-    central_text: OnscreenText
+    info_stream: InfoStream
     interfaces: list[FighterInterface]
 
     def __init__(
@@ -187,8 +207,12 @@ class BattleMenu(DirectObject):
         selector_width: float = 0.5,
     ) -> None:
         super().__init__()
-        self.central_text = OnscreenText(
-            pos=(0, 0.75), scale=0.07, align=TextNode.ACenter
+        self.info_stream = InfoStream(
+            DirectFrame(
+                pos=(aspect_ratio - 0.5, 0, 0),
+                frameSize=(-0.5, 0.5, -1, 1),
+                frameColor=(0, 0, 0, 0.25),
+            )
         )
         self.interfaces = [
             FighterInterface(
@@ -202,7 +226,7 @@ class BattleMenu(DirectObject):
         self.accept('output_info', self.output_info)
 
     def output_info(self, info: str) -> None:
-        self.central_text.setText(info)
+        self.info_stream.append_text(info)
 
 
 class FighterInterface:
