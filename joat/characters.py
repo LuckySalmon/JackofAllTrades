@@ -177,17 +177,19 @@ class Fighter:
 
         if move.is_projectile:
             render = ShowBaseGlobal.base.render
-            using_part = self.skeleton.parts[move.using] if arm is None else arm.forearm
+            if arm is None:
+                using_part = self.skeleton.parts[move.using]
+                offset = Vec3(0, 0, 0)
+            else:
+                arm.target_point = target_position - arm.origin
+                using_part = arm.forearm
+                offset = Vec3(0, -0.25, 0)
             global_target_position = render.get_relative_point(
                 self.skeleton.core, target_position
             )
 
             def throw_projectile(_: object = None) -> None:
-                from_position = using_part.get_pos(render)
-                if arm is not None:
-                    from_position += render.get_relative_vector(
-                        using_part, Vec3(0, -0.25, 0)
-                    )
+                from_position = render.get_relative_point(using_part, offset)
                 projectile = physics.spawn_projectile(
                     name=move.name,
                     instant_effects=move.instant_effects,
@@ -200,6 +202,7 @@ class Fighter:
                     ),
                     collision_mask=~using_part.get_collide_mask(),
                 )
+                self.skeleton.assume_stance()
                 taskMgr.do_method_later(
                     0.2 / self.strength,
                     lambda _: projectile.set_collide_mask(CollideMask.all_on()),
@@ -211,10 +214,9 @@ class Fighter:
                 throw_projectile,
                 'throw_projectile',
             )
-
-        if arm is None:
             return
 
+        assert arm is not None
         fist = arm.forearm.node()
         current_callback = fist.python_tags.get('impact_callback')
 
