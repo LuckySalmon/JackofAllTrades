@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field
-from typing import Any, TypedDict
-from typing_extensions import Never, NotRequired
+from dataclasses import dataclass
+from typing import Any
+from typing_extensions import Never
 
-from direct.directtools.DirectGeometry import LineNodePath
 from direct.showbase import ShowBaseGlobal
 from panda3d.bullet import (
     BulletBoxShape,
@@ -17,32 +16,9 @@ from panda3d.bullet import (
     BulletSphereShape,
     BulletWorld,
 )
-from panda3d.core import AsyncTaskPause, LColor, Mat3, Mat4, NodePath, VBase3, Vec3
+from panda3d.core import AsyncTaskPause, Mat3, Mat4, NodePath, VBase3, Vec3
 
 from . import physics, stances, tasks
-
-
-class _PathInfo(TypedDict):
-    points: list[VBase3]
-    color: NotRequired[LColor]
-
-
-def draw_lines(
-    lines: LineNodePath,
-    *paths: _PathInfo,
-    origin: VBase3 | None = None,
-) -> None:
-    if origin is None:
-        origin = lines.getCurrentPosition()
-    lines.reset()
-    for path in paths:
-        if 'color' in path:
-            lines.setColor(path['color'])
-        points = path['points']
-        lines.moveTo(origin)
-        for point in points:
-            lines.drawTo(origin + point)
-    lines.create()
 
 
 def shoulder_angles(
@@ -107,7 +83,6 @@ class Arm:
     speed: float  # proportional to maximum angular velocity of joint motors
     target_point: VBase3 | None = None
     target_angle: float = 0
-    lines: LineNodePath = field(init=False)
 
     @classmethod
     def construct(
@@ -177,27 +152,6 @@ class Arm:
             speed=speed,
         )
 
-    def __post_init__(self) -> None:
-        self.lines = LineNodePath(
-            name='debug', parent=self.bicep.parent, colorVec=LColor(0.2, 0.2, 0.5, 1)
-        )
-        draw_lines(
-            LineNodePath(name='axes', parent=self.bicep.parent),
-            {
-                'points': [self.shoulder.get_axis(0) / 4],
-                'color': LColor(1, 0, 0, 1),
-            },
-            {
-                'points': [self.shoulder.get_axis(1) / 4],
-                'color': LColor(0, 1, 0, 1),
-            },
-            {
-                'points': [self.shoulder.get_axis(2) / 4],
-                'color': LColor(0, 0, 1, 1),
-            },
-            origin=self.origin,
-        )
-
     def enable_motors(self, enabled: bool) -> None:
         for axis in range(3):
             motor = self.shoulder.get_rotational_limit_motor(axis)
@@ -227,7 +181,6 @@ class Arm:
                 self.set_target_shoulder_angle(axis, target_angles[axis])
             self.set_target_elbow_angle(target_angles[3])
             self.bicep.node().set_active(True)
-            draw_lines(self.lines, {'points': [self.target_point]}, origin=self.origin)
 
 
 @dataclass(repr=False, kw_only=True)
