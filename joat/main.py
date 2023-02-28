@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import functools
 import itertools
 import logging
 import math
@@ -24,6 +23,7 @@ class App(ShowBase):
     selected_characters: list[Character]
     arena: arenas.Arena | None = None
     character_menu: ui.CharacterMenu
+    fighter_menu: ui.CharacterMenu
     main_menu: ui.MainMenu
 
     def __init__(self, *, available_characters: Iterable[Character] = ()) -> None:
@@ -31,40 +31,46 @@ class App(ShowBase):
         self.available_characters = list(available_characters)
         self.selected_characters = []
         self.main_menu = ui.MainMenu(
-            battle_function=functools.partial(
-                self.enter_character_menu, 'split_screen'
-            ),
-            character_function=functools.partial(self.enter_character_menu, 'view'),
+            battle_function=self.enter_fighter_menu,
+            character_function=self.enter_character_menu,
             quit_function=self.userExit,
         )
         self.character_menu = ui.CharacterMenu(
             characters=self.available_characters,
-            character_select_function=self.select_character,
-            main_menu_function=self.enter_main_menu,
+            back_callback=self.enter_main_menu,
+        )
+        self.fighter_menu = ui.CharacterMenu(
+            characters=self.available_characters,
+            confirmation_callback=self.select_character,
+            back_callback=self.enter_main_menu,
         )
         self.enter_main_menu()
 
     def enter_main_menu(self) -> None:
         self.character_menu.hide()
+        self.fighter_menu.hide()
         self.main_menu.show()
 
-    def enter_character_menu(self, mode: str = 'view') -> None:
+    def enter_character_menu(self) -> None:
         self.main_menu.hide()
-        self.character_menu.reset(mode)
+        self.fighter_menu.hide()
         self.character_menu.show()
 
-    def select_character(self, character: Character, mode: str) -> None:
-        match mode:
-            case 'split_screen':
-                self.selected_characters.append(character)
-                if len(self.selected_characters) > 1:
-                    self.enter_battle(*self.selected_characters)
-            case 'copy':
-                self.enter_battle(character, character)
+    def enter_fighter_menu(self) -> None:
+        self.main_menu.hide()
+        self.character_menu.hide()
+        self.fighter_menu.show()
+
+    def select_character(self, character: Character) -> None:
+        self.selected_characters.append(character)
+        if len(self.selected_characters) > 1:
+            self.enter_battle(*self.selected_characters)
+            self.selected_characters.clear()
 
     def enter_battle(self, character_1: Character, character_2: Character) -> None:
         self.main_menu.hide()
         self.character_menu.hide()
+        self.fighter_menu.hide()
         if character_2.speed > character_1.speed:
             character_1, character_2 = character_2, character_1
         _logger.info(f'Starting battle with {character_1} and {character_2}')

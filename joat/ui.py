@@ -77,70 +77,53 @@ class MainMenu:
 
 
 class CharacterMenu:
-    mode: str
     selection: Character | None = None
     backdrop: DirectFrame
-    title_text: OnscreenText
     character_view: DirectFrame
-    character_view_text: OnscreenText
-    confirmation_button: DirectButton
-    back_button: DirectButton
-    buttons: list[DirectButton]
+    confirmation_button: DirectButton | None = None
 
     def __init__(
         self,
         characters: Iterable[Character],
-        mode: str = 'view',
         *,
-        character_select_function: Callable[[Character, str], object],
-        main_menu_function: Callable[[], object],
+        confirmation_callback: Callable[[Character], object] | None = None,
+        back_callback: Callable[[], object] | None = None,
         aspect_ratio: float = 4 / 3,
     ) -> None:
-        self.mode = mode
         self.backdrop = DirectFrame(frameColor=(0, 0, 0, 0), frameSize=(-1, 1, -1, 1))
-        self.title_text = OnscreenText(
-            text='Select a Character', pos=(0, 0.9), parent=self.backdrop
-        )
+        OnscreenText(text='Select a Character', pos=(0, 0.9), parent=self.backdrop)
         self.character_view = DirectFrame(
             frameColor=(0.2, 0.2, 0.2, 0.8),
             frameSize=(-aspect_ratio, aspect_ratio, -0.5, 0.5),
             pos=(0, 0, -0.5),
             parent=self.backdrop,
         )
-        self.character_view_text = OnscreenText(
-            text='Character customization is unimplemented',
-            pos=(0, 0.2),
-            parent=self.character_view,
-        )
-
-        def confirm_selection():
-            assert self.selection is not None
-            character_select_function(self.selection, self.mode)
-
-        self.confirmation_button = DirectButton(
-            text='',
-            command=confirm_selection,
-            frameSize=(-0.4, 0.4, -0.15, 0.15),
-            borderWidth=(0.05, 0.05),
-            text_scale=0.07,
-            parent=self.character_view,
-        )
-        if mode == 'view':
-            self.confirmation_button.hide()
+        if confirmation_callback is None:
+            OnscreenText(
+                text='Character customization is unimplemented',
+                pos=(0, 0.2),
+                parent=self.character_view,
+            )
         else:
-            self.character_view_text.hide()
+            self.confirmation_button = DirectButton(
+                text='',
+                command=confirmation_callback,
+                frameSize=(-0.4, 0.4, -0.15, 0.15),
+                borderWidth=(0.05, 0.05),
+                text_scale=0.07,
+                parent=self.character_view,
+            )
         self.character_view.hide()
-
-        self.back_button = DirectButton(
+        DirectButton(
             text='Back',
-            command=main_menu_function,
+            command=back_callback,
             pos=(-1.15, 0, 0.9),
             frameSize=(-2, 2, -1, 1),
             borderWidth=(0.2, 0.2),
             scale=0.05,
             parent=self.backdrop,
         )
-        self.buttons = [
+        for char, (x, y) in zip(characters, uniform_spacing((4, 4), (0.5, 0.5))):
             DirectButton(
                 text=char.name,
                 command=self.select_character,
@@ -151,28 +134,20 @@ class CharacterMenu:
                 scale=0.05,
                 parent=self.backdrop,
             )
-            for char, (x, y) in zip(characters, uniform_spacing((4, 4), (0.5, 0.5)))
-        ]
 
-    def reset(self, mode: str) -> None:
+    def reset(self) -> None:
         self.selection = None
         self.character_view.hide()
-        self.mode = mode
-        if mode == 'view':
-            self.character_view_text.show()
-            self.confirmation_button.hide()
-        else:
-            self.confirmation_button.show()
-            self.character_view_text.hide()
 
     def select_character(self, character: Character) -> None:
         self.character_view.show()
-        self.selection = character
-        if self.mode != 'view':
+        if self.confirmation_button is not None:
             self.confirmation_button['text'] = f'Use {character.name}'
+            self.confirmation_button['extraArgs'] = [character]
 
     def hide(self) -> None:
         self.backdrop.hide()
+        self.reset()
 
     def show(self) -> None:
         self.backdrop.show()
