@@ -8,11 +8,20 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final
 
-from direct.gui.DirectWaitBar import DirectWaitBar
 from direct.showbase import ShowBaseGlobal
 from direct.showbase.MessengerGlobal import messenger
 from panda3d.bullet import BulletPersistentManifold, BulletWorld
-from panda3d.core import AsyncTaskPause, CollideMask, Mat3, Mat4, PandaNode, Vec3
+from panda3d.core import (
+    AsyncTaskPause,
+    CollideMask,
+    Mat3,
+    Mat4,
+    NodePath,
+    PandaNode,
+    PGFrameStyle,
+    PGWaitBar,
+    Vec3,
+)
 
 from . import physics, stances
 from .moves import Move, StatusEffect
@@ -22,6 +31,30 @@ if TYPE_CHECKING:
     from _typeshed import SupportsRead
 
 _logger: Final = logging.getLogger(__name__)
+
+
+def make_health_bar(fighter: Fighter) -> NodePath[PGWaitBar]:
+    bar = PGWaitBar('Health Bar')
+    bar.set_frame(-0.4, 0.4, 0, 0.1)
+    bar.set_range(fighter.base_hp)
+    bar.set_value(fighter.hp)
+
+    frame_style = PGFrameStyle()
+    frame_style.set_width(0, 0)
+    frame_style.set_color(0.8, 0.8, 0.8, 1)
+    frame_style.set_type(PGFrameStyle.T_flat)
+    bar.set_frame_style(0, frame_style)
+
+    bar_style = PGFrameStyle()
+    bar_style.set_width(0, 0)
+    bar_style.set_color(1, 0, 0, 1)
+    bar_style.set_type(PGFrameStyle.T_flat)
+    bar.set_bar_style(bar_style)
+
+    bar_path = fighter.skeleton.core.attach_new_node(bar)
+    bar_path.set_pos(0, 0, 1.1)
+    bar_path.set_billboard_point_eye()
+    return bar_path
 
 
 @dataclass(kw_only=True)
@@ -87,18 +120,11 @@ class Fighter:
     world: BulletWorld
     index: int = field(default=0, repr=False)
     status_effects: list[StatusEffect] = field(default_factory=list, init=False)
-    health_bar: DirectWaitBar = field(init=False)
+    health_bar: NodePath[PGWaitBar] = field(init=False)
 
     def __post_init__(self) -> None:
         self.hp = self.base_hp
-        self.health_bar = DirectWaitBar(
-            parent=self.skeleton.core,
-            range=self.base_hp,
-            value=self.hp,
-            pos=(0, 0, 1.1),
-            frameSize=(-0.4, 0.4, 0, 0.1),
-        )
-        self.health_bar.set_billboard_point_eye()
+        self.health_bar = make_health_bar(self)
         for part in self.skeleton.parts.values():
             part.node().python_tags.update(
                 {
@@ -237,7 +263,7 @@ class Fighter:
         if damage:
             _logger.debug(f'{self} took {damage} damage')
         self.hp -= damage
-        self.health_bar['value'] = self.hp
+        self.health_bar.node().set_value(self.hp)
         messenger.send('output_info', [f'{self.name} took {damage} damage!'])
         if self.hp <= 0:
             self.kill()
