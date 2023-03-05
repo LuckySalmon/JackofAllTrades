@@ -5,7 +5,6 @@ from dataclasses import dataclass
 from typing import Any
 from typing_extensions import Never
 
-from direct.showbase import ShowBaseGlobal
 from panda3d.bullet import (
     BulletBoxShape,
     BulletCapsuleShape,
@@ -14,11 +13,10 @@ from panda3d.bullet import (
     BulletHingeConstraint,
     BulletRigidBodyNode,
     BulletSphereShape,
-    BulletWorld,
 )
 from panda3d.core import AsyncTaskPause, Mat3, Mat4, NodePath, VBase3, Vec3
 
-from . import physics, stances, tasks
+from . import arenas, physics, stances, tasks
 
 
 def shoulder_angles(
@@ -93,7 +91,6 @@ class Arm:
         radius: float,
         parent: NodePath,
         transform: Mat3,
-        world: BulletWorld,
         speed: float = 1,
         strength: float = 1,
     ) -> Arm:
@@ -111,7 +108,6 @@ class Arm:
             position=origin + along / 4,
             mass=5,
             parent=parent,
-            world=world,
         )
         forearm = physics.make_body(
             name='Forearm',
@@ -119,7 +115,6 @@ class Arm:
             position=along / 2,
             mass=5,
             parent=bicep,
-            world=world,
         )
         shoulder = physics.make_ball_joint(
             parent, bicep, position=origin, rotation=shoulder_transform
@@ -138,9 +133,6 @@ class Arm:
         shoulder.set_angular_limit(1, -90, 90)
         # limits for moving forward from down by side
         shoulder.set_angular_limit(2, -90, 175)
-
-        world.attach_constraint(shoulder, linked_collision=True)
-        world.attach_constraint(elbow, linked_collision=True)
 
         return cls(
             origin=origin,
@@ -197,12 +189,10 @@ class Skeleton:
     def construct(
         cls,
         parameters: dict[str, dict[str, Any]],
-        world: BulletWorld,
         coord_xform: Mat4,
         speed: float,
         strength: float,
     ) -> Skeleton:
-        render = ShowBaseGlobal.base.render
         measures: dict[str, float] = parameters['measures']
         head_radius = measures['head_radius']
         arm_length = measures['arm_length']
@@ -219,8 +209,6 @@ class Skeleton:
             shape=BulletBoxShape(Vec3(arm_radius, torso_width / 2, torso_height / 2)),
             position=Vec3(0, 0, 0.25),
             mass=0,
-            parent=render,
-            world=world,
         )
         torso.set_mat(torso, coord_xform)
         head = physics.make_body(
@@ -229,7 +217,6 @@ class Skeleton:
             position=Vec3(0, 0, torso_height / 2 + head_radius),
             mass=16,
             parent=torso,
-            world=world,
         )
         left_arm = Arm.construct(
             shoulder_pos_l,
@@ -238,7 +225,6 @@ class Skeleton:
             parent=torso,
             speed=speed,
             strength=strength,
-            world=world,
             transform=Mat3(1, 0, 0, 0, -1, 0, 0, 0, 1),
         )
         right_arm = Arm.construct(
@@ -248,7 +234,6 @@ class Skeleton:
             parent=torso,
             speed=speed,
             strength=strength,
-            world=world,
             transform=Mat3(1, 0, 0, 0, +1, 0, 0, 0, 1),
         )
 
@@ -265,7 +250,6 @@ class Skeleton:
             rotation=Mat3(0, 0, 1, 0, 1, 0, -1, 0, 0),
         )
         neck.set_limit(45, 45, 90, softness=0)
-        world.attach_constraint(neck)
         left_arm.enable_motors(True)
         right_arm.enable_motors(True)
         return cls(
@@ -290,10 +274,18 @@ class Skeleton:
             transform=coord_xform,
         )
 
-    def __post_init__(self) -> None:
+    def enter_arena(self, arena: arenas.Arena) -> None:
         self.assume_stance()
         tasks.add_task(self.left_arm.move())
         tasks.add_task(self.right_arm.move())
+        self.core.reparent_to(arena.root)
+        for part in self.parts.values():
+            arena.world.attach(part.node())
+        for name, joint in self.joints.items():
+            if name == 'neck':
+                arena.world.attach(joint)
+            else:
+                arena.world.attach_constraint(joint, linked_collision=True)
 
     def assume_stance(self) -> None:
         self.left_arm.target_point = self.stance.left_hand_pos

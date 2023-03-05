@@ -8,9 +8,8 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final
 
-from direct.showbase import ShowBaseGlobal
 from direct.showbase.MessengerGlobal import messenger
-from panda3d.bullet import BulletPersistentManifold, BulletWorld
+from panda3d.bullet import BulletPersistentManifold
 from panda3d.core import (
     AsyncTaskPause,
     CollideMask,
@@ -23,7 +22,7 @@ from panda3d.core import (
     Vec3,
 )
 
-from . import physics, stances
+from . import arenas, physics, stances
 from .moves import Move, StatusEffect
 from .skeletons import Skeleton
 
@@ -117,7 +116,7 @@ class Fighter:
     defense: int
     moves: dict[str, Move] = field(repr=False)
     skeleton: Skeleton = field(repr=False)
-    world: BulletWorld
+    arena: arenas.Arena | None = None
     index: int = field(default=0, repr=False)
     status_effects: list[StatusEffect] = field(default_factory=list, init=False)
     health_bar: NodePath[PGWaitBar] = field(init=False)
@@ -137,9 +136,7 @@ class Fighter:
         return f'{type(self).__name__} {self.name!r} ({self.index})'
 
     @classmethod
-    def from_character(
-        cls, character: Character, world: BulletWorld, index: int = 0
-    ) -> Fighter:
+    def from_character(cls, character: Character, *, index: int = 0) -> Fighter:
         path = Path('data', 'skeletons', character.skeleton)
         with path.with_suffix('.json').open() as f:
             skeleton_params: dict[str, Any] = json.load(f)
@@ -149,7 +146,6 @@ class Fighter:
         coord_xform = Mat4(rotation, offset)
         skeleton = Skeleton.construct(
             skeleton_params,
-            world,
             coord_xform,
             (2 + character.speed) * 2,
             character.strength * 1.5,
@@ -164,18 +160,20 @@ class Fighter:
             moves=character.moves,
             skeleton=skeleton,
             index=index,
-            world=world,
         )
 
     @classmethod
     def from_json(
         cls,
         file: SupportsRead[str | bytes],
-        world: BulletWorld,
         index: int = 0,
     ) -> Fighter:
         character = Character.from_json(file)
-        return cls.from_character(character, world, index)
+        return cls.from_character(character, index=index)
+
+    def enter_arena(self, arena: arenas.Arena) -> None:
+        self.arena = arena
+        self.skeleton.enter_arena(arena)
 
     def set_stance(self, stance: stances.Stance) -> None:
         self.skeleton.stance = stance
@@ -201,7 +199,8 @@ class Fighter:
             target_position[i] *= 1 + inaccuracy * scale
 
         if move.is_projectile:
-            render = ShowBaseGlobal.base.render
+            assert self.arena is not None
+            root = self.arena.root
             if arm is None:
                 using_part = self.skeleton.parts[move.using]
                 offset = Vec3(0, 0, 0)
@@ -210,15 +209,15 @@ class Fighter:
                 await AsyncTaskPause(1 / (1 + self.speed) / 8)
                 using_part = arm.forearm
                 offset = Vec3(0, -0.25, 0)
-            global_target_position = render.get_relative_point(
+            global_target_position = root.get_relative_point(
                 self.skeleton.core, target_position
             )
-            from_position = render.get_relative_point(using_part, offset)
+            from_position = root.get_relative_point(using_part, offset)
             projectile = physics.spawn_projectile(
                 name=move.name,
                 instant_effects=move.instant_effects,
                 status_effects=move.status_effects,
-                world=self.world,
+                arena=self.arena,
                 position=from_position,
                 velocity=physics.required_projectile_velocity(
                     global_target_position - from_position,

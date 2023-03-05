@@ -5,13 +5,11 @@ import math
 from collections.abc import Iterable
 from typing import Final
 
-from direct.showbase import ShowBaseGlobal
 from panda3d.bullet import (
     BulletConeTwistConstraint,
     BulletGenericConstraint,
     BulletHingeConstraint,
     BulletPersistentManifold,
-    BulletPlaneShape,
     BulletRigidBodyNode,
     BulletShape,
     BulletSphereShape,
@@ -29,7 +27,7 @@ from panda3d.core import (
     Vec3,
 )
 
-from . import moves
+from . import arenas, moves
 
 _logger: Final = logging.getLogger(__name__)
 
@@ -57,18 +55,22 @@ def make_body(
     shape: BulletShape,
     mass: float,
     position: VBase3,
-    parent: NodePath,
-    world: BulletWorld,
+    parent: NodePath | None = None,
+    world: BulletWorld | None = None,
     collision_mask: CollideMask | int = CollideMask.all_on(),
 ) -> NodePath[BulletRigidBodyNode]:
     """Return a NodePath for a new rigid body with the given characteristics"""
     node = BulletRigidBodyNode(name)
     node.add_shape(shape)
     node.set_mass(mass)
-    path = parent.attach_new_node(node)
+    if parent is None:
+        path = NodePath(node)
+    else:
+        path = parent.attach_new_node(node)
     path.set_pos(position)
     path.set_collide_mask(CollideMask(collision_mask))
-    world.attach(node)
+    if world is not None:
+        world.attach(node)
     return path
 
 
@@ -150,7 +152,7 @@ def spawn_projectile(
     position: VBase3 = Vec3.zero(),
     mass: float = 1,
     velocity: VBase3 = Vec3.zero(),
-    world: BulletWorld,
+    arena: arenas.Arena,
     instant_effects: Iterable[moves.InstantEffect] = (),
     status_effects: Iterable[moves.StatusEffect] = (),
     collision_mask: CollideMask | int = CollideMask.all_on(),
@@ -160,8 +162,8 @@ def spawn_projectile(
         shape=BulletSphereShape(0.1),
         mass=mass,
         position=position,
-        parent=ShowBaseGlobal.base.render,
-        world=world,
+        parent=arena.root,
+        world=arena.world,
         collision_mask=collision_mask,
     )
 
@@ -180,7 +182,7 @@ def spawn_projectile(
                 for effect in instant_effects:
                     effect.apply(other_fighter)
                 other_fighter.copy_effects(status_effects)
-            world.remove(node)
+            arena.world.remove(node)
             projectile.remove_node()
             break
 
@@ -193,9 +195,4 @@ def spawn_projectile(
 def make_world(*, gravity: VBase3) -> BulletWorld:
     world = BulletWorld()
     world.set_gravity(gravity)
-    ground_node = BulletRigidBodyNode('Ground')
-    ground_node.add_shape(BulletPlaneShape(Vec3(0, 0, 1), 1))
-    ground_node_path = ShowBaseGlobal.base.render.attach_new_node(ground_node)
-    ground_node_path.set_pos(0, 0, -2)
-    world.attach(ground_node)
     return world

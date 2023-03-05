@@ -76,11 +76,16 @@ class App(ShowBase):
         _logger.info(f'Starting battle with {character_1} and {character_2}')
         self.set_camera_pos(r=10, theta=1.2 * math.pi, height=2)
         world = physics.make_world(gravity=GRAVITY)
-        fighter_1 = Fighter.from_character(character_1, world, 0)
-        fighter_2 = Fighter.from_character(character_2, world, 1)
+        fighter_1 = Fighter.from_character(character_1, index=0)
+        fighter_2 = Fighter.from_character(character_2, index=1)
         fighter_1.set_stance(stances.BOXING_STANCE)
         fighter_2.set_stance(stances.BOXING_STANCE)
-        self.arena = arenas.Arena(fighter_1, fighter_2, world=world)
+        self.arena = arenas.Arena(
+            fighter_1,
+            fighter_2,
+            world=world,
+            root=self.render.attach_new_node('Arena Root'),
+        )
         tasks.add_task(self.arena.update())
         tasks.add_task(self.do_battle())
 
