@@ -119,13 +119,16 @@ class App(ShowBase):
                 await fighter.use_move(move, opponent)
             opponent.apply_current_effects()
             if opponent.hp <= 0:
-                victor = self.arena.get_fighter(i)
-                _logger.info(f'{victor} won the battle')
-                battle_menu.output_info(f'{victor.name} wins!')
-                return
+                _logger.info(f'{fighter} won the battle')
+                battle_menu.output_info(f'{fighter.name} wins!')
+                break
             else:
                 await AsyncTaskPause(0.5)
                 await self.move_camera((1.2 if i else 0.2) * math.pi)
+        await AsyncTaskPause(5)
+        battle_menu.destroy()
+        self.arena.exit()
+        self.enter_main_menu()
 
 
 def main() -> None:

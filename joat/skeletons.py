@@ -3,7 +3,6 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 from typing import Any
-from typing_extensions import Never
 
 from panda3d.bullet import (
     BulletBoxShape,
@@ -81,6 +80,10 @@ class Arm:
     speed: float  # proportional to maximum angular velocity of joint motors
     target_point: VBase3 | None = None
     target_angle: float = 0
+    _enabled: bool = True
+
+    def __post_init__(self) -> None:
+        self.enabled = self._enabled
 
     @classmethod
     def construct(
@@ -144,11 +147,17 @@ class Arm:
             speed=speed,
         )
 
-    def enable_motors(self, enabled: bool) -> None:
+    @property
+    def enabled(self) -> bool:
+        return self._enabled
+
+    @enabled.setter
+    def enabled(self, value: bool) -> None:
+        self._enabled = value
         for axis in range(3):
             motor = self.shoulder.get_rotational_limit_motor(axis)
-            motor.set_motor_enabled(enabled)
-        self.elbow.enable_motor(enabled)
+            motor.set_motor_enabled(value)
+        self.elbow.enable_motor(value)
 
     def set_target_shoulder_angle(self, axis: int, angle: float) -> None:
         motor = self.shoulder.get_rotational_limit_motor(axis)
@@ -158,11 +167,12 @@ class Arm:
     def set_target_elbow_angle(self, angle: float) -> None:
         self.elbow.set_motor_target(angle, 1 / self.speed)
 
-    async def move(self) -> Never:
+    async def move(self) -> None:
         """Move toward the position described
         by `target_point` and `target_angle`.
         """
-        while True:
+        self.enabled = True
+        while self.enabled:
             await AsyncTaskPause(0)
             if self.target_point is None:
                 continue
@@ -250,8 +260,6 @@ class Skeleton:
             rotation=Mat3(0, 0, 1, 0, 1, 0, -1, 0, 0),
         )
         neck.set_limit(45, 45, 90, softness=0)
-        left_arm.enable_motors(True)
-        right_arm.enable_motors(True)
         return cls(
             parts={
                 'torso': torso,
@@ -287,6 +295,17 @@ class Skeleton:
             else:
                 arena.world.attach_constraint(joint, linked_collision=True)
 
+    def exit_arena(self, arena: arenas.Arena) -> None:
+        self.left_arm.enabled = False
+        self.right_arm.enabled = False
+        self.core.detach_node()
+        for joint in self.joints.values():
+            arena.world.remove(joint)
+        for part in self.parts.values():
+            arena.world.remove(part.node())
+            if part.python_tags:
+                part.python_tags.clear()
+
     def assume_stance(self) -> None:
         self.left_arm.target_point = self.stance.left_hand_pos
         self.right_arm.target_point = self.stance.right_hand_pos
@@ -294,7 +313,7 @@ class Skeleton:
         self.right_arm.target_angle = self.stance.right_arm_angle
 
     def kill(self) -> None:
-        self.left_arm.enable_motors(False)
-        self.right_arm.enable_motors(False)
+        self.left_arm.enabled = False
+        self.right_arm.enabled = False
         for joint in self.joints.values():
             joint.enabled = False

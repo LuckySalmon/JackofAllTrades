@@ -175,6 +175,11 @@ class Fighter:
         self.arena = arena
         self.skeleton.enter_arena(arena)
 
+    def exit_arena(self) -> None:
+        if self.arena is not None:
+            self.skeleton.exit_arena(self.arena)
+            self.arena = None
+
     def set_stance(self, stance: stances.Stance) -> None:
         self.skeleton.stance = stance
         self.skeleton.assume_stance()

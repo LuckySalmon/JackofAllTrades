@@ -170,6 +170,12 @@ class InfoStream:
         for i, line in enumerate(self.lines):
             line.set_pos(0, 0, self.height * (i * line_spacing - 0.5))
 
+    def destroy(self) -> None:
+        for line in self.lines:
+            line.destroy()
+        self.lines.clear()
+        self.backdrop.remove_node()
+
 
 class BattleMenu(DirectObject):
     info_stream: InfoStream
@@ -202,6 +208,12 @@ class BattleMenu(DirectObject):
 
     def output_info(self, info: str) -> None:
         self.info_stream.append_text(info)
+
+    def destroy(self) -> None:
+        self.ignore_all()
+        self.info_stream.destroy()
+        for interface in self.interfaces:
+            interface.destroy()
 
 
 class FighterInterface:
@@ -303,3 +315,9 @@ class FighterInterface:
 
     def show(self) -> None:
         self.backdrop.show()
+
+    def destroy(self) -> None:
+        for button in self.action_buttons:
+            button.destroy()
+        for button in self.use_buttons:
+            button.destroy()
