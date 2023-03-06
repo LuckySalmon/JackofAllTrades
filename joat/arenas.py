@@ -27,6 +27,9 @@ class Arena:
         self.ground.set_pos(0, 0, -2)
         self.world.attach(ground_node)
 
+        if self.fighter_1.name == self.fighter_2.name:
+            self.fighter_1.name += ' (1)'
+            self.fighter_2.name += ' (2)'
         self.fighter_1.enter_arena(self)
         self.fighter_2.enter_arena(self)
 

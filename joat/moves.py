@@ -81,7 +81,6 @@ class Move:  # TODO: decide on whether these should be called moves or actions
     target: str = ''
     target_part: str = 'torso'
     is_projectile: bool = False
-    # TODO: effect system
 
     def __str__(self) -> str:
         return f'{type(self).__name__} {self.name!r}'

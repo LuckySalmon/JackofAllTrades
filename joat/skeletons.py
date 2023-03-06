@@ -193,7 +193,6 @@ class Skeleton:
     left_arm: Arm
     right_arm: Arm
     stance: stances.Stance = stances.T_POSE
-    transform: Mat4 = Mat4.ident_mat()
 
     @classmethod
     def construct(
@@ -279,7 +278,6 @@ class Skeleton:
             core=torso,
             left_arm=left_arm,
             right_arm=right_arm,
-            transform=coord_xform,
         )
 
     def enter_arena(self, arena: arenas.Arena) -> None:

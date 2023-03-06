@@ -117,7 +117,6 @@ class Fighter:
     moves: dict[str, Move] = field(repr=False)
     skeleton: Skeleton = field(repr=False)
     arena: arenas.Arena | None = None
-    index: int = field(default=0, repr=False)
     status_effects: list[StatusEffect] = field(default_factory=list, init=False)
     health_bar: NodePath[PGWaitBar] = field(init=False)
 
@@ -133,7 +132,7 @@ class Fighter:
             )
 
     def __str__(self) -> str:
-        return f'{type(self).__name__} {self.name!r} ({self.index})'
+        return f'{type(self).__name__} {self.name!r}'
 
     @classmethod
     def from_character(cls, character: Character, *, index: int = 0) -> Fighter:
@@ -159,17 +158,7 @@ class Fighter:
             defense=character.defense,
             moves=character.moves,
             skeleton=skeleton,
-            index=index,
         )
-
-    @classmethod
-    def from_json(
-        cls,
-        file: SupportsRead[str | bytes],
-        index: int = 0,
-    ) -> Fighter:
-        character = Character.from_json(file)
-        return cls.from_character(character, index=index)
 
     def enter_arena(self, arena: arenas.Arena) -> None:
         self.arena = arena
