@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 
 from panda3d.bullet import (
     BulletBoxShape,
@@ -21,7 +21,7 @@ from . import arenas, physics, stances, tasks
 def shoulder_angles(
     target: VBase3,
     theta: float,
-    transform: Mat3 | None = None,
+    *,
     arm_lengths: tuple[float, float] = (0.5, 0.5),
 ) -> tuple[float, float, float, float]:
     """Return the shoulder and elbow angles required
@@ -29,8 +29,6 @@ def shoulder_angles(
     """
     l1, l2 = arm_lengths
     max_dist = l1 + l2
-    if transform is not None:
-        target = transform.xform(target)
     unit_target = target.normalized()
 
     dist = target.length()
@@ -78,8 +76,8 @@ class Arm:
     forearm: NodePath[BulletRigidBodyNode]
     transform: Mat3
     speed: float  # proportional to maximum angular velocity of joint motors
-    target_point: VBase3 | None = None
-    target_angle: float = 0
+    target_shoulder_angles: tuple[float, float, float] = (0, 0, 0)
+    target_elbow_angle: float = 0
     _enabled: bool = True
 
     def __post_init__(self) -> None:
@@ -148,6 +146,16 @@ class Arm:
         )
 
     @property
+    def bicep_length(self) -> float:
+        bicep_shape = cast(BulletCapsuleShape, self.bicep.node().shapes[0])
+        return bicep_shape.height
+
+    @property
+    def forearm_length(self) -> float:
+        forearm_shape = cast(BulletCapsuleShape, self.forearm.node().shapes[0])
+        return forearm_shape.height
+
+    @property
     def enabled(self) -> bool:
         return self._enabled
 
@@ -159,30 +167,26 @@ class Arm:
             motor.set_motor_enabled(value)
         self.elbow.enable_motor(value)
 
-    def set_target_shoulder_angle(self, axis: int, angle: float) -> None:
-        motor = self.shoulder.get_rotational_limit_motor(axis)
-        diff = angle - motor.current_position
-        motor.set_target_velocity(diff * self.speed)
-
-    def set_target_elbow_angle(self, angle: float) -> None:
-        self.elbow.set_motor_target(angle, 1 / self.speed)
+    def set_target(self, point: VBase3, angle: float = 0) -> None:
+        angles = shoulder_angles(
+            self.transform.xform(point),
+            angle,
+            arm_lengths=(self.bicep_length, self.forearm_length),
+        )
+        self.target_shoulder_angles = angles[:3]
+        self.target_elbow_angle = angles[3]
 
     async def move(self) -> None:
-        """Move toward the position described
-        by `target_point` and `target_angle`.
-        """
+        """Move the arm."""
         self.enabled = True
         while self.enabled:
             await AsyncTaskPause(0)
-            if self.target_point is None:
-                continue
-            target_angles = shoulder_angles(
-                self.target_point, self.target_angle, self.transform
-            )
-            for axis in range(3):
-                self.set_target_shoulder_angle(axis, target_angles[axis])
-            self.set_target_elbow_angle(target_angles[3])
-            self.bicep.node().set_active(True)
+            for axis, angle in enumerate(self.target_shoulder_angles):
+                motor = self.shoulder.get_rotational_limit_motor(axis)
+                diff = angle - motor.current_position
+                motor.set_target_velocity(diff * self.speed)
+            self.elbow.set_motor_target(self.target_elbow_angle, 1 / self.speed)
+            self.bicep.node().active = True
 
 
 @dataclass(repr=False, kw_only=True)
@@ -305,10 +309,12 @@ class Skeleton:
                 part.python_tags.clear()
 
     def assume_stance(self) -> None:
-        self.left_arm.target_point = self.stance.left_hand_pos
-        self.right_arm.target_point = self.stance.right_hand_pos
-        self.left_arm.target_angle = self.stance.left_arm_angle
-        self.right_arm.target_angle = self.stance.right_arm_angle
+        self.left_arm.set_target(
+            self.stance.left_hand_pos, self.stance.left_arm_angle  # fmt: skip
+        )
+        self.right_arm.set_target(
+            self.stance.right_hand_pos, self.stance.right_arm_angle
+        )
 
     def kill(self) -> None:
         self.left_arm.enabled = False

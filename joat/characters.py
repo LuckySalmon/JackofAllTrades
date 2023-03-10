@@ -199,7 +199,7 @@ class Fighter:
                 using_part = self.skeleton.parts[move.using]
                 offset = Vec3(0, 0, 0)
             else:
-                arm.target_point = target_position - arm.origin
+                arm.set_target(target_position - arm.origin)
                 await AsyncTaskPause(1 / (1 + self.speed) / 8)
                 using_part = arm.forearm
                 offset = Vec3(0, -0.25, 0)
@@ -247,7 +247,7 @@ class Fighter:
                 current_callback(node, manifold)
 
         fist.python_tags['impact_callback'] = temporary_impact_callback
-        arm.target_point = target_position - arm.origin
+        arm.set_target(target_position - arm.origin)
         await AsyncTaskPause(1 / (1 + self.speed))
         self.skeleton.assume_stance()
         fist.python_tags['impact_callback'] = current_callback
