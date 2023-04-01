@@ -22,9 +22,9 @@ class Arena:
 
     def __post_init__(self) -> None:
         ground_node = bullet.BulletRigidBodyNode('Ground')
-        ground_node.add_shape(bullet.BulletPlaneShape(Vec3(0, 0, 1), 1))
+        ground_node.add_shape(bullet.BulletPlaneShape(Vec3(0, 0, 1), 0))
         self.ground = self.root.attach_new_node(ground_node)
-        self.ground.set_pos(0, 0, -2)
+        self.ground.set_pos(0, 0, 0)
         self.world.attach(ground_node)
 
         if self.fighter_1.name == self.fighter_2.name:

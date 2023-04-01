@@ -212,15 +212,17 @@ class Skeleton:
         arm_radius = measures['arm_radius']
         shoulder_width = measures['shoulder_width']
         torso_height = measures['torso_height']
+        eye_level = measures['eye_level']
         torso_width = shoulder_width - 2 * arm_radius
         shoulder_height = torso_height / 2 - arm_radius
         shoulder_pos_l = Vec3(0, +shoulder_width / 2, shoulder_height)
         shoulder_pos_r = Vec3(0, -shoulder_width / 2, shoulder_height)
+        torso_center = eye_level - head_radius - torso_height / 2
 
         torso = physics.make_body(
             name='Torso',
             shape=BulletBoxShape(Vec3(arm_radius, torso_width / 2, torso_height / 2)),
-            position=Vec3(0, 0, 0.25),
+            position=Vec3(0, 0, torso_center),
             mass=0,
         )
         torso.set_mat(torso, coord_xform)

@@ -4,6 +4,7 @@
     "arm_length": 1.0,
     "arm_radius": 0.1,
     "shoulder_width": 0.7,
-    "torso_height": 1.0
+    "torso_height": 1.0,
+    "eye_level": 1.75
   }
 }

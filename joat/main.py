@@ -74,7 +74,7 @@ class App(ShowBase):
         if character_2.speed > character_1.speed:
             character_1, character_2 = character_2, character_1
         _logger.info(f'Starting battle with {character_1} and {character_2}')
-        self.set_camera_pos(r=10, theta=1.2 * math.pi, height=2)
+        self.set_camera_pos(r=10, theta=1.2 * math.pi, height=3)
         world = physics.make_world(gravity=GRAVITY)
         fighter_1 = Fighter.from_character(character_1, index=0)
         fighter_2 = Fighter.from_character(character_2, index=1)
