@@ -12,6 +12,7 @@ from panda3d.bullet import (
     BulletPersistentManifold,
     BulletRigidBodyNode,
     BulletShape,
+    BulletSliderConstraint,
     BulletSphereShape,
     BulletWorld,
 )
@@ -123,6 +124,24 @@ def make_hinge_joint(
         pivot_b=b_to_joint,
         axis_a=axis,
         axis_b=axis,
+        use_frame_a=True,
+    )
+    return joint
+
+
+def make_slider_joint(
+    node_path_a: NodePath, node_path_b: NodePath, *, position: VBase3, axis: VBase3
+) -> BulletSliderConstraint:
+    a_to_joint = position
+    b_to_joint = node_path_b.get_relative_point(node_path_a, position)
+    rotation = required_rotation(Vec3.unit_x(), axis)
+    frame_a = make_rigid_transform(rotation, a_to_joint)
+    frame_b = make_rigid_transform(rotation, b_to_joint)
+    joint = BulletSliderConstraint(
+        node_path_a.node(),
+        node_path_b.node(),
+        frame_a=frame_a,
+        frame_b=frame_b,
         use_frame_a=True,
     )
     return joint

@@ -218,14 +218,22 @@ class Skeleton:
         shoulder_pos_l = Vec3(0, +shoulder_width / 2, shoulder_height)
         shoulder_pos_r = Vec3(0, -shoulder_width / 2, shoulder_height)
         torso_center = eye_level - head_radius - torso_height / 2
+        base_width = eye_level - head_radius - torso_height
 
         torso = physics.make_body(
             name='Torso',
             shape=BulletBoxShape(Vec3(arm_radius, torso_width / 2, torso_height / 2)),
             position=Vec3(0, 0, torso_center),
-            mass=0,
+            mass=32,
         )
         torso.set_mat(torso, coord_xform)
+        base = physics.make_body(
+            name='Base',
+            shape=BulletBoxShape(Vec3(0.25, 0.25, base_width * 0.49)),
+            position=Vec3(0, 0, -(torso_height + base_width) / 2),
+            mass=1000,
+            parent=torso,
+        )
         head = physics.make_body(
             name='Head',
             shape=BulletSphereShape(head_radius),
@@ -257,6 +265,7 @@ class Skeleton:
         right_arm.bicep.node().python_tags['damage_multiplier'] = 0.5
         left_arm.forearm.node().python_tags['damage_multiplier'] = 0.5
         right_arm.forearm.node().python_tags['damage_multiplier'] = 0.5
+        base.node().python_tags['damage_multiplier'] = 0
 
         neck = physics.make_cone_joint(
             torso,
@@ -265,6 +274,9 @@ class Skeleton:
             axis=Vec3(0, 0, 1),
         )
         neck.set_limit(45, 45, 90, softness=0)
+        waist = physics.make_slider_joint(
+            torso, base, position=Vec3(0, 0, -torso_height / 2), axis=Vec3(0, 0, 1)
+        )
         return cls(
             parts={
                 'torso': torso,
@@ -273,6 +285,7 @@ class Skeleton:
                 'bicep_right': right_arm.bicep,
                 'forearm_left': left_arm.forearm,
                 'forearm_right': right_arm.forearm,
+                'base': base,
             },
             joints={
                 'neck': neck,
@@ -280,6 +293,7 @@ class Skeleton:
                 'shoulder_right': right_arm.shoulder,
                 'elbow_left': left_arm.elbow,
                 'elbow_right': right_arm.elbow,
+                'waist': waist,
             },
             core=torso,
             left_arm=left_arm,
@@ -294,7 +308,7 @@ class Skeleton:
         for part in self.parts.values():
             arena.world.attach(part.node())
         for name, joint in self.joints.items():
-            if name == 'neck':
+            if name == 'neck' or name == 'waist':
                 arena.world.attach(joint)
             else:
                 arena.world.attach_constraint(joint, linked_collision=True)
