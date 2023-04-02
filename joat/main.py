@@ -18,7 +18,8 @@ _logger: Final = logging.getLogger(__name__)
 GRAVITY: Final = Vec3(0, 0, -9.81)
 
 
-class App(ShowBase):
+class App:
+    base: ShowBase
     available_characters: list[Character]
     selected_characters: list[Character]
     arena: arenas.Arena | None = None
@@ -26,14 +27,19 @@ class App(ShowBase):
     fighter_menu: ui.CharacterMenu
     main_menu: ui.MainMenu
 
-    def __init__(self, *, available_characters: Iterable[Character] = ()) -> None:
-        ShowBase.__init__(self)
+    def __init__(
+        self,
+        *,
+        available_characters: Iterable[Character] = (),
+        base: ShowBase | None = None,
+    ) -> None:
+        self.base = base or ShowBase()
         self.available_characters = list(available_characters)
         self.selected_characters = []
         self.main_menu = ui.MainMenu(
             battle_function=self.enter_fighter_menu,
             character_function=self.enter_character_menu,
-            quit_function=self.userExit,
+            quit_function=self.base.userExit,
         )
         self.character_menu = ui.CharacterMenu(
             characters=self.available_characters,
@@ -45,6 +51,9 @@ class App(ShowBase):
             back_callback=self.enter_main_menu,
         )
         self.enter_main_menu()
+
+    def run(self) -> None:
+        self.base.run()
 
     def enter_main_menu(self) -> None:
         self.character_menu.hide()
@@ -84,19 +93,19 @@ class App(ShowBase):
             fighter_1,
             fighter_2,
             world=world,
-            root=self.render.attach_new_node('Arena Root'),
+            root=self.base.render.attach_new_node('Arena Root'),
         )
         tasks.add_task(self.arena.update())
         tasks.add_task(self.do_battle())
 
     def set_camera_pos(self, *, r: float, theta: float, height: float) -> None:
-        self.cam.set_pos(r * math.cos(theta), r * math.sin(theta), height)
-        self.cam.look_at(0, 0, 0)
+        self.base.cam.set_pos(r * math.cos(theta), r * math.sin(theta), height)
+        self.base.cam.look_at(0, 0, 0)
 
     async def move_camera(self, to_angle: float, *, time: float = 1) -> None:
         clock = ClockObject.get_global_clock()
         start_time = clock.frame_time
-        x, y, height = self.cam.get_pos()
+        x, y, height = self.base.cam.get_pos()
         from_angle = math.atan2(y, x)
         r = math.hypot(x, y)
         speed = (to_angle - from_angle) / time
