@@ -262,7 +262,7 @@ class Skeleton:
             torso,
             head,
             position=Vec3(0, 0, torso_height / 2),
-            rotation=Mat3(0, 0, 1, 0, 1, 0, -1, 0, 0),
+            axis=Vec3(0, 0, 1),
         )
         neck.set_limit(45, 45, 90, softness=0)
         return cls(

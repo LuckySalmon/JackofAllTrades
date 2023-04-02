@@ -42,11 +42,27 @@ def make_quaternion(angle: float, axis: VBase3) -> Quat:
     return Quat(cosine, axis.normalized() * sine)
 
 
-def make_rigid_transform(rotation: Mat3, translation: VBase3) -> TransformState:
-    """Return a TransformState comprising the given rotation
-    followed by the given translation
+def required_rotation(from_: VBase3, to: VBase3) -> Quat:
+    """Return a quaternion representing the rotation
+    required to align `from_` with `to`.
     """
-    return TransformState.make_mat(Mat4(rotation, translation))
+    from_, to = from_.normalized(), to.normalized()
+    axis = from_.cross(to)
+    dot_product = from_.dot(to)
+    cosine = math.sqrt((1 + dot_product) / 2)
+    sine = math.sqrt((1 - dot_product) / 2)
+    return Quat(cosine, axis * sine)
+
+
+def make_rigid_transform(rotation: Mat3 | Quat, translation: VBase3) -> TransformState:
+    """Return a TransformState comprising the given rotation
+    followed by the given translation.
+    """
+    if isinstance(rotation, Quat):
+        # There isn't a `TransformState.make_pos_quat` constructor.
+        return TransformState.make_pos_quat_scale(translation, rotation, VBase3(1))
+    else:
+        return TransformState.make_mat(Mat4(rotation, translation))
 
 
 def make_body(
@@ -117,10 +133,11 @@ def make_cone_joint(
     node_path_b: NodePath,
     *,
     position: VBase3,
-    rotation: Mat3 = Mat3.ident_mat(),
+    axis: VBase3,
 ) -> BulletConeTwistConstraint:
     a_to_joint = position
     b_to_joint = node_path_b.get_relative_point(node_path_a, position)
+    rotation = required_rotation(Vec3.unit_x(), axis)
     frame_a = make_rigid_transform(rotation, a_to_joint)
     frame_b = make_rigid_transform(rotation, b_to_joint)
     joint = BulletConeTwistConstraint(
