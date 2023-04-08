@@ -16,54 +16,12 @@ from panda3d.bullet import (
     BulletSphereShape,
     BulletWorld,
 )
-from panda3d.core import (
-    CollideMask,
-    Mat3,
-    Mat4,
-    NodePath,
-    PandaNode,
-    Quat,
-    TransformState,
-    VBase3,
-    Vec3,
-)
+from panda3d.core import CollideMask, Mat3, NodePath, PandaNode, VBase3, Vec3
 
 from . import arenas, moves
+from .spatial import make_rigid_transform, required_rotation
 
 _logger: Final = logging.getLogger(__name__)
-
-
-def make_quaternion(angle: float, axis: VBase3) -> Quat:
-    """Return a quaternion representing a rotation
-    with the given characteristics.
-    """
-    half_radians = angle / 360 * math.pi
-    cosine = math.cos(half_radians)
-    sine = math.sin(half_radians)
-    return Quat(cosine, axis.normalized() * sine)
-
-
-def required_rotation(from_: VBase3, to: VBase3) -> Quat:
-    """Return a quaternion representing the rotation
-    required to align `from_` with `to`.
-    """
-    from_, to = from_.normalized(), to.normalized()
-    axis = from_.cross(to)
-    dot_product = from_.dot(to)
-    cosine = math.sqrt((1 + dot_product) / 2)
-    sine = math.sqrt((1 - dot_product) / 2)
-    return Quat(cosine, axis * sine)
-
-
-def make_rigid_transform(rotation: Mat3 | Quat, translation: VBase3) -> TransformState:
-    """Return a TransformState comprising the given rotation
-    followed by the given translation.
-    """
-    if isinstance(rotation, Quat):
-        # There isn't a `TransformState.make_pos_quat` constructor.
-        return TransformState.make_pos_quat_scale(translation, rotation, VBase3(1))
-    else:
-        return TransformState.make_mat(Mat4(rotation, translation))
 
 
 def make_body(
