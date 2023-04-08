@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from direct.showbase.DirectObject import DirectObject
 from panda3d import bullet
 from panda3d.core import AsyncTaskPause, ClockObject, NodePath, Vec3
 
 from .characters import Fighter
+from .debug import DebugHandler
 
 
 @dataclass
@@ -16,9 +16,8 @@ class Arena:
     world: bullet.BulletWorld = field(kw_only=True)
     root: NodePath = field(kw_only=True)
     ground: NodePath[bullet.BulletRigidBodyNode] = field(init=False)
-    debug_node_path: NodePath[bullet.BulletDebugNode] = field(init=False)
-    debug_acceptor: DirectObject = field(init=False)
     running: bool = field(default=False, init=False)
+    debug_handler: DebugHandler = field(init=False)
 
     def __post_init__(self) -> None:
         ground_node = bullet.BulletRigidBodyNode('Ground')
@@ -33,19 +32,7 @@ class Arena:
         self.fighter_1.enter_arena(self)
         self.fighter_2.enter_arena(self)
 
-        debug_node = bullet.BulletDebugNode('Bullet Debug Node')
-        debug_node.show_constraints(False)
-        self.world.set_debug_node(debug_node)
-        self.debug_node_path = self.root.attach_new_node(debug_node)
-        self.debug_node_path.show()
-        self.debug_acceptor = DirectObject()
-        self.debug_acceptor.accept('f1', self.toggle_debug)
-
-    def toggle_debug(self) -> None:
-        if self.debug_node_path.is_hidden():
-            self.debug_node_path.show()
-        else:
-            self.debug_node_path.hide()
+        self.debug_handler = DebugHandler.for_arena(self)
 
     def get_fighter(self, index: int) -> Fighter:
         if index == 0:
@@ -80,6 +67,5 @@ class Arena:
         self.root.detach_node()
         self.fighter_1.exit_arena()
         self.fighter_2.exit_arena()
-        self.debug_node_path.remove_node()
-        self.debug_acceptor.ignore_all()
+        self.debug_handler.destroy()
         self.world.remove(self.ground.node())

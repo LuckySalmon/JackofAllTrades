@@ -1,5 +1,42 @@
-from panda3d.bullet import BulletGenericConstraint
-from panda3d.core import GeomNode, LColor, LineSegs, LVecBase3
+from __future__ import annotations
+
+from dataclasses import InitVar, dataclass, field
+from typing_extensions import Self
+
+from direct.showbase.DirectObject import DirectObject
+from panda3d.bullet import BulletDebugNode, BulletGenericConstraint
+from panda3d.core import GeomNode, LColor, LineSegs, LVecBase3, NodePath
+
+from . import arenas
+
+
+@dataclass
+class DebugHandler:
+    node_path: NodePath[BulletDebugNode]
+    acceptor: DirectObject = field(default_factory=DirectObject)
+    event: InitVar[str] = 'f1'
+
+    def __post_init__(self, event: str):
+        self.acceptor.accept(event, self.toggle_debug)
+
+    @classmethod
+    def for_arena(cls, arena: arenas.Arena, event: str = 'f1') -> Self:
+        node = BulletDebugNode('Bullet Debug Node')
+        node.show_constraints(False)
+        arena.world.set_debug_node(node)
+        node_path = arena.root.attach_new_node(node)
+        node_path.show()
+        return cls(node_path, event=event)
+
+    def toggle_debug(self) -> None:
+        if self.node_path.is_hidden():
+            self.node_path.show()
+        else:
+            self.node_path.hide()
+
+    def destroy(self) -> None:
+        self.node_path.remove_node()
+        self.acceptor.ignore_all()
 
 
 def show_constraint_axes(
