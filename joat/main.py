@@ -36,10 +36,10 @@ class App:
         self.base = base or ShowBase()
         self.available_characters = list(available_characters)
         self.selected_characters = []
-        self.main_menu = ui.MainMenu(
-            battle_function=self.enter_fighter_menu,
-            character_function=self.enter_character_menu,
-            quit_function=self.base.userExit,
+        self.main_menu = ui.MainMenu.construct(
+            ('Go To Battle', self.enter_fighter_menu),
+            ('Characters', self.enter_character_menu),
+            ('Quit', self.base.userExit),
         )
         self.character_menu = ui.CharacterMenu(
             characters=self.available_characters,

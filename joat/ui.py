@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import collections
 import itertools
-from collections.abc import Callable, Iterable, Iterator
+from collections.abc import Callable, Iterable, Iterator, Sequence
 from dataclasses import dataclass, field
+from typing_extensions import Self
 
 from direct.gui.DirectGui import DirectButton, DirectFrame, OnscreenText
 from direct.showbase.DirectObject import DirectObject
@@ -30,44 +31,28 @@ def uniform_spacing(
     return itertools.product(*spots_by_axis)
 
 
+@dataclass
 class MainMenu:
-    backdrop: DirectFrame
-    battle_button: DirectButton
-    character_button: DirectButton
-    quit_button: DirectButton
+    backdrop: DirectFrame = field(default_factory=DirectFrame)
+    buttons: Sequence[DirectButton] = ()
 
-    def __init__(
-        self,
-        *,
-        battle_function: Callable[[], object],
-        character_function: Callable[[], object],
-        quit_function: Callable[[], object],
-    ) -> None:
-        self.backdrop = DirectFrame(frameColor=(0, 0, 0, 0), frameSize=(-1, 1, -1, 1))
-        construction_kwargs = {
-            'frameSize': (-0.4, 0.4, -0.15, 0.15),
-            'borderWidth': (0.05, 0.05),
-            'text_scale': 0.1,
-            'parent': self.backdrop,
-        }
-        self.battle_button = DirectButton(
-            text='Go To Battle',
-            command=battle_function,
-            pos=(0, 0, 0.4),
-            **construction_kwargs,
-        )
-        self.character_button = DirectButton(
-            text='Characters',
-            command=character_function,
-            pos=(0, 0, 0),
-            **construction_kwargs,
-        )
-        self.quit_button = DirectButton(
-            text='Quit',
-            command=quit_function,
-            pos=(0, 0, -0.4),
-            **construction_kwargs,
-        )
+    @classmethod
+    def construct(cls, *tuples: tuple[str, Callable[[], object]]) -> Self:
+        backdrop = DirectFrame()
+        center = (len(tuples) + 1) / 2
+        buttons: list[DirectButton] = []
+        for i, (name, callback) in enumerate(tuples, start=1):
+            button = DirectButton(
+                text=name,
+                command=callback,
+                pos=(0, 0, (center - i) * 0.4),
+                frameSize=(-0.4, 0.4, -0.15, 0.15),
+                borderWidth=(0.05, 0.05),
+                text_scale=0.1,
+                parent=backdrop,
+            )
+            buttons.append(button)
+        return cls(backdrop, buttons)
 
     def hide(self) -> None:
         self.backdrop.hide()
