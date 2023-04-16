@@ -117,7 +117,9 @@ class App:
 
     async def do_battle(self) -> None:
         assert self.arena is not None
-        battle_menu = ui.BattleMenu(self.arena.fighter_1, self.arena.fighter_2)
+        battle_menu = ui.BattleMenu.from_fighters(
+            self.arena.fighter_1, self.arena.fighter_2
+        )
         for i, interface in itertools.cycle(enumerate(battle_menu.interfaces)):
             fighter = self.arena.get_fighter(i)
             opponent = self.arena.get_fighter(1 - i)

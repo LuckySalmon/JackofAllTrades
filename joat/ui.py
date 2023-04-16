@@ -145,6 +145,16 @@ class InfoStream:
     max_lines: int = field(default=16, kw_only=True)
     height: float = field(default=1.9, kw_only=True)
 
+    @classmethod
+    def make_default(cls) -> Self:
+        return cls(
+            DirectFrame(
+                pos=(4 / 3 - 0.5, 0, 0),
+                frameSize=(-0.5, 0.5, -1, 1),
+                frameColor=(0, 0, 0, 0.25),
+            )
+        )
+
     def append_text(self, *new_lines: str) -> None:
         for new_line in new_lines:
             self.lines.appendleft(OnscreenText(new_line, parent=self.backdrop))
@@ -162,40 +172,33 @@ class InfoStream:
         self.backdrop.remove_node()
 
 
-class BattleMenu(DirectObject):
-    info_stream: InfoStream
-    interfaces: list[FighterInterface]
+@dataclass
+class BattleMenu:
+    interfaces: Iterable[FighterInterface]
+    info_stream: InfoStream = field(default_factory=InfoStream.make_default)
+    acceptor: DirectObject = field(default_factory=DirectObject, kw_only=True)
 
-    def __init__(
-        self,
-        *fighters: Fighter,
-        aspect_ratio: float = 4 / 3,
-        selector_width: float = 0.5,
-    ) -> None:
-        super().__init__()
-        self.info_stream = InfoStream(
-            DirectFrame(
-                pos=(aspect_ratio - 0.5, 0, 0),
-                frameSize=(-0.5, 0.5, -1, 1),
-                frameColor=(0, 0, 0, 0.25),
-            )
-        )
-        self.interfaces = [
-            FighterInterface(
+    @classmethod
+    def from_fighters(cls, *fighters: Fighter) -> Self:
+        interfaces: list[FighterInterface] = []
+        for fighter in fighters:
+            interface = FighterInterface(
                 fighter.moves.values(),
-                pos=(selector_width - aspect_ratio, 0, -0.5),
-                width=selector_width,
+                pos=(0.5 - 4 / 3, 0, -0.5),
+                width=0.5,
                 hidden=True,
             )
-            for fighter in fighters
-        ]
-        self.accept('output_info', self.output_info)
+            interfaces.append(interface)
+        return cls(interfaces)
+
+    def __post_init__(self) -> None:
+        self.acceptor.accept('output_info', self.output_info)
 
     def output_info(self, info: str) -> None:
         self.info_stream.append_text(info)
 
     def destroy(self) -> None:
-        self.ignore_all()
+        self.acceptor.ignore_all()
         self.info_stream.destroy()
         for interface in self.interfaces:
             interface.destroy()
