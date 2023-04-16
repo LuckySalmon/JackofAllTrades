@@ -67,17 +67,45 @@ def shoulder_angles(
     return -gamma, beta, alpha, math.pi - phi
 
 
+@dataclass
+class HingeJointController:
+    constraint: BulletHingeConstraint
+    target_angle: float = 0
+
+    def set_motor_enabled(self, enabled: bool) -> None:
+        self.constraint.enable_motor(enabled)
+
+    def move(self, speed: float) -> None:
+        self.constraint.set_motor_target(self.target_angle, 1 / speed)
+
+
+@dataclass
+class BallJointController:
+    constraint: BulletGenericConstraint
+    target_angles: tuple[float, float, float] = (0, 0, 0)
+
+    def set_motors_enabled(self, enabled: bool) -> None:
+        for i in range(3):
+            motor = self.constraint.get_rotational_limit_motor(i)
+            motor.motor_enabled = enabled
+
+    def move(self, speed: float) -> None:
+        for i in range(3):
+            motor = self.constraint.get_rotational_limit_motor(i)
+            target_angle = self.target_angles[i]
+            diff = target_angle - motor.current_position
+            motor.set_target_velocity(diff * speed)
+
+
 @dataclass(kw_only=True, repr=False)
 class Arm:
     origin: VBase3
-    shoulder: BulletGenericConstraint
-    elbow: BulletHingeConstraint
+    shoulder: BallJointController
+    elbow: HingeJointController
     bicep: NodePath[BulletRigidBodyNode]
     forearm: NodePath[BulletRigidBodyNode]
     transform: Mat3
     speed: float  # proportional to maximum angular velocity of joint motors
-    target_shoulder_angles: tuple[float, float, float] = (0, 0, 0)
-    target_elbow_angle: float = 0
     _enabled: bool = True
 
     def __post_init__(self) -> None:
@@ -137,8 +165,8 @@ class Arm:
 
         return cls(
             origin=origin,
-            shoulder=shoulder,
-            elbow=elbow,
+            shoulder=BallJointController(shoulder),
+            elbow=HingeJointController(elbow),
             bicep=bicep,
             forearm=forearm,
             transform=transform,
@@ -162,10 +190,8 @@ class Arm:
     @enabled.setter
     def enabled(self, value: bool) -> None:
         self._enabled = value
-        for axis in range(3):
-            motor = self.shoulder.get_rotational_limit_motor(axis)
-            motor.set_motor_enabled(value)
-        self.elbow.enable_motor(value)
+        self.shoulder.set_motors_enabled(value)
+        self.elbow.set_motor_enabled(value)
 
     def set_target(self, point: VBase3, angle: float = 0) -> None:
         angles = shoulder_angles(
@@ -173,19 +199,16 @@ class Arm:
             angle,
             arm_lengths=(self.bicep_length, self.forearm_length),
         )
-        self.target_shoulder_angles = angles[:3]
-        self.target_elbow_angle = angles[3]
+        self.shoulder.target_angles = angles[:3]
+        self.elbow.target_angle = angles[3]
 
     async def move(self) -> None:
         """Move the arm."""
         self.enabled = True
         while self.enabled:
             await AsyncTaskPause(0)
-            for axis, angle in enumerate(self.target_shoulder_angles):
-                motor = self.shoulder.get_rotational_limit_motor(axis)
-                diff = angle - motor.current_position
-                motor.set_target_velocity(diff * self.speed)
-            self.elbow.set_motor_target(self.target_elbow_angle, 1 / self.speed)
+            self.shoulder.move(self.speed)
+            self.elbow.move(self.speed)
             self.bicep.node().active = True
 
 
@@ -289,10 +312,10 @@ class Skeleton:
             },
             joints={
                 'neck': neck,
-                'shoulder_left': left_arm.shoulder,
-                'shoulder_right': right_arm.shoulder,
-                'elbow_left': left_arm.elbow,
-                'elbow_right': right_arm.elbow,
+                'shoulder_left': left_arm.shoulder.constraint,
+                'shoulder_right': right_arm.shoulder.constraint,
+                'elbow_left': left_arm.elbow.constraint,
+                'elbow_right': right_arm.elbow.constraint,
                 'waist': waist,
             },
             core=torso,
