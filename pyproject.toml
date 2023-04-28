@@ -7,3 +7,7 @@ extra_standard_library = ["typing_extensions"]
 [tool.black]
 target_version = ["py310"]
 skip_string_normalization = true
+
+[tool.ruff]
+select = ["E", "F", "B"]
+ignore = ["B008", "B905"]
