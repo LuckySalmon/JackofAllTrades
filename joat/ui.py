@@ -208,7 +208,7 @@ class FighterInterface:
     selected_target: moves.Target | None = None
     selected_action: moves.Move | None = None
     backdrop: DirectFrame
-    use_buttons: list[DirectButton]
+    use_buttons: dict[moves.Target, DirectButton]
     action_buttons: list[DirectButton]
     info_box: OnscreenText
 
@@ -237,49 +237,35 @@ class FighterInterface:
             'text_scale': 0.07,
             'parent': self.backdrop,
         }
-        self.use_buttons = [
-            DirectButton(
-                text='Use on self',
+        self.use_buttons = {}
+        for i, target in enumerate(moves.Target):
+            button = DirectButton(
+                text=f'Use on {target.value}',
                 command=self.select_target,
-                extraArgs=[moves.Target.SELF],
-                pos=(width / 2, 0, 0.4),
+                extraArgs=[target],
+                pos=(width / 2, 0, 0.4 - 0.2 * i),
                 **button_kwargs,
-            ),
-            DirectButton(
-                text='Use on opponent',
-                command=self.select_target,
-                extraArgs=[moves.Target.OTHER],
-                pos=(width / 2, 0, 0.2),
-                **button_kwargs,
-            ),
-        ]
-        for button in self.use_buttons:
+            )
             button.hide()
-        self.action_buttons = [
-            DirectButton(
+            self.use_buttons[target] = button
+        self.action_buttons = []
+        for i, action in enumerate(available_moves):
+            button = DirectButton(
                 text=action.name,
                 command=self.select_action,
                 extraArgs=[action],
                 pos=(-width / 2, 0, 0.4 - i * 0.2),
                 **button_kwargs,
             )
-            for i, action in enumerate(available_moves)
-        ]
+            self.action_buttons.append(button)
         if hidden:
             self.hide()
 
     def select_action(self, action: moves.Move) -> None:
         self.selected_action = action
         self.info_box.setText(f'{action.name}\n{action.accuracy}%')
-        button_visibility: tuple[bool, bool]
-        if action.target == 'self':
-            button_visibility = (True, False)
-        elif action.target == 'other':
-            button_visibility = (False, True)
-        else:
-            button_visibility = (True, True)
-        for visible, button in zip(button_visibility, self.use_buttons):
-            if visible:
+        for target, button in self.use_buttons.items():
+            if target in action.valid_targets:
                 button.show()
             else:
                 button.hide()
@@ -307,5 +293,5 @@ class FighterInterface:
     def destroy(self) -> None:
         for button in self.action_buttons:
             button.destroy()
-        for button in self.use_buttons:
+        for button in self.use_buttons.values():
             button.destroy()

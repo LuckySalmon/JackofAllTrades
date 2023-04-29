@@ -4,7 +4,7 @@ import enum
 import json
 import logging
 import random
-from collections.abc import Callable
+from collections.abc import Callable, Container
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Final, TypeAlias
 
@@ -28,8 +28,8 @@ def noop(*_: object) -> None:
 
 
 class Target(enum.Enum):
-    SELF = enum.auto()
-    OTHER = enum.auto()
+    SELF = 'self'
+    OTHER = 'opponent'
 
 
 @dataclass
@@ -78,7 +78,7 @@ class Move:  # TODO: decide on whether these should be called moves or actions
     instant_effects: list[InstantEffect] = field(default_factory=list)
     status_effects: list[StatusEffect] = field(default_factory=list)
     using: str = ''
-    target: str = ''
+    valid_targets: Container[Target] = frozenset()
     target_part: str = 'torso'
     is_projectile: bool = False
 
@@ -89,6 +89,12 @@ class Move:  # TODO: decide on whether these should be called moves or actions
     def from_json(cls, file: SupportsRead[str | bytes]) -> Move:
         j = json.load(file)
         name = j.pop('name').title()
+        target = j.pop('target').lower()
+        valid_targets = set[Target]()
+        if target in ('self', 'any'):
+            valid_targets.add(Target.SELF)
+        if target in ('other', 'any'):
+            valid_targets.add(Target.OTHER)
         instant_effects = [
             InstantEffect.from_preset(**params)
             for params in j.pop('instant_effects', [])
@@ -100,6 +106,7 @@ class Move:  # TODO: decide on whether these should be called moves or actions
         return cls(
             name,
             **j,
+            valid_targets=valid_targets,
             instant_effects=instant_effects,
             status_effects=status_effects,
         )
