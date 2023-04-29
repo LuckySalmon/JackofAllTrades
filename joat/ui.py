@@ -3,7 +3,7 @@ from __future__ import annotations
 import collections
 import itertools
 from collections.abc import Callable, Iterable, Iterator, Sequence
-from dataclasses import dataclass, field
+from dataclasses import InitVar, dataclass, field
 from typing_extensions import Self
 
 from direct.gui.DirectGui import DirectButton, DirectFrame, OnscreenText
@@ -182,12 +182,8 @@ class BattleMenu:
     def from_fighters(cls, *fighters: Fighter) -> Self:
         interfaces: list[FighterInterface] = []
         for fighter in fighters:
-            interface = FighterInterface(
-                fighter.moves.values(),
-                pos=(0.5 - 4 / 3, 0, -0.5),
-                width=0.5,
-                hidden=True,
-            )
+            interface = FighterInterface.for_fighter(fighter)
+            interface.hide()
             interfaces.append(interface)
         return cls(interfaces)
 
@@ -204,35 +200,41 @@ class BattleMenu:
             interface.destroy()
 
 
+@dataclass(kw_only=True)
 class FighterInterface:
-    selected_target: moves.Target | None = None
-    selected_action: moves.Move | None = None
     backdrop: DirectFrame
-    use_buttons: dict[moves.Target, DirectButton]
-    action_buttons: list[DirectButton]
     info_box: OnscreenText
+    available_moves: InitVar[Iterable[moves.Move]]
+    action_buttons: list[DirectButton] = field(default_factory=list, init=False)
+    use_buttons: dict[moves.Target, DirectButton] = field(
+        default_factory=dict, init=False
+    )
+    selected_target: moves.Target | None = field(default=None, init=False)
+    selected_action: moves.Move | None = field(default=None, init=False)
 
-    def __init__(
-        self,
-        available_moves: Iterable[moves.Move],
-        *,
-        pos: tuple[float, float, float],
-        width: float = 0.5,
-        hidden: bool = False,
-    ) -> None:
-        self.backdrop = DirectFrame(
+    @classmethod
+    def for_fighter(cls, fighter: Fighter) -> Self:
+        backdrop = DirectFrame(
             frameColor=(0, 0, 0, 0.5),
-            frameSize=(-width, width, -0.5, 0.5),
-            pos=pos,
+            frameSize=(-0.5, 0.5, -0.5, 0.5),
+            pos=(0.5 - 4 / 3, 0, -0.5),
         )
-        self.info_box = OnscreenText(
-            parent=self.backdrop,
+        info_box = OnscreenText(
+            parent=backdrop,
             pos=(0, 0.75),
             scale=0.07,
             align=TextNode.ACenter,
         )
+        return cls(
+            backdrop=backdrop,
+            info_box=info_box,
+            available_moves=fighter.moves.values(),
+        )
+
+    def __post_init__(self, available_moves: Iterable[moves.Move]) -> None:
+        button_width = self.backdrop.getWidth() / 4
         button_kwargs = {
-            'frameSize': (-width / 2, width / 2, -0.1, 0.1),
+            'frameSize': (-button_width, button_width, -0.1, 0.1),
             'borderWidth': (0.025, 0.025),
             'text_scale': 0.07,
             'parent': self.backdrop,
@@ -243,7 +245,7 @@ class FighterInterface:
                 text=f'Use on {target.value}',
                 command=self.select_target,
                 extraArgs=[target],
-                pos=(width / 2, 0, 0.4 - 0.2 * i),
+                pos=(button_width, 0, 0.4 - 0.2 * i),
                 **button_kwargs,
             )
             button.hide()
@@ -254,16 +256,14 @@ class FighterInterface:
                 text=action.name,
                 command=self.select_action,
                 extraArgs=[action],
-                pos=(-width / 2, 0, 0.4 - i * 0.2),
+                pos=(-button_width, 0, 0.4 - i * 0.2),
                 **button_kwargs,
             )
             self.action_buttons.append(button)
-        if hidden:
-            self.hide()
 
     def select_action(self, action: moves.Move) -> None:
         self.selected_action = action
-        self.info_box.setText(f'{action.name}\n{action.accuracy}%')
+        self.info_box.text = f'{action.name}\nAccuracy: {action.accuracy}%'
         for target, button in self.use_buttons.items():
             if target in action.valid_targets:
                 button.show()
@@ -280,8 +280,7 @@ class FighterInterface:
         assert self.selected_target is not None
         assert self.selected_action is not None
         action, target = self.selected_action, self.selected_target
-        self.hide()
-        del self.selected_target
+        self.selected_target = None
         return action, target
 
     def hide(self) -> None:

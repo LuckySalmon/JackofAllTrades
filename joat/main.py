@@ -124,6 +124,7 @@ class App:
             fighter = self.arena.get_fighter(i)
             opponent = self.arena.get_fighter(1 - i)
             move, target = await interface.query_action()
+            interface.hide()
             if target is moves.Target.SELF:
                 await fighter.use_move(move, fighter)
             elif target is moves.Target.OTHER:
