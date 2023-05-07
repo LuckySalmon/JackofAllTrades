@@ -1,9 +1,9 @@
 {
   "name": "throw poison",
+  "type": "ranged",
   "accuracy": 60,
   "using": "arm_right",
   "target": "any",
-  "is_projectile": true,
   "instant_effects": [{
     "name": "damage",
     "lower_bound": 5,

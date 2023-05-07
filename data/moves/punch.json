@@ -1,5 +1,6 @@
 {
   "name": "punch",
+  "type": "melee",
   "accuracy": 90,
   "using": "arm_right",
   "target": "any",

@@ -1,5 +1,6 @@
 {
   "name": "disappear",
+  "type": "instant",
   "accuracy": 100,
   "target": "self",
   "status_effects": [{

@@ -1,10 +1,10 @@
 {
   "name": "spit",
+  "type": "ranged",
   "accuracy": 55,
   "using": "head",
   "target": "any",
   "target_part": "head",
-  "is_projectile": true,
   "status_effects": [{
     "name": "poison",
     "strength": 1,

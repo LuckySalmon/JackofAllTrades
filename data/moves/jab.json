@@ -1,5 +1,6 @@
 {
   "name": "jab",
+  "type": "melee",
   "accuracy": 95,
   "using": "arm_left",
   "target": "any",

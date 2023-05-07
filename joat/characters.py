@@ -13,6 +13,7 @@ from panda3d.bullet import BulletPersistentManifold
 from panda3d.core import (
     AsyncTaskPause,
     CollideMask,
+    LVecBase3,
     Mat3,
     Mat4,
     NodePath,
@@ -23,7 +24,7 @@ from panda3d.core import (
 )
 
 from . import arenas, physics, stances
-from .moves import Move, StatusEffect
+from .moves import Move, MoveType, StatusEffect
 from .skeletons import Skeleton
 
 if TYPE_CHECKING:
@@ -175,16 +176,6 @@ class Fighter:
 
     async def use_move(self, move: Move, target: Fighter) -> None:
         _logger.debug(f'{self} used {move} on {target}')
-        if move.using == 'arm_right':
-            arm = self.skeleton.right_arm
-        elif move.using == 'arm_left':
-            arm = self.skeleton.left_arm
-        elif not move.is_projectile:
-            move.apply(self, target)
-            return
-        else:
-            arm = None
-
         target_part = target.skeleton.parts[move.target_part]
         target_position = target_part.get_pos(self.skeleton.core)
         for i in range(3):
@@ -192,40 +183,56 @@ class Fighter:
             inaccuracy = 1 - move.accuracy / 100
             target_position[i] *= 1 + inaccuracy * scale
 
-        if move.is_projectile:
-            assert self.arena is not None
-            root = self.arena.root
-            if arm is None:
-                using_part = self.skeleton.parts[move.using]
-                offset = Vec3(0, 0, 0)
-            else:
-                arm.set_target(target_position - arm.origin)
-                await AsyncTaskPause(1 / (1 + self.speed) / 8)
-                using_part = arm.forearm
-                offset = Vec3(0, -0.25, 0)
-            global_target_position = root.get_relative_point(
-                self.skeleton.core, target_position
-            )
-            from_position = root.get_relative_point(using_part, offset)
-            projectile = physics.spawn_projectile(
-                name=move.name,
-                instant_effects=move.instant_effects,
-                status_effects=move.status_effects,
-                arena=self.arena,
-                position=from_position,
-                velocity=physics.required_projectile_velocity(
-                    global_target_position - from_position,
-                    self.strength * 4,
-                ),
-                collision_mask=~using_part.get_collide_mask(),
-            )
-            self.skeleton.assume_stance()
-            await AsyncTaskPause(0.2 / self.strength)
-            if not projectile.is_empty():
-                projectile.set_collide_mask(CollideMask.all_on())
-            return
+        if move.type is MoveType.MELEE:
+            await self.use_melee_move(move, target_position)
+        elif move.type is MoveType.RANGED:
+            await self.use_ranged_move(move, target_position)
+        else:
+            move.apply(self, target)
 
-        assert arm is not None
+    async def use_ranged_move(self, move: Move, target_position: LVecBase3) -> None:
+        assert self.arena is not None
+        if move.using == 'arm_right':
+            arm = self.skeleton.right_arm
+        elif move.using == 'arm_left':
+            arm = self.skeleton.left_arm
+        else:
+            arm = None
+        if arm is None:
+            using_part = self.skeleton.parts[move.using]
+            offset = Vec3(0, 0, 0)
+        else:
+            arm.set_target(target_position - arm.origin)
+            await AsyncTaskPause(1 / (1 + self.speed) / 8)
+            using_part = arm.forearm
+            offset = Vec3(0, -0.25, 0)
+        root = self.arena.root
+        global_target_position = root.get_relative_point(
+            self.skeleton.core, target_position
+        )
+        from_position = root.get_relative_point(using_part, offset)
+        projectile = physics.spawn_projectile(
+            name=move.name,
+            instant_effects=move.instant_effects,
+            status_effects=move.status_effects,
+            arena=self.arena,
+            position=from_position,
+            velocity=physics.required_projectile_velocity(
+                global_target_position - from_position,
+                self.strength * 4,
+            ),
+            collision_mask=~using_part.get_collide_mask(),
+        )
+        self.skeleton.assume_stance()
+        await AsyncTaskPause(0.2 / self.strength)
+        if not projectile.is_empty():
+            projectile.set_collide_mask(CollideMask.all_on())
+
+    async def use_melee_move(self, move: Move, target_position: LVecBase3) -> None:
+        if move.using == 'arm_left':
+            arm = self.skeleton.left_arm
+        else:
+            arm = self.skeleton.right_arm
         fist = arm.forearm.node()
         current_callback = fist.python_tags.get('impact_callback')
 
@@ -237,11 +244,11 @@ class Fighter:
             else:
                 other_node = manifold.node0
             other_fighter = other_node.python_tags.get('fighter')
-            if other_fighter is target and any(
+            if isinstance(other_fighter, Fighter) and any(
                 p.distance < 0.01 for p in manifold.manifold_points
             ):
                 _logger.debug(f'{move} landed')
-                move.apply(self, target, True)
+                move.apply(self, other_fighter, True)
                 node.python_tags['impact_callback'] = current_callback
             if current_callback is not None:
                 current_callback(node, manifold)

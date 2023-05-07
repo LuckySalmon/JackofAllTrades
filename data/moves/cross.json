@@ -1,5 +1,6 @@
 {
   "name": "cross",
+  "type": "melee",
   "accuracy": 85,
   "using": "arm_right",
   "target": "any",

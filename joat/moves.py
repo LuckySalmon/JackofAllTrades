@@ -4,7 +4,7 @@ import enum
 import json
 import logging
 import random
-from collections.abc import Callable, Container
+from collections.abc import Callable, Container, Iterable
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Final, TypeAlias
 
@@ -30,6 +30,12 @@ def noop(*_: object) -> None:
 class Target(enum.Enum):
     SELF = 'self'
     OTHER = 'opponent'
+
+
+class MoveType(enum.Enum):
+    MELEE = 'melee'
+    RANGED = 'ranged'
+    INSTANT = 'instant'
 
 
 @dataclass
@@ -73,14 +79,14 @@ class StatusEffect:
 
 @dataclass(kw_only=True)
 class Move:  # TODO: decide on whether these should be called moves or actions
-    name: str = field(kw_only=False)
+    name: str
+    type: MoveType
     accuracy: int
-    instant_effects: list[InstantEffect] = field(default_factory=list)
-    status_effects: list[StatusEffect] = field(default_factory=list)
+    instant_effects: Iterable[InstantEffect] = ()
+    status_effects: Iterable[StatusEffect] = ()
     using: str = ''
     valid_targets: Container[Target] = frozenset()
     target_part: str = 'torso'
-    is_projectile: bool = False
 
     def __str__(self) -> str:
         return f'{type(self).__name__} {self.name!r}'
@@ -103,8 +109,10 @@ class Move:  # TODO: decide on whether these should be called moves or actions
             StatusEffect.from_preset(**params)
             for params in j.pop('status_effects', [])  # fmt: off
         ]
+        move_type = MoveType[j.pop('type').upper()]
         return cls(
-            name,
+            name=name,
+            type=move_type,
             **j,
             valid_targets=valid_targets,
             instant_effects=instant_effects,
