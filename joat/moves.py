@@ -36,6 +36,7 @@ class MoveType(enum.Enum):
     MELEE = 'melee'
     RANGED = 'ranged'
     INSTANT = 'instant'
+    REPOSITIONING = 'repositioning'
 
 
 @dataclass

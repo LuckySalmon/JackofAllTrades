@@ -13,6 +13,8 @@ from panda3d.bullet import BulletPersistentManifold
 from panda3d.core import (
     AsyncTaskPause,
     CollideMask,
+    EventHandler,
+    GeomNode,
     LVecBase3,
     Mat3,
     Mat4,
@@ -23,7 +25,7 @@ from panda3d.core import (
     Vec3,
 )
 
-from . import arenas, physics, stances
+from . import arenas, debug, physics, stances
 from .moves import Move, MoveType, StatusEffect
 from .skeletons import Skeleton
 
@@ -187,8 +189,28 @@ class Fighter:
             await self.use_melee_move(move, target_position)
         elif move.type is MoveType.RANGED:
             await self.use_ranged_move(move, target_position)
+        elif move.type is MoveType.REPOSITIONING:
+            await self.reposition()
         else:
             move.apply(self, target)
+
+    async def reposition(self) -> None:
+        assert self.arena is not None
+        ring_path = self.project_ring()
+        while True:
+            await EventHandler.get_global_event_handler().get_future('mouse1')
+            result = self.arena.get_mouse_ray()
+            if result.node == self.arena.ground.node():
+                target = result.hit_pos.xy
+                break
+        displacement = target - self.skeleton.core.get_pos().xy
+        if displacement.length_squared() > self.speed**2:
+            target -= displacement
+            displacement.normalize()
+            displacement *= self.speed
+            target += displacement
+        ring_path.remove_node()
+        await self.skeleton.slide_to(target)
 
     async def use_ranged_move(self, move: Move, target_position: LVecBase3) -> None:
         assert self.arena is not None
@@ -289,6 +311,22 @@ class Fighter:
             else:
                 effect.on_removal(self)
         self.status_effects = new_effects
+
+    def project_ring(self) -> NodePath[GeomNode]:
+        assert self.arena is not None
+        base_pos = self.skeleton.core.get_pos()
+        base_pos.z = 0
+        radius = self.speed
+        node = debug.draw_path(
+            base_pos + (+radius, +radius, 0),
+            base_pos + (+radius, -radius, 0),
+            base_pos + (-radius, -radius, 0),
+            base_pos + (-radius, +radius, 0),
+            base_pos + (+radius, +radius, 0),
+        )
+        node_path = NodePath(node)
+        node_path.reparent_to(self.skeleton.core.parent)
+        return node_path
 
     def kill(self) -> None:
         _logger.info(f'{self} died')

@@ -6,7 +6,8 @@
   "strength": 5,
   "defense": 0,
   "basic_moves": [
-    "fastball"
+    "fastball",
+    "slide"
   ],
   "skeleton": "default"
 }

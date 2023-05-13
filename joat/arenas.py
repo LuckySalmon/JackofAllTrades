@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from panda3d import bullet
-from panda3d.core import AsyncTaskPause, ClockObject, NodePath, Vec3
+from panda3d.core import AsyncTaskPause, ClockObject, LPoint3, NodePath, Vec3
 
 from .characters import Fighter
 from .debug import DebugHandler
@@ -61,6 +61,18 @@ class Arena:
                 impact_callback = node.python_tags.get('impact_callback')
                 if impact_callback is not None:
                     impact_callback(node, manifold)
+
+    def get_mouse_ray(self) -> bullet.BulletClosestHitRayResult:
+        from direct.showbase.ShowBaseGlobal import base
+
+        mouse_pos = base.mouseWatcherNode.get_mouse()
+        camera = base.cam
+        lens = camera.node().get_lens()
+        near_point, far_point = LPoint3(), LPoint3()
+        lens.extrude(mouse_pos, near_point, far_point)
+        origin = self.root.get_relative_point(camera, near_point)
+        endpoint = self.root.get_relative_point(camera, far_point)
+        return self.world.ray_test_closest(origin, endpoint)
 
     def exit(self):
         self.running = False

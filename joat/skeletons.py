@@ -13,9 +13,18 @@ from panda3d.bullet import (
     BulletRigidBodyNode,
     BulletSphereShape,
 )
-from panda3d.core import AsyncTaskPause, Mat3, Mat4, NodePath, VBase3, Vec3
+from panda3d.core import (
+    AsyncTaskPause,
+    ClockObject,
+    LVecBase2,
+    Mat3,
+    Mat4,
+    NodePath,
+    VBase3,
+    Vec3,
+)
 
-from . import arenas, physics, stances, tasks
+from . import arenas, control, physics, stances, tasks
 
 
 def shoulder_angles(
@@ -354,6 +363,22 @@ class Skeleton:
         self.right_arm.set_target(
             self.stance.right_hand_pos, self.stance.right_arm_angle
         )
+
+    async def slide_to(self, target: LVecBase2, *, tol: float = 0.1) -> None:
+        clock = ClockObject.get_global_clock()
+        t0 = clock.frame_time
+        base = self.parts['base']
+        controller = control.pid(100, 1, 10, zero=LVecBase2)
+        next(controller)
+        while True:
+            t1 = clock.frame_time
+            here = self.core.get_pos().xy
+            if here.almost_equal(target, threshold=tol):
+                break
+            impulse = controller.send((target - here, t1 - t0))
+            base.node().apply_central_impulse(Vec3(impulse, 0))
+            t0 = t1
+            await AsyncTaskPause(0)
 
     def kill(self) -> None:
         self.left_arm.enabled = False
