@@ -5,17 +5,24 @@ import logging
 import math
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Final
+from typing import Final, Protocol
 
+import imgui
 from direct.showbase.ShowBase import ShowBase
-from panda3d.core import AsyncTaskPause, ClockObject, Vec3
+from panda3d.core import AsyncTaskPause, ClockObject, GraphicsWindow, Vec3
 
 from . import arenas, moves, physics, stances, tasks, ui
 from .characters import Character, Fighter
+from .panda_imgui import Panda3DRenderer
 
 _logger: Final = logging.getLogger(__name__)
 
 GRAVITY: Final = Vec3(0, 0, -9.81)
+
+
+class SupportsDraw(Protocol):
+    def draw(self) -> object:
+        ...
 
 
 class App:
@@ -26,6 +33,7 @@ class App:
     character_menu: ui.CharacterMenu
     fighter_menu: ui.CharacterMenu
     main_menu: ui.MainMenu
+    drawing: bool = True
 
     def __init__(
         self,
@@ -115,11 +123,24 @@ class App:
             await AsyncTaskPause(0)
         self.set_camera_pos(r=r, theta=to_angle, height=height)
 
+    async def draw(self, menu: SupportsDraw) -> None:
+        assert isinstance(self.base.win, GraphicsWindow)
+        imgui.create_context()
+        renderer = Panda3DRenderer(self.base.win)
+        while self.drawing:
+            imgui.new_frame()
+            menu.draw()
+            imgui.render()
+            renderer.render(imgui.get_draw_data())
+            await AsyncTaskPause(0)
+
     async def do_battle(self) -> None:
         assert self.arena is not None
+        self.drawing = True
         battle_menu = ui.BattleMenu.from_fighters(
             self.arena.fighter_1, self.arena.fighter_2
         )
+        tasks.add_task(self.draw(battle_menu))
         for i, interface in itertools.cycle(enumerate(battle_menu.interfaces)):
             fighter = self.arena.get_fighter(i)
             opponent = self.arena.get_fighter(1 - i)
@@ -138,6 +159,7 @@ class App:
                 await AsyncTaskPause(0.5)
                 await self.move_camera((1.2 if i else 0.2) * math.pi)
         await AsyncTaskPause(5)
+        self.drawing = False
         battle_menu.destroy()
         self.arena.exit()
         self.enter_main_menu()

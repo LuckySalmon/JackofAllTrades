@@ -3,12 +3,13 @@ from __future__ import annotations
 import collections
 import itertools
 from collections.abc import Callable, Iterable, Iterator, Sequence
-from dataclasses import InitVar, dataclass, field
+from dataclasses import dataclass, field
 from typing_extensions import Self
 
+import imgui
 from direct.gui.DirectGui import DirectButton, DirectFrame, OnscreenText
 from direct.showbase.DirectObject import DirectObject
-from panda3d.core import AsyncTaskPause, NodePath, TextNode
+from panda3d.core import AsyncTaskPause
 
 from . import moves
 from .characters import Character, Fighter
@@ -140,36 +141,19 @@ class CharacterMenu:
 
 @dataclass
 class InfoStream:
-    backdrop: NodePath
-    lines: collections.deque[OnscreenText] = field(default_factory=collections.deque)
-    max_lines: int = field(default=16, kw_only=True)
-    height: float = field(default=1.9, kw_only=True)
+    lines: collections.deque[str] = field(default_factory=collections.deque)
 
     @classmethod
     def make_default(cls) -> Self:
-        return cls(
-            DirectFrame(
-                pos=(4 / 3 - 0.5, 0, 0),
-                frameSize=(-0.5, 0.5, -1, 1),
-                frameColor=(0, 0, 0, 0.25),
-            )
-        )
+        lines = collections.deque(('' for _ in range(16)), maxlen=16)
+        return cls(lines)
 
     def append_text(self, *new_lines: str) -> None:
-        for new_line in new_lines:
-            self.lines.appendleft(OnscreenText(new_line, parent=self.backdrop))
-            if len(self.lines) > self.max_lines:
-                old_line = self.lines.pop()
-                old_line.destroy()
-        line_spacing = 1 / (self.max_lines - 1)
-        for i, line in enumerate(self.lines):
-            line.set_pos(0, 0, self.height * (i * line_spacing - 0.5))
+        self.lines.extendleft(new_lines)
 
-    def destroy(self) -> None:
-        for line in self.lines:
-            line.destroy()
-        self.lines.clear()
-        self.backdrop.remove_node()
+    def draw(self) -> None:
+        for line in reversed(self.lines):
+            imgui.text(line)
 
 
 @dataclass
@@ -180,98 +164,58 @@ class BattleMenu:
 
     @classmethod
     def from_fighters(cls, *fighters: Fighter) -> Self:
-        interfaces: list[FighterInterface] = []
-        for fighter in fighters:
-            interface = FighterInterface.for_fighter(fighter)
-            interface.hide()
-            interfaces.append(interface)
-        return cls(interfaces)
+        return cls([FighterInterface.for_fighter(fighter) for fighter in fighters])
 
     def __post_init__(self) -> None:
         self.acceptor.accept('output_info', self.output_info)
+
+    def draw(self) -> None:
+        for i, interface in enumerate(self.interfaces):
+            if interface.shown:
+                imgui.set_next_window_position(60, 60, imgui.FIRST_USE_EVER)
+                imgui.set_next_window_size(180, 180, imgui.FIRST_USE_EVER)
+                with imgui.begin(f'Select a move:##{i}'):
+                    interface.draw()
+        imgui.set_next_window_position(500, 60, imgui.FIRST_USE_EVER)
+        imgui.set_next_window_size(250, 310, imgui.FIRST_USE_EVER)
+        with imgui.begin('Info'):
+            self.info_stream.draw()
 
     def output_info(self, info: str) -> None:
         self.info_stream.append_text(info)
 
     def destroy(self) -> None:
         self.acceptor.ignore_all()
-        self.info_stream.destroy()
-        for interface in self.interfaces:
-            interface.destroy()
 
 
 @dataclass(kw_only=True)
 class FighterInterface:
-    backdrop: DirectFrame
-    info_box: OnscreenText
-    available_moves: InitVar[Iterable[moves.Move]]
-    action_buttons: list[DirectButton] = field(default_factory=list, init=False)
-    use_buttons: dict[moves.Target, DirectButton] = field(
-        default_factory=dict, init=False
-    )
+    available_moves: Iterable[moves.Move]
+    text: str = ''
     selected_target: moves.Target | None = field(default=None, init=False)
     selected_action: moves.Move | None = field(default=None, init=False)
+    shown: bool = field(default=False, init=False)
 
     @classmethod
     def for_fighter(cls, fighter: Fighter) -> Self:
-        backdrop = DirectFrame(
-            frameColor=(0, 0, 0, 0.5),
-            frameSize=(-0.5, 0.5, -0.5, 0.5),
-            pos=(0.5 - 4 / 3, 0, -0.5),
-        )
-        info_box = OnscreenText(
-            parent=backdrop,
-            pos=(0, 0.75),
-            scale=0.07,
-            align=TextNode.ACenter,
-        )
-        return cls(
-            backdrop=backdrop,
-            info_box=info_box,
-            available_moves=fighter.moves.values(),
-        )
+        return cls(available_moves=fighter.moves.values())
 
-    def __post_init__(self, available_moves: Iterable[moves.Move]) -> None:
-        button_width = self.backdrop.getWidth() / 4
-        button_kwargs = {
-            'frameSize': (-button_width, button_width, -0.1, 0.1),
-            'borderWidth': (0.025, 0.025),
-            'text_scale': 0.07,
-            'parent': self.backdrop,
-        }
-        self.use_buttons = {}
-        for i, target in enumerate(moves.Target):
-            button = DirectButton(
-                text=f'Use on {target.value}',
-                command=self.select_target,
-                extraArgs=[target],
-                pos=(button_width, 0, 0.4 - 0.2 * i),
-                **button_kwargs,
-            )
-            button.hide()
-            self.use_buttons[target] = button
-        self.action_buttons = []
-        for i, action in enumerate(available_moves):
-            button = DirectButton(
-                text=action.name,
-                command=self.select_action,
-                extraArgs=[action],
-                pos=(-button_width, 0, 0.4 - i * 0.2),
-                **button_kwargs,
-            )
-            self.action_buttons.append(button)
-
-    def select_action(self, action: moves.Move) -> None:
-        self.selected_action = action
-        self.info_box.text = f'{action.name}\nAccuracy: {action.accuracy}%'
-        for target, button in self.use_buttons.items():
-            if target in action.valid_targets:
-                button.show()
-            else:
-                button.hide()
-
-    def select_target(self, target: moves.Target) -> None:
-        self.selected_target = target
+    def draw(self) -> None:
+        imgui.text(self.text)
+        with imgui.begin_group():
+            for action in self.available_moves:
+                if imgui.button(action.name):
+                    self.selected_action = action
+                    self.text = f'{action.name}\nAccuracy: {action.accuracy}%'
+        imgui.same_line()
+        if self.selected_action is None:
+            imgui.text('Select a move...')
+            return
+        with imgui.begin_group():
+            for target in moves.Target:
+                if target in self.selected_action.valid_targets:
+                    if imgui.button(f'Use on {target.value}'):
+                        self.selected_target = target
 
     async def query_action(self) -> tuple[moves.Move, moves.Target]:
         self.show()
@@ -284,13 +228,7 @@ class FighterInterface:
         return action, target
 
     def hide(self) -> None:
-        self.backdrop.hide()
+        self.shown = False
 
     def show(self) -> None:
-        self.backdrop.show()
-
-    def destroy(self) -> None:
-        for button in self.action_buttons:
-            button.destroy()
-        for button in self.use_buttons.values():
-            button.destroy()
+        self.shown = True

@@ -11,3 +11,6 @@ skip_string_normalization = true
 [tool.ruff]
 select = ["E", "F", "B"]
 ignore = ["B008", "B905"]
+
+[tool.pyright]
+useLibraryCodeForTypes = false
