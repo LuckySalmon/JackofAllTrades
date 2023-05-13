@@ -4,10 +4,11 @@ import json
 import logging
 import random
 from collections.abc import Iterable
-from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final
 
+import attrs
+from attrs import field
 from direct.showbase.MessengerGlobal import messenger
 from panda3d.bullet import BulletPersistentManifold
 from panda3d.core import (
@@ -59,14 +60,14 @@ def make_health_bar(fighter: Fighter) -> NodePath[PGWaitBar]:
     return bar_path
 
 
-@dataclass(kw_only=True)
+@attrs.define(kw_only=True)
 class Character:
-    name: str = field(kw_only=False)
+    name: str
     hp: int
     speed: int
     strength: int
     defense: int
-    moves: dict[str, Move] = field(default_factory=dict, repr=False)
+    moves: dict[str, Move] = attrs.Factory(dict)
     skeleton: str = field(default='default', repr=False)
     xp: int = field(default=0, init=False, repr=False)
     level: int = field(default=0, init=False, repr=False)
@@ -109,9 +110,9 @@ class Character:
             self.xp -= threshold
 
 
-@dataclass(kw_only=True)
+@attrs.define(kw_only=True)
 class Fighter:
-    name: str = field(kw_only=False)
+    name: str
     base_hp: int
     hp: int = field(init=False)
     speed: int
@@ -120,10 +121,10 @@ class Fighter:
     moves: dict[str, Move] = field(repr=False)
     skeleton: Skeleton = field(repr=False)
     arena: arenas.Arena | None = None
-    status_effects: list[StatusEffect] = field(default_factory=list, init=False)
+    status_effects: list[StatusEffect] = field(factory=list, init=False)
     health_bar: NodePath[PGWaitBar] = field(init=False)
 
-    def __post_init__(self) -> None:
+    def __attrs_post_init__(self) -> None:
         self.hp = self.base_hp
         self.health_bar = make_health_bar(self)
         for part in self.skeleton.parts.values():
@@ -154,7 +155,7 @@ class Fighter:
         )
         skeleton.parts['head'].set_collide_mask(CollideMask.bit(index))
         return cls(
-            character.name,
+            name=character.name,
             base_hp=character.hp,
             speed=character.speed,
             strength=character.strength,
@@ -292,7 +293,7 @@ class Fighter:
 
     def copy_effects(self, effects: Iterable[StatusEffect]) -> None:
         for effect in effects:
-            self.add_effect(replace(effect))
+            self.add_effect(attrs.evolve(effect))
 
     def add_effect(self, effect: StatusEffect) -> None:
         _logger.debug(f'Added {effect} to {self}')

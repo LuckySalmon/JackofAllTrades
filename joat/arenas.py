@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-
+import attrs
+from attrs import field
 from panda3d import bullet
 from panda3d.core import AsyncTaskPause, ClockObject, LPoint3, NodePath, Vec3
 
@@ -9,7 +9,7 @@ from .characters import Fighter
 from .debug import DebugHandler
 
 
-@dataclass
+@attrs.define
 class Arena:
     fighter_1: Fighter
     fighter_2: Fighter
@@ -19,7 +19,7 @@ class Arena:
     running: bool = field(default=False, init=False)
     debug_handler: DebugHandler = field(init=False)
 
-    def __post_init__(self) -> None:
+    def __attrs_post_init__(self) -> None:
         ground_node = bullet.BulletRigidBodyNode('Ground')
         ground_node.add_shape(bullet.BulletPlaneShape(Vec3(0, 0, 1), 0))
         self.ground = self.root.attach_new_node(ground_node)

@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
 from typing import Any, cast
 
+import attrs
 from panda3d.bullet import (
     BulletBoxShape,
     BulletCapsuleShape,
@@ -76,7 +76,7 @@ def shoulder_angles(
     return -gamma, beta, alpha, math.pi - phi
 
 
-@dataclass
+@attrs.define
 class HingeJointController:
     constraint: BulletHingeConstraint
     target_angle: float = 0
@@ -88,7 +88,7 @@ class HingeJointController:
         self.constraint.set_motor_target(self.target_angle, 1 / speed)
 
 
-@dataclass
+@attrs.define
 class BallJointController:
     constraint: BulletGenericConstraint
     target_angles: tuple[float, float, float] = (0, 0, 0)
@@ -106,7 +106,7 @@ class BallJointController:
             motor.set_target_velocity(diff * speed)
 
 
-@dataclass(kw_only=True, repr=False)
+@attrs.define(kw_only=True, repr=False)
 class Arm:
     origin: VBase3
     shoulder: BallJointController
@@ -117,7 +117,7 @@ class Arm:
     speed: float  # proportional to maximum angular velocity of joint motors
     _enabled: bool = True
 
-    def __post_init__(self) -> None:
+    def __attrs_post_init__(self) -> None:
         self.enabled = self._enabled
 
     @classmethod
@@ -221,7 +221,7 @@ class Arm:
             self.bicep.node().active = True
 
 
-@dataclass(repr=False, kw_only=True)
+@attrs.define(repr=False, kw_only=True)
 class Skeleton:
     parts: dict[str, NodePath[BulletRigidBodyNode]]
     joints: dict[str, BulletConstraint]

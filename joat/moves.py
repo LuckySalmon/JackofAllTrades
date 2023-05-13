@@ -5,9 +5,10 @@ import json
 import logging
 import random
 from collections.abc import Callable, Container, Iterable
-from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Final, TypeAlias
 
+import attrs
+from attrs import field
 from direct.showbase.MessengerGlobal import messenger
 
 if TYPE_CHECKING:
@@ -39,7 +40,7 @@ class MoveType(enum.Enum):
     REPOSITIONING = 'repositioning'
 
 
-@dataclass
+@attrs.define
 class InstantEffect:
     name: str
     apply: EffectProcedure
@@ -55,13 +56,13 @@ class InstantEffect:
         return constructor(*args, **kwargs)
 
 
-@dataclass(kw_only=True)
+@attrs.define
 class StatusEffect:
-    name: str = field(kw_only=False)
-    duration: int = field(kw_only=False)
-    on_application: EffectProcedure = field(default=noop, repr=False)
-    on_turn: EffectProcedure = field(default=noop, repr=False)
-    on_removal: EffectProcedure = field(default=noop, repr=False)
+    name: str
+    duration: int
+    on_application: EffectProcedure = field(default=noop, kw_only=True, repr=False)
+    on_turn: EffectProcedure = field(default=noop, kw_only=True, repr=False)
+    on_removal: EffectProcedure = field(default=noop, kw_only=True, repr=False)
 
     def __str__(self) -> str:
         return f'{type(self).__name__} {self.name!r}'
@@ -78,7 +79,7 @@ class StatusEffect:
         return self.duration > 0
 
 
-@dataclass(kw_only=True)
+@attrs.define(kw_only=True)
 class Move:  # TODO: decide on whether these should be called moves or actions
     name: str
     type: MoveType

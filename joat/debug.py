@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from dataclasses import InitVar, dataclass, field
 from typing_extensions import Self
 
+import attrs
 from direct.showbase.DirectObject import DirectObject
 from panda3d.bullet import BulletDebugNode, BulletGenericConstraint
 from panda3d.core import GeomNode, LColor, LineSegs, LVecBase3, NodePath
@@ -10,14 +10,14 @@ from panda3d.core import GeomNode, LColor, LineSegs, LVecBase3, NodePath
 from . import arenas
 
 
-@dataclass
+@attrs.define
 class DebugHandler:
     node_path: NodePath[BulletDebugNode]
-    acceptor: DirectObject = field(default_factory=DirectObject)
-    event: InitVar[str] = 'f1'
+    acceptor: DirectObject = attrs.Factory(DirectObject)
+    event: str = 'f1'
 
-    def __post_init__(self, event: str):
-        self.acceptor.accept(event, self.toggle_debug)
+    def __attrs_post_init__(self) -> None:
+        self.acceptor.accept(self.event, self.toggle_debug)
 
     @classmethod
     def for_arena(cls, arena: arenas.Arena, event: str = 'f1') -> Self:

@@ -3,10 +3,11 @@ from __future__ import annotations
 import collections
 import itertools
 from collections.abc import Callable, Iterable, Iterator, Sequence
-from dataclasses import dataclass, field
 from typing_extensions import Self
 
+import attrs
 import imgui
+from attrs import field
 from direct.gui.DirectGui import DirectButton, DirectFrame, OnscreenText
 from direct.showbase.DirectObject import DirectObject
 from panda3d.core import AsyncTaskPause
@@ -32,9 +33,9 @@ def uniform_spacing(
     return itertools.product(*spots_by_axis)
 
 
-@dataclass
+@attrs.define
 class MainMenu:
-    backdrop: DirectFrame = field(default_factory=DirectFrame)
+    backdrop: DirectFrame = attrs.Factory(DirectFrame)
     buttons: Sequence[DirectButton] = ()
 
     @classmethod
@@ -139,9 +140,9 @@ class CharacterMenu:
         self.backdrop.show()
 
 
-@dataclass
+@attrs.define
 class InfoStream:
-    lines: collections.deque[str] = field(default_factory=collections.deque)
+    lines: collections.deque[str] = attrs.Factory(collections.deque)
 
     @classmethod
     def make_default(cls) -> Self:
@@ -156,17 +157,17 @@ class InfoStream:
             imgui.text(line)
 
 
-@dataclass
+@attrs.define
 class BattleMenu:
     interfaces: Iterable[FighterInterface]
-    info_stream: InfoStream = field(default_factory=InfoStream.make_default)
-    acceptor: DirectObject = field(default_factory=DirectObject, kw_only=True)
+    info_stream: InfoStream = field(factory=InfoStream.make_default)
+    acceptor: DirectObject = field(factory=DirectObject, kw_only=True)
 
     @classmethod
     def from_fighters(cls, *fighters: Fighter) -> Self:
         return cls([FighterInterface.for_fighter(fighter) for fighter in fighters])
 
-    def __post_init__(self) -> None:
+    def __attrs_post_init__(self) -> None:
         self.acceptor.accept('output_info', self.output_info)
 
     def draw(self) -> None:
@@ -188,7 +189,7 @@ class BattleMenu:
         self.acceptor.ignore_all()
 
 
-@dataclass(kw_only=True)
+@attrs.define(kw_only=True)
 class FighterInterface:
     available_moves: Iterable[moves.Move]
     text: str = ''

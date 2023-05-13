@@ -1,10 +1,10 @@
-from dataclasses import dataclass
 from typing import Final
 
+import attrs
 from panda3d.core import Vec3
 
 
-@dataclass
+@attrs.define
 class Stance:
     left_hand_pos: Vec3
     right_hand_pos: Vec3
