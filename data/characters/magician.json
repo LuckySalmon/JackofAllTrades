@@ -1,12 +1,11 @@
 {
   "trade": "magician",
-  "name": "the great jack",
-  "hp": 150,
+  "name": "The Great Jack",
+  "health": 150,
   "speed": 1,
   "strength": 1,
   "defense": 0,
   "basic_moves": [
     "disappear"
-  ],
-  "skeleton": "default"
+  ]
 }

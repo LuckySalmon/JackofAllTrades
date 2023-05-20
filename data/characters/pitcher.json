@@ -1,13 +1,12 @@
 {
   "trade": "pitcher",
-  "name": "pitcher jack",
-  "hp": 200,
+  "name": "Pitcher Jack",
+  "health": 200,
   "speed": 1,
   "strength": 5,
   "defense": 0,
   "basic_moves": [
     "fastball",
     "slide"
-  ],
-  "skeleton": "default"
+  ]
 }

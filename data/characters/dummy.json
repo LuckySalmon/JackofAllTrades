@@ -1,12 +1,11 @@
 {
   "trade": "dummy",
-  "name": "dummy jack",
-  "hp": 50,
+  "name": "Dummy Jack",
+  "health": 50,
   "speed": 1,
   "strength": 1,
   "defense": 0,
   "basic_moves": [
     "punch"
-  ],
-  "skeleton": "default"
+  ]
 }

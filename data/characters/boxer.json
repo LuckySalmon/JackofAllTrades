@@ -1,7 +1,7 @@
 {
   "trade": "boxer",
-  "name": "boxer jack",
-  "hp": 200,
+  "name": "Boxer Jack",
+  "health": 200,
   "speed": 2,
   "strength": 5,
   "defense": 0,
@@ -9,6 +9,5 @@
     "jab",
     "cross",
     "hook"
-  ],
-  "skeleton": "default"
+  ]
 }

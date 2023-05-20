@@ -1,13 +1,12 @@
 {
   "trade": "teacher",
-  "name": "mr. jack",
-  "hp": 200,
+  "name": "Mr. Jack",
+  "health": 200,
   "speed": 1,
   "strength": 1,
   "defense": 0,
   "basic_moves": [
     "ruler_slap",
     "throw_apple"
-  ],
-  "skeleton": "default"
+  ]
 }

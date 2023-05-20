@@ -199,7 +199,7 @@ class FighterInterface:
 
     @classmethod
     def for_fighter(cls, fighter: Fighter) -> Self:
-        return cls(available_moves=fighter.moves.values())
+        return cls(available_moves=fighter.moves)
 
     def draw(self) -> None:
         imgui.text(self.text)

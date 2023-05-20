@@ -26,7 +26,8 @@ def required_rotation(u: LVecBase3, v: LVecBase3, /) -> LQuaternion:
 
 
 def make_rigid_transform(
-    rotation: LMatrix3 | LQuaternion, translation: LVecBase3
+    rotation: LMatrix3 | LQuaternion = LQuaternion.ident_quat(),
+    translation: LVecBase3 = LVecBase3.zero(),
 ) -> TransformState:
     """Return a TransformState comprising the given rotation
     followed by the given translation.

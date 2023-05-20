@@ -17,12 +17,11 @@ from panda3d.core import (
     EventHandler,
     GeomNode,
     LVecBase3,
-    Mat3,
-    Mat4,
     NodePath,
     PandaNode,
     PGFrameStyle,
     PGWaitBar,
+    TransformState,
     Vec3,
 )
 
@@ -39,8 +38,8 @@ _logger: Final = logging.getLogger(__name__)
 def make_health_bar(fighter: Fighter) -> NodePath[PGWaitBar]:
     bar = PGWaitBar('Health Bar')
     bar.set_frame(-0.4, 0.4, 0, 0.1)
-    bar.set_range(fighter.base_hp)
-    bar.set_value(fighter.hp)
+    bar.set_range(fighter.base_health)
+    bar.set_value(fighter.health)
 
     frame_style = PGFrameStyle()
     frame_style.set_width(0, 0)
@@ -63,12 +62,11 @@ def make_health_bar(fighter: Fighter) -> NodePath[PGWaitBar]:
 @attrs.define(kw_only=True)
 class Character:
     name: str
-    hp: int
+    health: int
     speed: int
     strength: int
     defense: int
-    moves: dict[str, Move] = attrs.Factory(dict)
-    skeleton: str = field(default='default', repr=False)
+    moves: list[Move] = attrs.Factory(list)
     xp: int = field(default=0, init=False, repr=False)
     level: int = field(default=0, init=False, repr=False)
 
@@ -79,21 +77,33 @@ class Character:
     def from_json(cls, file: SupportsRead[str | bytes]) -> Character:
         attributes = json.load(file)
         move_names = attributes.pop('basic_moves')
-        moves = {}
+        moves: list[Move] = []
         for move_name in move_names:
             path = Path('data', 'moves', move_name).with_suffix('.json')
             if path.exists():
                 with path.open() as f:
-                    move = Move.from_json(f)
-                moves[move_name] = move
+                    moves.append(Move.from_json(f))
         attributes.pop('trade')
         return cls(**attributes, moves=moves)
+
+    def make_fighter(
+        self, *, xform: TransformState = TransformState.make_identity()
+    ) -> Fighter:
+        with Path('data', 'skeletons', 'default.json').open() as f:
+            skeleton_params: dict[str, dict[str, Any]] = json.load(f)
+        skeleton = Skeleton.construct(
+            skeleton_params,
+            transform=xform,
+            speed=(2 + self.speed) * 2,
+            strength=self.strength * 1.5,
+        )
+        return Fighter(name=self.name, character=self, skeleton=skeleton)
 
     def add_move(self, move: Move) -> None:
         """Attempt to add a move to this list of those available."""
         # TODO: why this formula?
         if len(self.moves) < int(0.41 * self.level + 4):
-            self.moves[move.name] = move
+            self.moves.append(move)
             # winsound.Beep(600, 125)
             # winsound.Beep(750, 100)
             # winsound.Beep(900, 150)
@@ -113,19 +123,35 @@ class Character:
 @attrs.define(kw_only=True)
 class Fighter:
     name: str
-    base_hp: int
-    hp: int = field(init=False)
-    speed: int
-    strength: int
-    defense: int
-    moves: dict[str, Move] = field(repr=False)
+    character: Character
+    health: int = field(init=False)
     skeleton: Skeleton = field(repr=False)
     arena: arenas.Arena | None = None
     status_effects: list[StatusEffect] = field(factory=list, init=False)
     health_bar: NodePath[PGWaitBar] = field(init=False)
 
+    @property
+    def base_health(self) -> int:
+        return self.character.health
+
+    @property
+    def speed(self) -> int:
+        return self.character.speed
+
+    @property
+    def strength(self) -> int:
+        return self.character.strength
+
+    @property
+    def defense(self) -> int:
+        return self.character.defense
+
+    @property
+    def moves(self) -> list[Move]:
+        return self.character.moves
+
     def __attrs_post_init__(self) -> None:
-        self.hp = self.base_hp
+        self.health = self.base_health
         self.health_bar = make_health_bar(self)
         for part in self.skeleton.parts.values():
             part.node().python_tags.update(
@@ -137,32 +163,6 @@ class Fighter:
 
     def __str__(self) -> str:
         return f'{type(self).__name__} {self.name!r}'
-
-    @classmethod
-    def from_character(cls, character: Character, *, index: int = 0) -> Fighter:
-        path = Path('data', 'skeletons', character.skeleton)
-        with path.with_suffix('.json').open() as f:
-            skeleton_params: dict[str, Any] = json.load(f)
-        side = 1 if index else -1
-        offset = Vec3(-0.5, 0, 0) if index == 0 else Vec3(0.5, 0, 0)
-        rotation = Mat3(-side, 0, 0, 0, -side, 0, 0, 0, 1)
-        coord_xform = Mat4(rotation, offset)
-        skeleton = Skeleton.construct(
-            skeleton_params,
-            coord_xform,
-            (2 + character.speed) * 2,
-            character.strength * 1.5,
-        )
-        skeleton.parts['head'].set_collide_mask(CollideMask.bit(index))
-        return cls(
-            name=character.name,
-            base_hp=character.hp,
-            speed=character.speed,
-            strength=character.strength,
-            defense=character.defense,
-            moves=character.moves,
-            skeleton=skeleton,
-        )
 
     def enter_arena(self, arena: arenas.Arena) -> None:
         self.arena = arena
@@ -285,10 +285,10 @@ class Fighter:
     def apply_damage(self, damage: int) -> None:
         if damage:
             _logger.debug(f'{self} took {damage} damage')
-        self.hp -= damage
-        self.health_bar.node().set_value(self.hp)
+        self.health -= damage
+        self.health_bar.node().set_value(self.health)
         messenger.send('output_info', [f'{self.name} took {damage} damage!'])
-        if self.hp <= 0:
+        if self.health <= 0:
             self.kill()
 
     def copy_effects(self, effects: Iterable[StatusEffect]) -> None:

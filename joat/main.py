@@ -11,8 +11,8 @@ import imgui
 from direct.showbase.ShowBase import ShowBase
 from panda3d.core import AsyncTaskPause, ClockObject, GraphicsWindow, Vec3
 
-from . import arenas, moves, physics, stances, tasks, ui
-from .characters import Character, Fighter
+from . import arenas, moves, physics, spatial, stances, tasks, ui
+from .characters import Character
 from .panda_imgui import Panda3DRenderer
 
 _logger: Final = logging.getLogger(__name__)
@@ -93,10 +93,19 @@ class App:
         _logger.info(f'Starting battle with {character_1} and {character_2}')
         self.set_camera_pos(r=10, theta=1.2 * math.pi, height=3)
         world = physics.make_world(gravity=GRAVITY)
-        fighter_1 = Fighter.from_character(character_1, index=0)
-        fighter_2 = Fighter.from_character(character_2, index=1)
+
+        fighter_1 = character_1.make_fighter(
+            xform=spatial.make_rigid_transform(translation=Vec3(-0.5, 0, 0))
+        )
+        fighter_2 = character_2.make_fighter(
+            xform=spatial.make_rigid_transform(
+                rotation=spatial.make_rotation(math.pi, Vec3.unit_z()),
+                translation=Vec3(0.5, 0, 0),
+            )
+        )
         fighter_1.set_stance(stances.BOXING_STANCE)
         fighter_2.set_stance(stances.BOXING_STANCE)
+
         self.arena = arenas.Arena(
             fighter_1,
             fighter_2,
@@ -151,7 +160,7 @@ class App:
             elif target is moves.Target.OTHER:
                 await fighter.use_move(move, opponent)
             opponent.apply_current_effects()
-            if opponent.hp <= 0:
+            if opponent.health <= 0:
                 _logger.info(f'{fighter} won the battle')
                 battle_menu.output_info(f'{fighter.name} wins!')
                 break

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import math
 from typing import Any, cast
+from typing_extensions import Self
 
 import attrs
 from panda3d.bullet import (
@@ -18,8 +19,8 @@ from panda3d.core import (
     ClockObject,
     LVecBase2,
     Mat3,
-    Mat4,
     NodePath,
+    TransformState,
     VBase3,
     Vec3,
 )
@@ -234,10 +235,11 @@ class Skeleton:
     def construct(
         cls,
         parameters: dict[str, dict[str, Any]],
-        coord_xform: Mat4,
+        *,
+        transform: TransformState = TransformState.make_identity(),
         speed: float,
         strength: float,
-    ) -> Skeleton:
+    ) -> Self:
         measures: dict[str, float] = parameters['measures']
         head_radius = measures['head_radius']
         arm_length = measures['arm_length']
@@ -258,7 +260,7 @@ class Skeleton:
             position=Vec3(0, 0, torso_center),
             mass=32,
         )
-        torso.set_mat(torso, coord_xform)
+        torso.set_transform(torso, transform)
         base = physics.make_body(
             name='Base',
             shape=BulletBoxShape(Vec3(0.25, 0.25, base_width * 0.49)),

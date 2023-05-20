@@ -1,13 +1,12 @@
 {
   "trade": "chemist",
-  "name": "chemist jack",
-  "hp": 175,
+  "name": "Chemist Jack",
+  "health": 175,
   "speed": 1,
   "strength": 1,
   "defense": 0,
   "basic_moves": [
     "throw_water",
     "throw_poison"
-  ],
-  "skeleton": "default"
+  ]
 }
