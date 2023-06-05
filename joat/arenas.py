@@ -5,19 +5,16 @@ from attrs import field
 from panda3d import bullet
 from panda3d.core import AsyncTaskPause, ClockObject, LPoint3, NodePath, Vec3
 
-from .characters import Fighter
 from .debug import DebugHandler
 
 
 @attrs.define
 class Arena:
-    fighter_1: Fighter
-    fighter_2: Fighter
-    world: bullet.BulletWorld = field(kw_only=True)
-    root: NodePath = field(kw_only=True)
+    root: NodePath
+    world: bullet.BulletWorld
     ground: NodePath[bullet.BulletRigidBodyNode] = field(init=False)
     running: bool = field(default=False, init=False)
-    debug_handler: DebugHandler = field(init=False)
+    debug_handler: DebugHandler = attrs.Factory(DebugHandler.for_arena, takes_self=True)
 
     def __attrs_post_init__(self) -> None:
         ground_node = bullet.BulletRigidBodyNode('Ground')
@@ -25,22 +22,6 @@ class Arena:
         self.ground = self.root.attach_new_node(ground_node)
         self.ground.set_pos(0, 0, 0)
         self.world.attach(ground_node)
-
-        if self.fighter_1.name == self.fighter_2.name:
-            self.fighter_1.name += ' (1)'
-            self.fighter_2.name += ' (2)'
-        self.fighter_1.enter_arena(self)
-        self.fighter_2.enter_arena(self)
-
-        self.debug_handler = DebugHandler.for_arena(self)
-
-    def get_fighter(self, index: int) -> Fighter:
-        if index == 0:
-            return self.fighter_1
-        elif index == 1:
-            return self.fighter_2
-        else:
-            raise IndexError(f'{self} has no fighter at index {index}')
 
     async def update(self) -> None:
         self.running = True
@@ -77,7 +58,5 @@ class Arena:
     def exit(self):
         self.running = False
         self.root.detach_node()
-        self.fighter_1.exit_arena()
-        self.fighter_2.exit_arena()
         self.debug_handler.destroy()
         self.world.remove(self.ground.node())

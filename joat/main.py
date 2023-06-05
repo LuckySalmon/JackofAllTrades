@@ -12,7 +12,7 @@ from direct.showbase.ShowBase import ShowBase
 from panda3d.core import AsyncTaskPause, ClockObject, GraphicsWindow, Vec3
 
 from . import arenas, moves, physics, spatial, stances, tasks, ui
-from .characters import Character
+from .characters import Character, Fighter
 from .panda_imgui import Panda3DRenderer
 
 _logger: Final = logging.getLogger(__name__)
@@ -29,7 +29,6 @@ class App:
     base: ShowBase
     available_characters: list[Character]
     selected_characters: list[Character]
-    arena: arenas.Arena | None = None
     character_menu: ui.CharacterMenu
     fighter_menu: ui.CharacterMenu
     main_menu: ui.MainMenu
@@ -92,7 +91,9 @@ class App:
             character_1, character_2 = character_2, character_1
         _logger.info(f'Starting battle with {character_1} and {character_2}')
         self.set_camera_pos(r=10, theta=1.2 * math.pi, height=3)
+        root = self.base.render.attach_new_node('Arena Root')
         world = physics.make_world(gravity=GRAVITY)
+        arena = arenas.Arena(root, world)
 
         fighter_1 = character_1.make_fighter(
             xform=spatial.make_rigid_transform(translation=Vec3(-0.5, 0, 0))
@@ -103,17 +104,14 @@ class App:
                 translation=Vec3(0.5, 0, 0),
             )
         )
+        if fighter_1.name == fighter_2.name:
+            fighter_1.name += ' (1)'
+            fighter_2.name += ' (2)'
         fighter_1.set_stance(stances.BOXING_STANCE)
         fighter_2.set_stance(stances.BOXING_STANCE)
 
-        self.arena = arenas.Arena(
-            fighter_1,
-            fighter_2,
-            world=world,
-            root=self.base.render.attach_new_node('Arena Root'),
-        )
-        tasks.add_task(self.arena.update())
-        tasks.add_task(self.do_battle())
+        tasks.add_task(arena.update())
+        tasks.add_task(self.do_battle(arena, fighter_1, fighter_2))
 
     def set_camera_pos(self, *, r: float, theta: float, height: float) -> None:
         self.base.cam.set_pos(r * math.cos(theta), r * math.sin(theta), height)
@@ -143,16 +141,20 @@ class App:
             renderer.render(imgui.get_draw_data())
             await AsyncTaskPause(0)
 
-    async def do_battle(self) -> None:
-        assert self.arena is not None
+    async def do_battle(
+        self, arena: arenas.Arena, fighter_1: Fighter, fighter_2: Fighter
+    ) -> None:
+        fighter_1.enter_arena(arena)
+        fighter_2.enter_arena(arena)
         self.drawing = True
-        battle_menu = ui.BattleMenu.from_fighters(
-            self.arena.fighter_1, self.arena.fighter_2
-        )
+        battle_menu = ui.BattleMenu.from_fighters(fighter_1, fighter_2)
         tasks.add_task(self.draw(battle_menu))
-        for i, interface in itertools.cycle(enumerate(battle_menu.interfaces)):
-            fighter = self.arena.get_fighter(i)
-            opponent = self.arena.get_fighter(1 - i)
+        fighters = (fighter_1, fighter_2)
+        interfaces = tuple(battle_menu.interfaces)
+        for i in itertools.cycle(range(2)):
+            interface = interfaces[i]
+            fighter = fighters[i]
+            opponent = fighters[1 - i]
             move, target = await interface.query_action()
             interface.hide()
             if target is moves.Target.SELF:
@@ -170,7 +172,9 @@ class App:
         await AsyncTaskPause(5)
         self.drawing = False
         battle_menu.destroy()
-        self.arena.exit()
+        fighter_1.exit_arena()
+        fighter_2.exit_arena()
+        arena.exit()
         self.enter_main_menu()
 
 
