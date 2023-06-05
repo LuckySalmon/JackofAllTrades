@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import itertools
+import json
 import logging
 import math
 from collections.abc import Iterable
@@ -191,9 +192,15 @@ def main() -> None:
     stream_handler.setLevel(logging.WARNING)
     logger.addHandler(file_handler)
     logger.addHandler(stream_handler)
+    move_dict: dict[str, moves.Move] = {}
     characters: list[Character] = []
+    for fp in Path('data', 'moves').iterdir():
+        j = json.loads(fp.read_text())
+        move = moves.Move.from_json(j)
+        move_dict[fp.stem] = move
     for fp in Path('data', 'characters').iterdir():
-        with fp.open() as f:
-            characters.append(Character.from_json(f))
+        j = json.loads(fp.read_text())
+        character = Character.from_json(j, move_dict=move_dict)
+        characters.append(character)
     app = App(available_characters=characters)
     app.run()

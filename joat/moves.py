@@ -1,19 +1,17 @@
 from __future__ import annotations
 
 import enum
-import json
 import logging
 import random
 from collections.abc import Callable, Container, Iterable
 from typing import TYPE_CHECKING, Any, Final, TypeAlias
+from typing_extensions import Self
 
 import attrs
 from attrs import field
 from direct.showbase.MessengerGlobal import messenger
 
 if TYPE_CHECKING:
-    from _typeshed import SupportsRead
-
     from .characters import Fighter
 
 _logger: Final = logging.getLogger(__name__)
@@ -94,8 +92,7 @@ class Move:  # TODO: decide on whether these should be called moves or actions
         return f'{type(self).__name__} {self.name!r}'
 
     @classmethod
-    def from_json(cls, file: SupportsRead[str | bytes]) -> Move:
-        j = json.load(file)
+    def from_json(cls, j: dict[str, Any]) -> Self:
         name = j.pop('name').title()
         target = j.pop('target').lower()
         valid_targets = set[Target]()

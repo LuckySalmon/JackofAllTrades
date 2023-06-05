@@ -3,9 +3,10 @@ from __future__ import annotations
 import json
 import logging
 import random
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Final
+from typing import Any, Final
+from typing_extensions import Self
 
 import attrs
 from attrs import field
@@ -28,9 +29,6 @@ from panda3d.core import (
 from . import arenas, debug, physics, stances
 from .moves import Move, MoveType, StatusEffect
 from .skeletons import Skeleton
-
-if TYPE_CHECKING:
-    from _typeshed import SupportsRead
 
 _logger: Final = logging.getLogger(__name__)
 
@@ -74,15 +72,11 @@ class Character:
         return f'{type(self).__name__} {self.name!r}'
 
     @classmethod
-    def from_json(cls, file: SupportsRead[str | bytes]) -> Character:
-        attributes = json.load(file)
+    def from_json(
+        cls, attributes: dict[str, Any], *, move_dict: Mapping[str, Move]
+    ) -> Self:
         move_names = attributes.pop('basic_moves')
-        moves: list[Move] = []
-        for move_name in move_names:
-            path = Path('data', 'moves', move_name).with_suffix('.json')
-            if path.exists():
-                with path.open() as f:
-                    moves.append(Move.from_json(f))
+        moves = [move_dict[name] for name in move_names]
         attributes.pop('trade')
         return cls(**attributes, moves=moves)
 
