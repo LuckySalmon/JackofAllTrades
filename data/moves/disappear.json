@@ -3,9 +3,8 @@
   "type": "instant",
   "accuracy": 100,
   "target": "self",
-  "status_effects": [{
+  "effects": [{
     "name": "invisibility",
-    "strength": 1,
     "duration": 1
   }]
 }

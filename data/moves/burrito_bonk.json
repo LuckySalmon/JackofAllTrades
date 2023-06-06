@@ -3,7 +3,7 @@
   "type": "ranged",
   "accuracy": 60,
   "target": "any",
-  "instant_effects": [{
+  "effects": [{
     "name": "damage",
     "lower_bound": -100,
     "upper_bound": 100

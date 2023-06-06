@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 import math
-from collections.abc import Iterable
 from typing import Final
 
 from panda3d.bullet import (
@@ -18,7 +17,7 @@ from panda3d.bullet import (
 )
 from panda3d.core import CollideMask, Mat3, NodePath, PandaNode, VBase3, Vec3
 
-from . import arenas, moves
+from . import arenas, effects
 from .spatial import make_rigid_transform, required_rotation
 
 _logger: Final = logging.getLogger(__name__)
@@ -147,8 +146,7 @@ def spawn_projectile(
     mass: float = 1,
     velocity: VBase3 = Vec3.zero(),
     arena: arenas.Arena,
-    instant_effects: Iterable[moves.InstantEffect] = (),
-    status_effects: Iterable[moves.StatusEffect] = (),
+    effect: effects.Effect | None = None,
     collision_mask: CollideMask | int = CollideMask.all_on(),
 ) -> NodePath[BulletRigidBodyNode]:
     projectile = make_body(
@@ -173,9 +171,8 @@ def spawn_projectile(
             other_fighter = other_node.python_tags.get('fighter')
             if other_fighter is not None:
                 _logger.debug(f'{other_fighter} was hit by {name}')
-                for effect in instant_effects:
+                if effect is not None:
                     effect.apply(other_fighter)
-                other_fighter.copy_effects(status_effects)
             arena.world.remove(node)
             projectile.remove_node()
             break

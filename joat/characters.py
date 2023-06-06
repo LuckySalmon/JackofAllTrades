@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import random
-from collections.abc import Iterable, Mapping
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Any, Final
 from typing_extensions import Self
@@ -27,7 +27,8 @@ from panda3d.core import (
 )
 
 from . import arenas, debug, physics, stances
-from .moves import Move, MoveType, StatusEffect
+from .effects import StatusEffect
+from .moves import Move, MoveType
 from .skeletons import Skeleton
 
 _logger: Final = logging.getLogger(__name__)
@@ -230,8 +231,7 @@ class Fighter:
         from_position = root.get_relative_point(using_part, offset)
         projectile = physics.spawn_projectile(
             name=move.name,
-            instant_effects=move.instant_effects,
-            status_effects=move.status_effects,
+            effect=move.effect,
             arena=self.arena,
             position=from_position,
             velocity=physics.required_projectile_velocity(
@@ -284,10 +284,6 @@ class Fighter:
         messenger.send('output_info', [f'{self.name} took {damage} damage!'])
         if self.health <= 0:
             self.kill()
-
-    def copy_effects(self, effects: Iterable[StatusEffect]) -> None:
-        for effect in effects:
-            self.add_effect(attrs.evolve(effect))
 
     def add_effect(self, effect: StatusEffect) -> None:
         _logger.debug(f'Added {effect} to {self}')
