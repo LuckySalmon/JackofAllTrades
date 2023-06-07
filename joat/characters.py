@@ -27,7 +27,7 @@ from panda3d.core import (
 )
 
 from . import arenas, debug, physics, stances
-from .effects import StatusEffect
+from .effects import Effect, StatusEffect
 from .moves import Move, MoveType
 from .skeletons import Skeleton
 
@@ -150,10 +150,8 @@ class Fighter:
         self.health_bar = make_health_bar(self)
         for part in self.skeleton.parts.values():
             part.node().python_tags.update(
-                {
-                    'fighter': self,
-                    'impact_callback': damage_callback,
-                }
+                fighter=self,
+                impact_callback=standard_impact_callback,
             )
 
     def __str__(self) -> str:
@@ -231,7 +229,6 @@ class Fighter:
         from_position = root.get_relative_point(using_part, offset)
         projectile = physics.spawn_projectile(
             name=move.name,
-            effect=move.effect,
             arena=self.arena,
             position=from_position,
             velocity=physics.required_projectile_velocity(
@@ -240,6 +237,7 @@ class Fighter:
             ),
             collision_mask=~using_part.get_collide_mask(),
         )
+        projectile.node().python_tags.update(one_shot_effect=move.effect, min_impulse=1)
         self.skeleton.assume_stance()
         await AsyncTaskPause(0.2 / self.strength)
         if not projectile.is_empty():
@@ -251,30 +249,11 @@ class Fighter:
         else:
             arm = self.skeleton.right_arm
         fist = arm.forearm.node()
-        current_callback = fist.python_tags.get('impact_callback')
-
-        def temporary_impact_callback(
-            node: PandaNode, manifold: BulletPersistentManifold
-        ) -> None:
-            if node == manifold.node0:
-                other_node = manifold.node1
-            else:
-                other_node = manifold.node0
-            other_fighter = other_node.python_tags.get('fighter')
-            if isinstance(other_fighter, Fighter) and any(
-                p.distance < 0.01 for p in manifold.manifold_points
-            ):
-                _logger.debug(f'{move} landed')
-                move.apply(self, other_fighter, True)
-                node.python_tags['impact_callback'] = current_callback
-            if current_callback is not None:
-                current_callback(node, manifold)
-
-        fist.python_tags['impact_callback'] = temporary_impact_callback
+        fist.python_tags['one_shot_effect'] = move.effect
         arm.set_target(target_position - arm.origin)
         await AsyncTaskPause(1 / (1 + self.speed))
         self.skeleton.assume_stance()
-        fist.python_tags['impact_callback'] = current_callback
+        fist.python_tags.pop('one_shot_effect', None)
 
     def apply_damage(self, damage: int) -> None:
         if damage:
@@ -324,24 +303,35 @@ class Fighter:
         self.skeleton.kill()
 
 
-def damage_callback(
+def standard_impact_callback(
     node: PandaNode,
     manifold: BulletPersistentManifold,
     *,
-    min_damaging_impulse: float = 20,
+    min_impulse: float = 20,
 ) -> None:
     fighter: Fighter | None = node.python_tags.get('fighter')
     if fighter is None:
         return
+    if node == manifold.node0:
+        other_node = manifold.node1
+    else:
+        other_node = manifold.node0
+    min_impulse = other_node.python_tags.get('min_impulse', min_impulse)
     for point in manifold.manifold_points:
         impulse = point.applied_impulse
-        if impulse < min_damaging_impulse:
+        if impulse < min_impulse:
             continue
         multiplier: float = node.python_tags.get('damage_multiplier', 1)
-        damage = int(impulse * multiplier / (10 + fighter.defense))
-        if not damage:
+        if not multiplier:
+            # Don't do anything if the node is immune to damage.
             continue
         _logger.debug(
             f'{fighter} was hit in the {node.name} with an impulse of {impulse}'
         )
-        fighter.apply_damage(damage)
+        damage = int(impulse * multiplier / (10 + fighter.defense))
+        if damage:
+            fighter.apply_damage(damage)
+        effect: Effect | None = other_node.python_tags.pop('one_shot_effect', None)
+        if effect is not None:
+            _logger.debug(f'Applying {effect} to {fighter}')
+            effect.apply(fighter)

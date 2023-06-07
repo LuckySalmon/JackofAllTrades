@@ -17,7 +17,7 @@ from panda3d.bullet import (
 )
 from panda3d.core import CollideMask, Mat3, NodePath, PandaNode, VBase3, Vec3
 
-from . import arenas, effects
+from . import arenas
 from .spatial import make_rigid_transform, required_rotation
 
 _logger: Final = logging.getLogger(__name__)
@@ -146,7 +146,6 @@ def spawn_projectile(
     mass: float = 1,
     velocity: VBase3 = Vec3.zero(),
     arena: arenas.Arena,
-    effect: effects.Effect | None = None,
     collision_mask: CollideMask | int = CollideMask.all_on(),
 ) -> NodePath[BulletRigidBodyNode]:
     projectile = make_body(
@@ -160,22 +159,9 @@ def spawn_projectile(
     )
 
     def impact_callback(node: PandaNode, manifold: BulletPersistentManifold) -> None:
-        if node == manifold.node0:
-            other_node = manifold.node1
-        else:
-            other_node = manifold.node0
-        for point in manifold.manifold_points:
-            if point.distance > 0.01:
-                continue
-            _logger.debug(f'{name} hit {other_node.name}')
-            other_fighter = other_node.python_tags.get('fighter')
-            if other_fighter is not None:
-                _logger.debug(f'{other_fighter} was hit by {name}')
-                if effect is not None:
-                    effect.apply(other_fighter)
+        if any(p.distance < 0.01 for p in manifold.manifold_points):
             arena.world.remove(node)
             projectile.remove_node()
-            break
 
     projectile_node = projectile.node()
     projectile_node.python_tags['impact_callback'] = impact_callback
