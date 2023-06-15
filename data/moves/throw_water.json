@@ -2,7 +2,7 @@
   "name": "throw water",
   "type": "ranged",
   "accuracy": 60,
-  "using": "arm_right",
+  "side": "right",
   "target": "any",
   "effects": [{
     "name": "damage",

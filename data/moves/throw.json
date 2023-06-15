@@ -2,7 +2,7 @@
   "name": "throw",
   "type": "ranged",
   "accuracy": 75,
-  "using": "arm_right",
+  "side": "right",
   "target": "other",
   "effects": [{
     "name": "damage",

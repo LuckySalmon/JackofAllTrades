@@ -2,7 +2,7 @@
   "name": "hook",
   "type": "melee",
   "accuracy": 85,
-  "using": "arm_right",
+  "side": "right",
   "target": "any",
   "target_part": "torso"
 }

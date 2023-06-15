@@ -1,7 +1,6 @@
 {
   "name": "disappear",
   "type": "instant",
-  "accuracy": 100,
   "target": "self",
   "effects": [{
     "name": "invisibility",

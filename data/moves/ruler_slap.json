@@ -2,7 +2,7 @@
   "name": "ruler slap",
   "type": "melee",
   "accuracy": 90,
-  "using": "arm_right",
+  "side": "right",
   "target": "any",
   "target_part": "forearm_left"
 }

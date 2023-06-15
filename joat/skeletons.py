@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import enum
 import math
 from typing import Any, cast
 from typing_extensions import Self
@@ -26,6 +27,11 @@ from panda3d.core import (
 )
 
 from . import arenas, control, physics, stances, tasks
+
+
+class Side(enum.Enum):
+    LEFT = enum.auto()
+    RIGHT = enum.auto()
 
 
 def shoulder_angles(
@@ -333,6 +339,12 @@ class Skeleton:
             left_arm=left_arm,
             right_arm=right_arm,
         )
+
+    def get_arm(self, side: Side) -> Arm:
+        if side is Side.LEFT:
+            return self.left_arm
+        else:
+            return self.right_arm
 
     def enter_arena(self, arena: arenas.Arena) -> None:
         self.assume_stance()

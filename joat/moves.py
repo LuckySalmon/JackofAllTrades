@@ -2,15 +2,14 @@ from __future__ import annotations
 
 import enum
 import logging
-import random
 from collections.abc import Container
 from typing import TYPE_CHECKING, Any, Final
 from typing_extensions import Self
 
 import attrs
-from direct.showbase.MessengerGlobal import messenger
 
 from .effects import Effect, EffectBundle, make_effect
+from .skeletons import Side
 
 if TYPE_CHECKING:
     from .characters import Fighter
@@ -34,9 +33,9 @@ class MoveType(enum.Enum):
 class Move:  # TODO: decide on whether these should be called moves or actions
     name: str
     type: MoveType
-    accuracy: int
+    accuracy: int = 100
     effect: Effect | None = None
-    using: str = ''
+    side: Side | None = None
     valid_targets: Container[Target] = frozenset()
     target_part: str = 'torso'
 
@@ -58,19 +57,18 @@ class Move:  # TODO: decide on whether these should be called moves or actions
         else:
             effect = EffectBundle([make_effect(**params) for params in effect_params])
         move_type = MoveType[j.pop('type').upper()]
+        side_string = j.pop('side', None)
+        side = None if side_string is None else Side[side_string.upper()]
         return cls(
             name=name,
             type=move_type,
+            side=side,
             **j,
             valid_targets=valid_targets,
             effect=effect,
         )
 
-    def apply(self, user: Fighter, target: Fighter, confirmed: bool = False) -> None:
-        if confirmed or self.accuracy > random.randint(0, 99):
-            _logger.debug(f'{user} hit {target} with {self}')
-            if self.effect is not None:
-                self.effect.apply(target)
-        else:
-            _logger.debug(f'{user} missed {target} with {self}')
-            messenger.send('output_info', [f"{user.name}'s {self.name} missed!"])
+    def apply(self, user: Fighter, target: Fighter) -> None:
+        _logger.debug(f'{user} hit {target} with {self}')
+        if self.effect is not None:
+            self.effect.apply(target)

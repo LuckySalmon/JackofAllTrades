@@ -2,7 +2,6 @@
   "name": "spit",
   "type": "ranged",
   "accuracy": 55,
-  "using": "head",
   "target": "any",
   "target_part": "head",
   "effects": [{

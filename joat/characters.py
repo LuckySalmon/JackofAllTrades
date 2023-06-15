@@ -23,13 +23,12 @@ from panda3d.core import (
     PGFrameStyle,
     PGWaitBar,
     TransformState,
-    Vec3,
 )
 
 from . import arenas, debug, physics, stances
 from .effects import Effect, StatusEffect
 from .moves import Move, MoveType
-from .skeletons import Skeleton
+from .skeletons import Side, Skeleton
 
 _logger: Final = logging.getLogger(__name__)
 
@@ -170,18 +169,26 @@ class Fighter:
         self.skeleton.stance = stance
         self.skeleton.assume_stance()
 
-    async def use_move(self, move: Move, target: Fighter) -> None:
-        _logger.debug(f'{self} used {move} on {target}')
-        target_part = target.skeleton.parts[move.target_part]
-        target_position = target_part.get_pos(self.skeleton.core)
+    def get_position_of(self, np: NodePath, inaccuracy: float = 0) -> LVecBase3:
+        target_position = np.get_pos(self.skeleton.core)
         for i in range(3):
             scale = 1 - 2 * random.random()
-            inaccuracy = 1 - move.accuracy / 100
             target_position[i] *= 1 + inaccuracy * scale
+        return target_position
 
+    async def use_move(self, move: Move, target: Fighter) -> None:
+        _logger.debug(f'{self} used {move} on {target}')
         if move.type is MoveType.MELEE:
+            target_part = target.skeleton.parts[move.target_part]
+            target_position = self.get_position_of(
+                target_part, (1 - move.accuracy / 100)
+            )
             await self.use_melee_move(move, target_position)
         elif move.type is MoveType.RANGED:
+            target_part = target.skeleton.parts[move.target_part]
+            target_position = self.get_position_of(
+                target_part, (1 - move.accuracy / 100)
+            )
             await self.use_ranged_move(move, target_position)
         elif move.type is MoveType.REPOSITIONING:
             await self.reposition()
@@ -208,25 +215,20 @@ class Fighter:
 
     async def use_ranged_move(self, move: Move, target_position: LVecBase3) -> None:
         assert self.arena is not None
-        if move.using == 'arm_right':
-            arm = self.skeleton.right_arm
-        elif move.using == 'arm_left':
-            arm = self.skeleton.left_arm
+        root = self.arena.root
+        if move.side is None:
+            using_part = self.skeleton.parts['head']
+            from_position = using_part.get_pos(root)
         else:
-            arm = None
-        if arm is None:
-            using_part = self.skeleton.parts[move.using]
-            offset = Vec3(0, 0, 0)
-        else:
+            arm = self.skeleton.get_arm(move.side)
+            using_part = arm.forearm
+            from_position = root.get_relative_point(using_part, (0, -0.25, 0))
             arm.set_target(target_position - arm.origin)
             await AsyncTaskPause(1 / (1 + self.speed) / 8)
-            using_part = arm.forearm
-            offset = Vec3(0, -0.25, 0)
-        root = self.arena.root
+            self.skeleton.assume_stance()
         global_target_position = root.get_relative_point(
             self.skeleton.core, target_position
         )
-        from_position = root.get_relative_point(using_part, offset)
         projectile = physics.spawn_projectile(
             name=move.name,
             arena=self.arena,
@@ -238,16 +240,12 @@ class Fighter:
             collision_mask=~using_part.get_collide_mask(),
         )
         projectile.node().python_tags.update(one_shot_effect=move.effect, min_impulse=1)
-        self.skeleton.assume_stance()
         await AsyncTaskPause(0.2 / self.strength)
         if not projectile.is_empty():
             projectile.set_collide_mask(CollideMask.all_on())
 
     async def use_melee_move(self, move: Move, target_position: LVecBase3) -> None:
-        if move.using == 'arm_left':
-            arm = self.skeleton.left_arm
-        else:
-            arm = self.skeleton.right_arm
+        arm = self.skeleton.get_arm(move.side or Side.RIGHT)
         fist = arm.forearm.node()
         fist.python_tags['one_shot_effect'] = move.effect
         arm.set_target(target_position - arm.origin)

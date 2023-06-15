@@ -2,6 +2,6 @@
   "name": "fastball",
   "type": "ranged",
   "accuracy": 90,
-  "using": "arm_right",
+  "side": "right",
   "target": "other"
 }

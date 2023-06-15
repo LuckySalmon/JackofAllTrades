@@ -1,6 +1,5 @@
 {
   "name": "slide",
   "type": "repositioning",
-  "accuracy": 100,
   "target": "self"
 }
