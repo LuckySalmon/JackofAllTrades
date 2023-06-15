@@ -13,7 +13,7 @@ from direct.showbase.ShowBase import ShowBase
 from panda3d.core import AsyncTaskPause, ClockObject, GraphicsWindow, Vec3
 
 from . import arenas, moves, physics, spatial, stances, tasks, ui
-from .characters import Character, Fighter
+from .characters import Action, Character, Fighter
 from .panda_imgui import Panda3DRenderer
 
 _logger: Final = logging.getLogger(__name__)
@@ -192,11 +192,11 @@ def main() -> None:
     stream_handler.setLevel(logging.WARNING)
     logger.addHandler(file_handler)
     logger.addHandler(stream_handler)
-    move_dict: dict[str, moves.Move] = {}
+    move_dict: dict[str, Action] = {}
     characters: list[Character] = []
     for fp in Path('data', 'moves').iterdir():
         j = json.loads(fp.read_text())
-        move = moves.Move.from_json(j)
+        move = moves.make_move_from_json(j)
         move_dict[fp.stem] = move
     for fp in Path('data', 'characters').iterdir():
         j = json.loads(fp.read_text())

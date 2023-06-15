@@ -3,9 +3,9 @@ from __future__ import annotations
 import json
 import logging
 import random
-from collections.abc import Mapping
+from collections.abc import Container, Mapping
 from pathlib import Path
-from typing import Any, Final
+from typing import Any, Final, Protocol
 from typing_extensions import Self
 
 import attrs
@@ -13,9 +13,6 @@ from attrs import field
 from direct.showbase.MessengerGlobal import messenger
 from panda3d.bullet import BulletPersistentManifold
 from panda3d.core import (
-    AsyncTaskPause,
-    CollideMask,
-    EventHandler,
     GeomNode,
     LVecBase3,
     NodePath,
@@ -25,10 +22,9 @@ from panda3d.core import (
     TransformState,
 )
 
-from . import arenas, debug, physics, stances
+from . import arenas, debug, moves, stances
 from .effects import Effect, StatusEffect
-from .moves import Move, MoveType
-from .skeletons import Side, Skeleton
+from .skeletons import Skeleton
 
 _logger: Final = logging.getLogger(__name__)
 
@@ -57,6 +53,19 @@ def make_health_bar(fighter: Fighter) -> NodePath[PGWaitBar]:
     return bar_path
 
 
+class Action(Protocol):
+    @property
+    def name(self) -> str:
+        raise NotImplementedError
+
+    @property
+    def valid_targets(self) -> Container[moves.Target]:
+        raise NotImplementedError
+
+    async def use(self, user: Fighter, using_on: Fighter) -> object:
+        raise NotImplementedError
+
+
 @attrs.define(kw_only=True)
 class Character:
     name: str
@@ -64,7 +73,7 @@ class Character:
     speed: int
     strength: int
     defense: int
-    moves: list[Move] = attrs.Factory(list)
+    moves: list[Action] = attrs.Factory(list)
     xp: int = field(default=0, init=False, repr=False)
     level: int = field(default=0, init=False, repr=False)
 
@@ -73,7 +82,7 @@ class Character:
 
     @classmethod
     def from_json(
-        cls, attributes: dict[str, Any], *, move_dict: Mapping[str, Move]
+        cls, attributes: dict[str, Any], *, move_dict: Mapping[str, Action]
     ) -> Self:
         move_names = attributes.pop('basic_moves')
         moves = [move_dict[name] for name in move_names]
@@ -93,7 +102,7 @@ class Character:
         )
         return Fighter(name=self.name, character=self, skeleton=skeleton)
 
-    def add_move(self, move: Move) -> None:
+    def add_move(self, move: Action) -> None:
         """Attempt to add a move to this list of those available."""
         # TODO: why this formula?
         if len(self.moves) < int(0.41 * self.level + 4):
@@ -141,7 +150,7 @@ class Fighter:
         return self.character.defense
 
     @property
-    def moves(self) -> list[Move]:
+    def moves(self) -> list[Action]:
         return self.character.moves
 
     def __attrs_post_init__(self) -> None:
@@ -176,82 +185,9 @@ class Fighter:
             target_position[i] *= 1 + inaccuracy * scale
         return target_position
 
-    async def use_move(self, move: Move, target: Fighter) -> None:
+    async def use_move(self, move: Action, target: Fighter) -> None:
         _logger.debug(f'{self} used {move} on {target}')
-        if move.type is MoveType.MELEE:
-            target_part = target.skeleton.parts[move.target_part]
-            target_position = self.get_position_of(
-                target_part, (1 - move.accuracy / 100)
-            )
-            await self.use_melee_move(move, target_position)
-        elif move.type is MoveType.RANGED:
-            target_part = target.skeleton.parts[move.target_part]
-            target_position = self.get_position_of(
-                target_part, (1 - move.accuracy / 100)
-            )
-            await self.use_ranged_move(move, target_position)
-        elif move.type is MoveType.REPOSITIONING:
-            await self.reposition()
-        else:
-            move.apply(self, target)
-
-    async def reposition(self) -> None:
-        assert self.arena is not None
-        ring_path = self.project_ring()
-        while True:
-            await EventHandler.get_global_event_handler().get_future('mouse1')
-            result = self.arena.get_mouse_ray()
-            if result.node == self.arena.ground.node():
-                target = result.hit_pos.xy
-                break
-        displacement = target - self.skeleton.core.get_pos().xy
-        if displacement.length_squared() > self.speed**2:
-            target -= displacement
-            displacement.normalize()
-            displacement *= self.speed
-            target += displacement
-        ring_path.remove_node()
-        await self.skeleton.slide_to(target)
-
-    async def use_ranged_move(self, move: Move, target_position: LVecBase3) -> None:
-        assert self.arena is not None
-        root = self.arena.root
-        if move.side is None:
-            using_part = self.skeleton.parts['head']
-            from_position = using_part.get_pos(root)
-        else:
-            arm = self.skeleton.get_arm(move.side)
-            using_part = arm.forearm
-            from_position = root.get_relative_point(using_part, (0, -0.25, 0))
-            arm.set_target(target_position - arm.origin)
-            await AsyncTaskPause(1 / (1 + self.speed) / 8)
-            self.skeleton.assume_stance()
-        global_target_position = root.get_relative_point(
-            self.skeleton.core, target_position
-        )
-        projectile = physics.spawn_projectile(
-            name=move.name,
-            arena=self.arena,
-            position=from_position,
-            velocity=physics.required_projectile_velocity(
-                global_target_position - from_position,
-                self.strength * 4,
-            ),
-            collision_mask=~using_part.get_collide_mask(),
-        )
-        projectile.node().python_tags.update(one_shot_effect=move.effect, min_impulse=1)
-        await AsyncTaskPause(0.2 / self.strength)
-        if not projectile.is_empty():
-            projectile.set_collide_mask(CollideMask.all_on())
-
-    async def use_melee_move(self, move: Move, target_position: LVecBase3) -> None:
-        arm = self.skeleton.get_arm(move.side or Side.RIGHT)
-        fist = arm.forearm.node()
-        fist.python_tags['one_shot_effect'] = move.effect
-        arm.set_target(target_position - arm.origin)
-        await AsyncTaskPause(1 / (1 + self.speed))
-        self.skeleton.assume_stance()
-        fist.python_tags.pop('one_shot_effect', None)
+        await move.use(self, target)
 
     def apply_damage(self, damage: int) -> None:
         if damage:

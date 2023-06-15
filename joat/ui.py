@@ -13,7 +13,7 @@ from direct.showbase.DirectObject import DirectObject
 from panda3d.core import AsyncTaskPause
 
 from . import moves
-from .characters import Character, Fighter
+from .characters import Action, Character, Fighter
 
 
 def uniform_spacing(
@@ -191,10 +191,10 @@ class BattleMenu:
 
 @attrs.define(kw_only=True)
 class FighterInterface:
-    available_moves: Iterable[moves.Move]
+    available_moves: Iterable[Action]
     text: str = ''
     selected_target: moves.Target | None = field(default=None, init=False)
-    selected_action: moves.Move | None = field(default=None, init=False)
+    selected_action: Action | None = field(default=None, init=False)
     shown: bool = field(default=False, init=False)
 
     @classmethod
@@ -207,7 +207,8 @@ class FighterInterface:
             for action in self.available_moves:
                 if imgui.button(action.name):
                     self.selected_action = action
-                    self.text = f'{action.name}\nAccuracy: {action.accuracy}%'
+                    accuracy = getattr(action, 'accuracy', 100)
+                    self.text = f'{action.name}\nAccuracy: {accuracy}%'
         imgui.same_line()
         if self.selected_action is None:
             imgui.text('Select a move...')
@@ -218,7 +219,7 @@ class FighterInterface:
                     if imgui.button(f'Use on {target.value}'):
                         self.selected_target = target
 
-    async def query_action(self) -> tuple[moves.Move, moves.Target]:
+    async def query_action(self) -> tuple[Action, moves.Target]:
         self.show()
         while self.selected_target is None or self.selected_action is None:
             await AsyncTaskPause(0)
