@@ -146,7 +146,7 @@ class InfoStream:
 
     @classmethod
     def make_default(cls) -> Self:
-        lines = collections.deque(('' for _ in range(16)), maxlen=16)
+        lines = collections.deque[str](('' for _ in range(16)), maxlen=16)
         return cls(lines)
 
     def append_text(self, *new_lines: str) -> None:
