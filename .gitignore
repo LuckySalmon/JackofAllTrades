@@ -1,7 +1,8 @@
 env/*
 venv/*
-.idea/*
-.vscode/*
+.venv
+.idea
+.vscode
 *.code-workspace
 *.pyc
 
