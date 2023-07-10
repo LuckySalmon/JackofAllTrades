@@ -134,7 +134,7 @@ class Arm:
         *,
         length: float,
         radius: float,
-        parent: NodePath,
+        parent: NodePath[BulletRigidBodyNode],
         transform: Mat3,
         speed: float = 1,
         strength: float = 1,

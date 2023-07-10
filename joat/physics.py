@@ -49,8 +49,8 @@ def make_body(
 
 
 def make_ball_joint(
-    node_path_a: NodePath,
-    node_path_b: NodePath,
+    node_path_a: NodePath[BulletRigidBodyNode],
+    node_path_b: NodePath[BulletRigidBodyNode],
     *,
     position: VBase3,
     rotation: Mat3 = Mat3.ident_mat(),
@@ -70,7 +70,11 @@ def make_ball_joint(
 
 
 def make_hinge_joint(
-    node_path_a: NodePath, node_path_b: NodePath, *, position: VBase3, axis: VBase3
+    node_path_a: NodePath[BulletRigidBodyNode],
+    node_path_b: NodePath[BulletRigidBodyNode],
+    *,
+    position: VBase3,
+    axis: VBase3,
 ) -> BulletHingeConstraint:
     a_to_joint = position
     b_to_joint = node_path_b.get_relative_point(node_path_a, position)
@@ -87,7 +91,11 @@ def make_hinge_joint(
 
 
 def make_slider_joint(
-    node_path_a: NodePath, node_path_b: NodePath, *, position: VBase3, axis: VBase3
+    node_path_a: NodePath[BulletRigidBodyNode],
+    node_path_b: NodePath[BulletRigidBodyNode],
+    *,
+    position: VBase3,
+    axis: VBase3,
 ) -> BulletSliderConstraint:
     a_to_joint = position
     b_to_joint = node_path_b.get_relative_point(node_path_a, position)
@@ -105,8 +113,8 @@ def make_slider_joint(
 
 
 def make_cone_joint(
-    node_path_a: NodePath,
-    node_path_b: NodePath,
+    node_path_a: NodePath[BulletRigidBodyNode],
+    node_path_b: NodePath[BulletRigidBodyNode],
     *,
     position: VBase3,
     axis: VBase3,
